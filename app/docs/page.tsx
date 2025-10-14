@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { TabPanel, Tabs } from "../components/Tabs";
 
 export default function Docs() {
   const [currentPage, setCurrentPage] = useState("main");
@@ -554,14 +555,27 @@ export default function Docs() {
                         <h4 className="text-lg font-medium text-white mb-3">
                           1. Creating a new DocumentDB instance
                         </h4>
-                        <div className="bg-neutral-900/50 rounded-lg p-4 border border-neutral-600/30 mb-4">
-                          <pre className="text-green-400 font-mono text-sm overflow-x-auto">
-                            {`docker pull ghcr.io/microsoft/documentdb/documentdb-local:latest
+                        <Tabs>
+                          <TabPanel title="Bash">
+                            <div className="bg-neutral-900/50 rounded-lg p-4 border border-neutral-600/30 mb-4">
+                            <pre className="text-green-400 font-mono text-sm overflow-x-auto">
+                              {`docker pull ghcr.io/microsoft/documentdb/documentdb-local:latest
 docker tag ghcr.io/microsoft/documentdb/documentdb-local:latest documentdb
 docker run -dt -p 10260:10260 --name documentdb-container documentdb --username <YOUR_USERNAME> --password <YOUR_PASSWORD>
 docker image rm -f ghcr.io/microsoft/documentdb/documentdb-local:latest || echo "No existing documentdb image to remove"`}
-                          </pre>
-                        </div>
+                            </pre></div>
+                          </TabPanel>
+                          <TabPanel title="PowerShell">
+                            <div className="bg-neutral-900/50 rounded-lg p-4 border border-neutral-600/30 mb-4">
+                            <pre className="text-green-400 font-mono text-sm overflow-x-auto">
+                              {`docker pull ghcr.io/microsoft/documentdb/documentdb-local:latest
+docker tag ghcr.io/microsoft/documentdb/documentdb-local:latest documentdb
+docker run -dt -p 10260:10260 --name documentdb-container documentdb --username <YOUR_USERNAME> --password <YOUR_PASSWORD>
+docker image rm -f ghcr.io/microsoft/documentdb/documentdb-local:latest; if ($LASTEXITCODE -ne 0) { echo "No existing documentdb image to remove" }`}
+                              </pre>
+                            </div>
+                          </TabPanel>
+                        </Tabs>
                         <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4 mb-4">
                           <p className="text-blue-200 text-sm">
                             <span className="font-medium">Note:</span> Replace{" "}
