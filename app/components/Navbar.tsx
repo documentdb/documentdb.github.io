@@ -65,6 +65,12 @@ export default function Navbar() {
               Docs
             </Link>
             <Link
+              href="/packages"
+              className="text-gray-300 hover:text-blue-400 transition-colors duration-200 font-medium"
+            >
+              Packages
+            </Link>
+            <Link
               href="/blogs"
               className="text-gray-300 hover:text-blue-400 transition-colors duration-200 font-medium"
             >
