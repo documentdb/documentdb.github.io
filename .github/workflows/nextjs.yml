@@ -1,8 +1,5 @@
-# Sample workflow for building and deploying a Next.js site to GitHub Pages
-#
-# To get started with Next.js see: https://nextjs.org/docs/getting-started
-#
-name: Deploy Next.js site to Pages
+# Workflow for building Next.js site and downloading DocumentDB packages, then deploying to GitHub Pages
+name: Deploy Next.js site and DocumentDB packages to Pages
 
 on:
   # Runs on pushes targeting the default branch
@@ -31,6 +28,24 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Install required packages
+        run: |
+          until sudo apt-get update; do sleep 1; done
+          sudo apt-get install -y createrepo-c dpkg-dev gnupg2 python3
+      - name: Setup GPG
+        id: import_gpg
+        uses: crazy-max/ghaction-import-gpg@v6
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+        continue-on-error: true
+      - name: Set GPG fingerprint
+        run: |
+          if [ -n "${{ steps.import_gpg.outputs.fingerprint }}" ]; then
+            echo "GPG_FINGERPRINT=${{ steps.import_gpg.outputs.fingerprint }}" >> $GITHUB_ENV
+            echo "✓ GPG key loaded: ${{ steps.import_gpg.outputs.fingerprint }}"
+          else
+            echo "⚠ No GPG key configured - packages will not be signed"
+          fi
       - name: Detect package manager
         id: detect-package-manager
         run: |
@@ -75,6 +90,8 @@ jobs:
         run: ${{ steps.detect-package-manager.outputs.manager }} ${{ steps.detect-package-manager.outputs.command }}
       - name: Build with Next.js
         run: ${{ steps.detect-package-manager.outputs.runner }} next build
+      - name: Download DocumentDB packages from latest release
+        run: .github/scripts/download_packages.sh
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
