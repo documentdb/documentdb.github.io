@@ -30,8 +30,8 @@ generate_hashes() {
 
 echo "Downloading packages from $REPO releases"
 
-# Get the latest release info
-if release=$(curl -fqs "https://api.github.com/repos/${REPO}/releases/latest")
+# Get the latest release info (including pre-releases)
+if release=$(curl -fqs "https://api.github.com/repos/${REPO}/releases" | python3 -c "import sys, json; releases = json.load(sys.stdin); print(json.dumps(releases[0])) if releases else sys.exit(1)")
 then
   tag="$(echo "$release" | python3 -c "import sys, json; print(json.load(sys.stdin)['tag_name'])")"
   echo "Found latest release: $tag"
