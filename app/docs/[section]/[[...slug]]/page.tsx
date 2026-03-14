@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from 'next/navigation';
 import { capitalCase } from 'change-case';
 import { getAllArticlePaths, getArticleByPath } from "../../../services/articleService";
+import { getMetadata } from "../../../services/metadataService";
 import ComingSoon from "../../../components/ComingSoon";
 import Markdown from "../../../components/Markdown";
 
@@ -35,10 +36,11 @@ export async function generateMetadata({ params }: PageProps) {
     const selectedNavItem = navigation.find((item) => item.link.includes(file));
     const pageTitle = frontmatter.title || selectedNavItem?.title || section;
 
-    return {
+    return getMetadata({
         title: `${pageTitle} - DocumentDB Documentation`,
-        description: frontmatter.description || undefined,
-    };
+        description: frontmatter.description || `${pageTitle} - DocumentDB Documentation`,
+        pagePath: `docs/${section}${slug.length ? '/' + slug.join('/') : ''}`
+    });
 }
 
 export default async function ArticlePage({ params }: PageProps) {

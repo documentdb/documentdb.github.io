@@ -1,0 +1,11 @@
+# robots.txt for DocumentDB documentation site
+
+# Allow all crawlers
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://documentdb.io/sitemap.xml
+
+# Crawl-delay (optional, uncomment if needed)
+# Crawl-delay: 1
