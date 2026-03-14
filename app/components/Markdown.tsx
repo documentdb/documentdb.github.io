@@ -7,7 +7,12 @@ import type { ReactElement } from 'react';
 import Code from './Code';
 import { kebabCase } from 'change-case';
 
-export default function Markdown({ content }: { content: string }) {
+interface MarkdownProps {
+  content: string;
+  currentPath?: string; // e.g., "architecture/index" or "quickstart/extension"
+}
+
+export default function Markdown({ content, currentPath }: MarkdownProps) {
   const processedContent = useMemo(() => {
     // Split content by H2 headings to group sections
     const sections = content.split(/^## /gm);
@@ -22,7 +27,7 @@ export default function Markdown({ content }: { content: string }) {
           <div key={`intro-${index}`} className="mb-8">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
-              components={getMarkdownComponents()}
+              components={getMarkdownComponents(currentPath)}
             >
               {section}
             </ReactMarkdown>
@@ -42,7 +47,7 @@ export default function Markdown({ content }: { content: string }) {
             </h2>
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
-              components={getMarkdownComponents()}
+              components={getMarkdownComponents(currentPath)}
             >
               {sectionContent}
             </ReactMarkdown>
@@ -57,7 +62,59 @@ export default function Markdown({ content }: { content: string }) {
   return <div className="space-y-8">{processedContent}</div>;
 }
 
-function getMarkdownComponents() {
+/**
+ * Convert a relative markdown link to the correct Next.js route
+ * @param href - The href from the markdown (e.g., "../quickstart/extension.md")
+ * @param currentPath - The current article path (e.g., "architecture/index")
+ * @returns The converted route (e.g., "/docs/quickstart/extension")
+ */
+function convertMarkdownLink(href: string, currentPath?: string): string {
+  // Only process relative links that end with .md
+  if (!href.endsWith('.md') || href.startsWith('http://') || href.startsWith('https://')) {
+    return href;
+  }
+
+  // Remove the .md extension
+  let linkPath = href.replace(/\.md$/, '');
+
+  // If it's a relative path, resolve it
+  if (linkPath.startsWith('../') || linkPath.startsWith('./')) {
+    if (!currentPath) {
+      // Fallback: just remove ./ and ../ and hope for the best
+      linkPath = linkPath.replace(/^(\.\.\/)+/, '').replace(/^\.\//, '');
+    } else {
+      // Get the directory of the current file
+      const currentDir = currentPath.includes('/') 
+        ? currentPath.substring(0, currentPath.lastIndexOf('/'))
+        : '';
+      
+      // Split the link into parts
+      const linkParts = linkPath.split('/');
+      const currentParts = currentDir.split('/').filter(p => p);
+
+      // Process each part of the link
+      for (const part of linkParts) {
+        if (part === '..') {
+          // Go up one directory
+          currentParts.pop();
+        } else if (part !== '.') {
+          // Add to the path
+          currentParts.push(part);
+        }
+      }
+
+      linkPath = currentParts.join('/');
+    }
+  }
+
+  // Remove trailing /index if present
+  linkPath = linkPath.replace(/\/index$/, '');
+
+  // Add /docs prefix if not already present
+  return linkPath.startsWith('/') ? linkPath : `/docs/${linkPath}`;
+}
+
+function getMarkdownComponents(currentPath?: string) {
   return {
     // H1 headings (main page title from Markdown content)
     h1: ({ children, ...props }: any) => (
@@ -132,7 +189,6 @@ function getMarkdownComponents() {
 
       return (
         <div
-          className="bg-neutral-900/50 rounded-lg p-4 border border-neutral-600/30 mb-4"
           {...props}
         >
           <Code code={codeString} language={lang} />
@@ -244,18 +300,38 @@ function getMarkdownComponents() {
       );
     },
 
+    // Images
+    img: ({ src, alt, ...props }: any) => {
+      // Convert relative media paths to absolute paths
+      const imageSrc = src?.startsWith('media/') ? `/${src}` : src;
+      
+      return (
+        <img
+          src={imageSrc}
+          alt={alt}
+          className="rounded-lg my-4 max-w-full h-auto"
+          {...props}
+        />
+      );
+    },
+
     // Links
-    a: ({ children, href, ...props }: any) => (
-      <a
-        href={href}
-        className="text-blue-400 hover:text-blue-300 transition-colors"
-        target="_blank"
-        rel="noopener noreferrer"
-        {...props}
-      >
-        {children}
-      </a>
-    ),
+    a: ({ children, href, ...props }: any) => {
+      const convertedHref = convertMarkdownLink(href, currentPath);
+      const isExternal = convertedHref.startsWith('http://') || convertedHref.startsWith('https://');
+
+      return (
+        <a
+          href={convertedHref}
+          className="text-blue-400 hover:text-blue-300 transition-colors"
+          target={isExternal ? "_blank" : undefined}
+          rel={isExternal ? "noopener noreferrer" : undefined}
+          {...props}
+        >
+          {children}
+        </a>
+      );
+    },
 
     // Strong text
     strong: ({ children, ...props }: any) => (

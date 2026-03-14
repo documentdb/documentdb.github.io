@@ -29,7 +29,10 @@
   ],
   "include": [
     "**/*.md",
-    "**/*.yml"
+    "**/*.yml",
+    "**/media/**/*.png",
+    "**/media/**/*.jpg",
+    "**/media/**/*.gif"
   ],
   "exclude": [
     "**/{readme,README}.md"

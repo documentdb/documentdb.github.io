@@ -5,8 +5,9 @@
   "scripts": {
     "dev": "npm run compile && next dev --turbopack",
     "build": "npm run compile && next build --turbopack",
-    "compile": "npm run compile:clean && npm run compile:content",
+    "compile": "npm run compile:clean && npm run compile:content && npm run compile:media",
     "compile:content": "tsx scripts/compile-content.tsx",
+    "compile:media": "tsx scripts/compile-media.tsx",
     "compile:clean": "tsx scripts/compile-clean.tsx",
     "start": "npx serve out",
     "lint": "eslint"
@@ -16,6 +17,7 @@
     "gray-matter": "^4.0.3",
     "handlebars": "^4.7.8",
     "js-yaml": "^4.1.1",
+    "mermaid": "^11.12.2",
     "next": "^15.5.9",
     "pluralize": "^8.0.0",
     "react": "^19.2.3",
@@ -23,6 +25,7 @@
     "react-markdown": "^10.1.0",
     "react-syntax-highlighter": "^16.1.0",
     "remark": "^15.0.1",
+    "react-x-mermaid": "^0.0.10",
     "remark-gfm": "^4.0.1",
     "strip-markdown": "^6.0.0"
   },
