@@ -4,33 +4,123 @@ import {
   documentdbKubernetesOperatorGitHubUrl,
 } from "../services/externalLinks";
 
+type OperatorBenefitIcon = "cluster" | "globe" | "replication" | "shield" | "terminal";
+
 const operatorBenefits = [
   {
-    title: "Local to cloud",
-    description:
-      "Start on kind or minikube, then move to managed or self-managed Kubernetes with the same operator model.",
+    title: "Local first",
+    description: "Start on kind or minikube, then scale out.",
+    icon: "cluster" as const,
   },
   {
     title: "Hybrid and multi-cloud",
-    description:
-      "The docs include concrete AKS, EKS, GKE, and on-prem deployment patterns for teams spanning more than one environment.",
+    description: "Keep one operator model across cloud and on-prem clusters.",
+    icon: "globe" as const,
   },
   {
     title: "Cross-cluster replication",
-    description:
-      "Use documented multi-cluster replication and failover patterns when one cluster is not enough.",
+    description: "Replicate across clusters and promote when needed.",
+    icon: "replication" as const,
   },
   {
     title: "HA, backup, and TLS",
-    description:
-      "Add automatic failover, backup resources, and TLS to operate DocumentDB as a real service.",
+    description: "Add failover, backups, and secure connectivity.",
+    icon: "shield" as const,
   },
   {
-    title: "Day-2 operations",
-    description:
-      "Use the kubectl plugin for status, events, and promotion workflows.",
+    title: "Day-2 tooling",
+    description: "Use the kubectl plugin for status and promotion tasks.",
+    icon: "terminal" as const,
   },
 ] as const;
+
+function OperatorBenefitGlyph({ icon }: { icon: OperatorBenefitIcon }) {
+  switch (icon) {
+    case "cluster":
+      return (
+        <svg
+          className="h-5 w-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <circle cx="6" cy="7" r="2.5" />
+          <circle cx="18" cy="7" r="2.5" />
+          <circle cx="12" cy="17" r="2.5" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.8}
+            d="M8.2 8.8 10.4 14m5.4-5.2L13.6 14"
+          />
+        </svg>
+      );
+    case "globe":
+      return (
+        <svg
+          className="h-5 w-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.8}
+            d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm-9-9h18M12 3c2.5 2.4 4 5.6 4 9s-1.5 6.6-4 9m0-18c-2.5 2.4-4 5.6-4 9s1.5 6.6 4 9"
+          />
+        </svg>
+      );
+    case "replication":
+      return (
+        <svg
+          className="h-5 w-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.8}
+            d="M4 7h13m0 0-3-3m3 3-3 3M20 17H7m0 0 3-3m-3 3 3 3"
+          />
+        </svg>
+      );
+    case "shield":
+      return (
+        <svg
+          className="h-5 w-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.8}
+            d="M12 3 5 6v6c0 5 3.4 8 7 9 3.6-1 7-4 7-9V6l-7-3Zm-2.5 9 1.7 1.7L14.8 10"
+          />
+        </svg>
+      );
+    case "terminal":
+      return (
+        <svg
+          className="h-5 w-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.8}
+            d="M4 6h16v12H4V6Zm4 4 2 2-2 2m4 0h4"
+          />
+        </svg>
+      );
+  }
+}
 
 const setupSteps = [
   {
@@ -209,28 +299,16 @@ export default function KubernetesOperatorPage() {
             </p>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {operatorBenefits.map((item) => (
               <article
                 key={item.title}
                 className="rounded-2xl border border-neutral-800 bg-neutral-900/80 p-5 transition hover:-translate-y-0.5 hover:border-emerald-400/30 hover:bg-neutral-900 sm:p-6"
               >
                 <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl border border-emerald-400/20 bg-emerald-500/10 text-emerald-300">
-                  <svg
-                    className="h-5 w-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.8}
-                      d="M12 6v12M6 12h12"
-                    />
-                  </svg>
+                  <OperatorBenefitGlyph icon={item.icon} />
                 </div>
-                <h3 className="text-xl font-semibold text-white">{item.title}</h3>
+                <h3 className="text-lg font-semibold text-white">{item.title}</h3>
                 <p className="mt-3 text-sm leading-6 text-gray-400">
                   {item.description}
                 </p>
