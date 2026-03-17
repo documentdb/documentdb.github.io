@@ -8,28 +8,33 @@ type OperatorBenefitIcon = "cluster" | "globe" | "replication" | "shield" | "ter
 
 const operatorBenefits = [
   {
-    title: "Local first",
-    description: "Start on kind or minikube, then scale out.",
+    title: "Local to cloud",
+    description:
+      "Start on kind or minikube, then use the same operator model on managed or self-managed Kubernetes.",
     icon: "cluster" as const,
   },
   {
     title: "Hybrid and multi-cloud",
-    description: "Keep one operator model across cloud and on-prem clusters.",
+    description:
+      "Use one operator model across AKS, EKS, GKE, and on-prem clusters.",
     icon: "globe" as const,
   },
   {
     title: "Cross-cluster replication",
-    description: "Replicate across clusters and promote when needed.",
+    description:
+      "Replicate across clusters and promote a new primary when you need cross-cluster failover.",
     icon: "replication" as const,
   },
   {
     title: "HA, backup, and TLS",
-    description: "Add failover, backups, and secure connectivity.",
+    description:
+      "Add automatic failover, Backup and ScheduledBackup resources, and configurable TLS modes.",
     icon: "shield" as const,
   },
   {
-    title: "Day-2 tooling",
-    description: "Use the kubectl plugin for status and promotion tasks.",
+    title: "Day-2 operations",
+    description:
+      "Use the kubectl plugin for status, events, and promotion workflows.",
     icon: "terminal" as const,
   },
 ] as const;
@@ -133,30 +138,30 @@ const setupSteps = [
     step: "02",
     title: "Install the operator",
     description:
-      "Deploy the operator so it can reconcile DocumentDB resources and manage cluster lifecycle operations.",
+      "Install cert-manager, CloudNativePG, and the DocumentDB operator with Helm.",
   },
   {
     step: "03",
     title: "Create a DocumentDB resource",
     description:
-      "Apply a DocumentDB custom resource to start locally or grow into replicated topologies as your environment expands.",
+      "Apply a DocumentDB custom resource to launch a cluster, then expand into replicated topologies as needed.",
   },
 ] as const;
 
 const operatorHighlights = [
-  "kind + minikube quickstart",
+  "kind + minikube",
   "AKS / EKS / GKE",
-  "Hybrid / on-prem guide",
+  "Hybrid / on-prem",
   "Cross-cluster replication",
-  "Backup + ScheduledBackup resources",
-  "kubectl plugin for operator workflows",
-  "TLS-aware deployment model",
+  "Backup + ScheduledBackup CRDs",
+  "kubectl plugin workflows",
+  "Configurable TLS modes",
 ] as const;
 
 const bestFitScenarios = [
-  "Teams starting on local clusters and growing toward managed Kubernetes.",
-  "Platform teams spanning cloud and on-prem Kubernetes environments.",
-  "Operators that need cross-cluster replication and promotion workflows.",
+  "Teams moving from local Kubernetes clusters to managed environments.",
+  "Platform teams standardizing DocumentDB operations across cloud and on-prem clusters.",
+  "Operators that need replication, promotion, and recovery workflows across clusters.",
 ] as const;
 
 export const metadata = getMetadata({
@@ -196,9 +201,9 @@ export default function KubernetesOperatorPage() {
                 <span className="inline-block">hybrid and multi-cloud Kubernetes.</span>
               </p>
               <p className="mb-7 max-w-xl text-base leading-7 text-gray-300 sm:text-lg">
-                Install with Helm, manage with custom resources, and extend to
-                documented cross-cluster replication, failover, backups, and
-                TLS.
+                Install with Helm, manage with custom resources, and run
+                DocumentDB on Kubernetes with replication, failover, backups,
+                and TLS.
               </p>
               <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                 <a
@@ -225,8 +230,9 @@ export default function KubernetesOperatorPage() {
                   Built for local, hybrid, and multi-cluster paths
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-gray-400">
-                  Use the operator when one cluster is not enough and you want a
-                  consistent Kubernetes operating model.
+                  Use the operator when you want Kubernetes-native lifecycle
+                  management for local clusters, HA topologies, or
+                  multi-cluster deployments.
                 </p>
               </div>
 
@@ -293,9 +299,8 @@ export default function KubernetesOperatorPage() {
               A better fit for Kubernetes-based DocumentDB environments
             </h2>
             <p className="mt-4 text-base leading-7 text-gray-400 sm:text-lg">
-              Choose the operator when one cluster is not enough and you want
-              the same operating model across local, hybrid, and multi-cloud
-              environments.
+              The operator adds Kubernetes-native lifecycle management,
+              recovery, and cross-cluster workflows on top of DocumentDB.
             </p>
           </div>
 
