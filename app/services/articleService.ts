@@ -109,7 +109,7 @@ function splitPrebuiltNavigation(section: string, links: Link[]): Link[] {
 
   const isPrebuiltPackages = (link: Link) =>
     link.link.includes('prebuilt-packages') || /pre-built packages/i.test(link.title);
-  const dockerAndLinuxLinks: Link[] = [
+  const gettingStartedQuickLinks: Link[] = [
     {
       title: 'Docker',
       link: '/docs/getting-started/docker',
@@ -123,11 +123,11 @@ function splitPrebuiltNavigation(section: string, links: Link[]): Link[] {
   const gettingStartedIndex = filteredLinks.find((link) => link.link === 'index.md');
 
   if (!gettingStartedIndex) {
-    return [...dockerAndLinuxLinks, ...filteredLinks];
+    return [...gettingStartedQuickLinks, ...filteredLinks];
   }
 
   const remainingLinks = filteredLinks.filter((link) => link !== gettingStartedIndex);
-  return [gettingStartedIndex, ...dockerAndLinuxLinks, ...remainingLinks];
+  return [gettingStartedIndex, ...gettingStartedQuickLinks, ...remainingLinks];
 }
 
 function updateGettingStartedIndexContent(content: string): string {

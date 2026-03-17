@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import CommandSnippet from "./components/CommandSnippet";
+import { documentdbKubernetesOperatorDocsUrl } from "./services/externalLinks";
 import { withBasePath } from "./services/sitePath";
 
 type CapabilityIconName =
@@ -26,7 +27,26 @@ const quickStartSteps = [
   },
   {
     step: "03",
-    description: "Continue with the docs or prebuilt packages.",
+    description: "Continue with the docs or Linux packages for the setup you need.",
+  },
+];
+
+const kubernetesOperatorEntryPoints = [
+  {
+    title: "Local clusters",
+    description: "Start on kind or minikube for local Kubernetes development.",
+  },
+  {
+    title: "Hybrid and multi-cloud",
+    description: "Use documented AKS, EKS, GKE, and on-prem deployment guides.",
+  },
+  {
+    title: "Replication and resilience",
+    description: "Extend to cross-cluster replication, HA, backups, and TLS.",
+  },
+  {
+    title: "Day-2 operations",
+    description: "Use the kubectl plugin for status, events, and promotion.",
   },
 ];
 
@@ -574,6 +594,68 @@ export default function Home() {
                 </h3>
               </a>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="border-b border-neutral-800 bg-neutral-900/60 py-14 sm:py-16 lg:py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-8 max-w-3xl">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-300">
+              Operator preview
+            </p>
+            <h2 className="mb-4 text-3xl font-bold text-white sm:text-4xl">
+              DocumentDB Kubernetes Operator
+            </h2>
+            <p className="text-base leading-7 text-gray-400 sm:text-lg">
+              Run DocumentDB on Kubernetes—from kind and minikube to{" "}
+              <span className="inline-block">hybrid and multi-cloud deployments.</span>
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {kubernetesOperatorEntryPoints.map((item) => (
+              <article
+                key={item.title}
+                className="group flex h-full flex-col rounded-2xl border border-neutral-800 bg-neutral-900/80 p-5 transition hover:-translate-y-0.5 hover:border-emerald-400/30 hover:bg-neutral-900 sm:p-6"
+              >
+                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300">
+                  {item.title}
+                </p>
+                <p className="text-sm leading-6 text-gray-400">
+                  {item.description}
+                </p>
+              </article>
+            ))}
+          </div>
+
+          <div className="mt-6 rounded-3xl border border-emerald-500/20 bg-emerald-500/5 p-5 sm:p-6">
+            <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
+              <div>
+                <p className="text-sm font-semibold text-white">
+                  Preview with local, hybrid, and multi-cluster paths
+                </p>
+                <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-300">
+                  The operator is still in preview. Start with the overview, then
+                  follow the quick start or multi-cluster guides.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                <Link
+                  href="/kubernetes-operator"
+                  className="inline-flex items-center justify-center rounded-md bg-emerald-500 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-400"
+                >
+                  Read operator overview
+                </Link>
+                <a
+                  href={documentdbKubernetesOperatorDocsUrl}
+                  className="inline-flex items-center justify-center rounded-md border border-emerald-400/30 bg-emerald-500/10 px-6 py-3 text-sm font-semibold text-emerald-200 transition-colors hover:bg-emerald-500/20"
+                >
+                  Open quick start
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       </section>
