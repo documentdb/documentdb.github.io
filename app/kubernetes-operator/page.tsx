@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { getMetadata } from "../services/metadataService";
 import {
   documentdbKubernetesOperatorDocsUrl,
@@ -124,12 +123,6 @@ export default function KubernetesOperatorPage() {
                 >
                   GitHub repository
                 </a>
-                <Link
-                  href="/docs/getting-started"
-                  className="inline-flex w-full items-center justify-center rounded-md border border-neutral-600 bg-neutral-800/40 px-6 py-3 text-sm font-semibold text-gray-200 transition-colors hover:border-neutral-500 hover:bg-neutral-800 sm:w-auto"
-                >
-                  View local install guides
-                </Link>
               </div>
             </div>
 
@@ -329,12 +322,6 @@ export default function KubernetesOperatorPage() {
             >
               GitHub repository
             </a>
-            <Link
-              href="/docs/getting-started"
-              className="inline-flex w-full items-center justify-center rounded-md border border-neutral-600 px-5 py-2.5 text-sm font-semibold text-gray-200 transition-colors hover:border-neutral-500 hover:bg-neutral-800 sm:w-auto"
-            >
-              View local install guides
-            </Link>
           </div>
         </div>
       </section>
