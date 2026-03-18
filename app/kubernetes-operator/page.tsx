@@ -1,47 +1,72 @@
+import CommandSnippet from "../components/CommandSnippet";
 import { getMetadata } from "../services/metadataService";
 import {
   documentdbKubernetesOperatorDocsUrl,
   documentdbKubernetesOperatorGitHubUrl,
 } from "../services/externalLinks";
 
-type OperatorBenefitIcon = "cluster" | "globe" | "replication" | "shield" | "terminal";
+type OperatorBenefitIcon =
+  | "database"
+  | "foundation"
+  | "globe"
+  | "replication"
+  | "shield"
+  | "terminal";
 
 const operatorBenefits = [
   {
-    title: "Local to cloud",
+    eyebrow: "Compatibility",
+    title: "MongoDB-compatible",
     description:
-      "Start on kind or minikube, then use the same operator model on managed or self-managed Kubernetes.",
-    icon: "cluster" as const,
+      "Run DocumentDB with standard MongoDB drivers and tools, then manage it with Kubernetes custom resources.",
+    highlights: ["PyMongo", "Node.js", "mongosh"],
+    icon: "database" as const,
   },
   {
+    eyebrow: "Foundation",
+    title: "Built on PostgreSQL",
+    description:
+      "Use CloudNativePG and PostgreSQL under the hood while keeping a document database workflow on Kubernetes.",
+    highlights: ["PostgreSQL", "CloudNativePG", "ACID"],
+    icon: "foundation" as const,
+  },
+  {
+    eyebrow: "Topology",
     title: "Hybrid and multi-cloud",
     description:
-      "Use one operator model across AKS, EKS, GKE, and on-prem clusters.",
+      "Use one operator model across kind, minikube, AKS, EKS, GKE, and connected on-prem clusters.",
+    highlights: ["kind + minikube", "AKS / EKS / GKE", "On-prem"],
     icon: "globe" as const,
   },
   {
-    title: "Cross-cluster replication",
+    eyebrow: "Resilience",
+    title: "Failover and recovery",
     description:
-      "Replicate across clusters and promote a new primary when you need cross-cluster failover.",
+      "Add automatic failover, cross-cluster replication, and Backup and ScheduledBackup workflows for recovery.",
+    highlights: ["5-15s failover", "Cross-cluster", "Backup CRDs"],
     icon: "replication" as const,
   },
   {
-    title: "HA, backup, and TLS",
+    eyebrow: "Security",
+    title: "TLS and access controls",
     description:
-      "Add automatic failover, Backup and ScheduledBackup resources, and configurable TLS modes.",
+      "Choose preview or production TLS modes and integrate with secrets, SCRAM auth, RBAC, and secure cluster networking.",
+    highlights: ["4 TLS modes", "SCRAM", "RBAC"],
     icon: "shield" as const,
   },
   {
+    eyebrow: "Operations",
     title: "Day-2 operations",
     description:
-      "Use the kubectl plugin for status, events, and promotion workflows.",
+      "Use the kubectl plugin plus events and metrics to inspect status, troubleshoot, and promote a new primary when needed.",
+    highlights: ["kubectl plugin", "Events", "Metrics"],
     icon: "terminal" as const,
   },
 ] as const;
 
 function OperatorBenefitGlyph({ icon }: { icon: OperatorBenefitIcon }) {
   switch (icon) {
-    case "cluster":
+    case "database":
       return (
         <svg
           className="h-5 w-5"
@@ -49,14 +74,51 @@ function OperatorBenefitGlyph({ icon }: { icon: OperatorBenefitIcon }) {
           stroke="currentColor"
           viewBox="0 0 24 24"
         >
-          <circle cx="6" cy="7" r="2.5" />
-          <circle cx="18" cy="7" r="2.5" />
-          <circle cx="12" cy="17" r="2.5" />
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
             strokeWidth={1.8}
-            d="M8.2 8.8 10.4 14m5.4-5.2L13.6 14"
+            d="M4 7.5C4 5.567 7.582 4 12 4s8 1.567 8 3.5S16.418 11 12 11 4 9.433 4 7.5Z"
+          />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.8}
+            d="M4 12c0 1.933 3.582 3.5 8 3.5s8-1.567 8-3.5"
+          />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.8}
+            d="M4 16.5C4 18.433 7.582 20 12 20s8-1.567 8-3.5"
+          />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.8}
+            d="M4 7.5v9M20 7.5v9"
+          />
+        </svg>
+      );
+    case "foundation":
+      return (
+        <svg
+          className="h-5 w-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.8}
+            d="M4 8h16M4 12h16M4 16h16"
+          />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.8}
+            d="M6 5h12v14H6z"
           />
         </svg>
       );
@@ -132,52 +194,61 @@ const setupSteps = [
     step: "01",
     title: "Prepare the cluster",
     description:
-      "Use kind or minikube locally, or a Kubernetes 1.35+ cluster such as AKS, EKS, or GKE.",
+      "Use kind or minikube locally, or a Kubernetes 1.35+ cluster such as AKS, EKS, or GKE for the current preview install path.",
   },
   {
     step: "02",
     title: "Install the operator",
     description:
-      "Install cert-manager, CloudNativePG, and the DocumentDB operator with Helm.",
+      "Install cert-manager, then add the DocumentDB operator with Helm. CloudNativePG is included as a chart dependency.",
   },
   {
     step: "03",
     title: "Create a DocumentDB resource",
     description:
-      "Apply a DocumentDB custom resource to launch a cluster, then expand into replicated topologies as needed.",
+      "Apply a DocumentDB custom resource to launch a MongoDB-compatible database built on PostgreSQL, then expand into replicated topologies as needed.",
   },
 ] as const;
 
 const operatorHighlights = [
-  "kind + minikube",
-  "AKS / EKS / GKE",
-  "Hybrid / on-prem",
-  "Cross-cluster replication",
+  "MongoDB-compatible",
+  "Built on PostgreSQL",
+  "MIT licensed",
+  "5-15s failover",
   "Backup + ScheduledBackup CRDs",
+  "AKS / EKS / GKE",
   "kubectl plugin workflows",
-  "Configurable TLS modes",
+  "Prometheus-ready",
 ] as const;
 
 const bestFitScenarios = [
-  "Teams moving from local Kubernetes clusters to managed environments.",
-  "Platform teams standardizing DocumentDB operations across cloud and on-prem clusters.",
-  "Operators that need replication, promotion, and recovery workflows across clusters.",
+  "Teams moving MongoDB-compatible workloads from local clusters to managed Kubernetes.",
+  "Platform teams standardizing PostgreSQL-backed DocumentDB operations across cloud and on-prem clusters.",
+  "Operators that need failover, backup, promotion, and recovery workflows across clusters.",
 ] as const;
+
+const operatorQuickStartCommand = `helm repo add documentdb https://documentdb.github.io/documentdb-kubernetes-operator
+helm install documentdb-operator documentdb/documentdb-operator \\
+  --namespace documentdb-operator --create-namespace`;
 
 export const metadata = getMetadata({
   title: "DocumentDB Kubernetes Operator",
   description:
-    "Learn how the DocumentDB Kubernetes Operator takes DocumentDB from local Kubernetes clusters to hybrid and multi-cloud topologies with replication, HA, backups, and TLS.",
+    "Run MongoDB-compatible DocumentDB on Kubernetes with a PostgreSQL foundation, replication, HA, backups, TLS, and hybrid or multi-cloud topologies.",
   extraKeywords: [
     "Kubernetes",
     "operator",
     "Helm",
+    "MongoDB compatible",
+    "PostgreSQL",
+    "CloudNativePG",
     "multi-cloud",
     "hybrid",
     "on-prem",
     "cross-cluster replication",
     "high availability",
     "backup",
+    "ScheduledBackup",
     "TLS",
   ],
 });
@@ -197,13 +268,13 @@ export default function KubernetesOperatorPage() {
                 DocumentDB Kubernetes Operator
               </h1>
               <p className="mb-4 max-w-3xl text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-                Start on kind or minikube. Expand to{" "}
-                <span className="inline-block">hybrid and multi-cloud Kubernetes.</span>
+                Run MongoDB-compatible DocumentDB on Kubernetes.{" "}
+                <span className="inline-block">Built on PostgreSQL for local, hybrid, and multi-cloud paths.</span>
               </p>
               <p className="mb-7 max-w-xl text-base leading-7 text-gray-300 sm:text-lg">
-                Install with Helm, manage with custom resources, and run
-                DocumentDB on Kubernetes with replication, failover, backups,
-                and TLS.
+                Install with Helm, manage with custom resources, and add
+                failover, replication, backups, TLS, and day-2 workflows from a
+                single operator model.
               </p>
               <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                 <a
@@ -219,6 +290,16 @@ export default function KubernetesOperatorPage() {
                   GitHub repository
                 </a>
               </div>
+              <div className="mt-7 flex flex-wrap gap-2.5">
+                {operatorHighlights.map((badge) => (
+                  <span
+                    key={badge}
+                    className="rounded-full border border-neutral-700 bg-neutral-800/80 px-3.5 py-1.5 text-xs text-gray-200 sm:text-sm"
+                  >
+                    {badge}
+                  </span>
+                ))}
+              </div>
             </div>
 
             <div className="min-w-0 rounded-2xl border border-white/10 bg-neutral-900/90 p-5 shadow-[0_24px_80px_-40px_rgba(16,185,129,0.45)] sm:rounded-3xl sm:p-6">
@@ -227,12 +308,12 @@ export default function KubernetesOperatorPage() {
                   Where it fits
                 </span>
                 <h2 className="mt-4 text-xl font-semibold text-white sm:text-2xl">
-                  Built for local, hybrid, and multi-cluster paths
+                  Built for Kubernetes-native document database operations
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-gray-400">
-                  Use the operator when you want Kubernetes-native lifecycle
-                  management for local clusters, HA topologies, or
-                  multi-cluster deployments.
+                  Use the operator when you want MongoDB-compatible DocumentDB
+                  on PostgreSQL with Kubernetes-native lifecycle management for
+                  local clusters, HA topologies, or multi-cluster deployments.
                 </p>
               </div>
 
@@ -264,24 +345,12 @@ export default function KubernetesOperatorPage() {
 
               <div className="mt-5 rounded-2xl border border-neutral-800 bg-neutral-950/70 p-5">
                 <p className="text-sm font-semibold text-white">
-                  Operator highlights
-                </p>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {operatorHighlights.map((item) => (
-                    <span
-                      key={item}
-                      className="rounded-full border border-neutral-700 bg-neutral-900 px-3 py-1 text-xs text-gray-200"
-                    >
-                      {item}
-                    </span>
-                  ))}
-                </div>
-                <p className="mt-5 text-xs font-semibold uppercase tracking-[0.18em] text-amber-300">
                   Preview status
                 </p>
                 <p className="mt-2 text-sm leading-6 text-gray-300">
-                  The operator is still in preview. Use this page to assess the
-                  fit, then follow the quick start or multi-cluster guides.
+                  The operator is still in preview. Use this page to assess fit,
+                  then follow the quick start or multi-cluster guides for the
+                  current support envelope.
                 </p>
               </div>
             </div>
@@ -313,10 +382,23 @@ export default function KubernetesOperatorPage() {
                 <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl border border-emerald-400/20 bg-emerald-500/10 text-emerald-300">
                   <OperatorBenefitGlyph icon={item.icon} />
                 </div>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300">
+                  {item.eyebrow}
+                </p>
                 <h3 className="text-lg font-semibold text-white">{item.title}</h3>
                 <p className="mt-3 text-sm leading-6 text-gray-400">
                   {item.description}
                 </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {item.highlights.map((highlight) => (
+                    <span
+                      key={highlight}
+                      className="rounded-full border border-neutral-700 bg-neutral-900 px-3 py-1 text-xs text-gray-200"
+                    >
+                      {highlight}
+                    </span>
+                  ))}
+                </div>
               </article>
             ))}
           </div>
@@ -336,6 +418,18 @@ export default function KubernetesOperatorPage() {
               Use this page to understand the path. Use the docs for commands,
               topology setup, and current support details.
             </p>
+          </div>
+
+          <div className="mb-8 rounded-2xl border border-neutral-800 bg-neutral-900/80 p-6">
+            <div className="mb-4 max-w-3xl">
+              <p className="text-sm font-semibold text-white">See the install shape</p>
+              <p className="mt-2 text-sm leading-6 text-gray-400">
+                Install cert-manager first, then add the operator chart. The
+                current preview install path brings in CloudNativePG as a
+                dependency.
+              </p>
+            </div>
+            <CommandSnippet command={operatorQuickStartCommand} label="Helm" />
           </div>
 
           <div className="grid gap-4 lg:grid-cols-3">
@@ -364,9 +458,11 @@ export default function KubernetesOperatorPage() {
                   What to expect before you start
                 </p>
                 <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-400">
-                  The operator currently targets Kubernetes 1.35+ and depends on
-                  cert-manager and CloudNativePG. Cross-cluster topologies also
-                  require network connectivity between clusters.
+                  The current preview install path targets Kubernetes 1.35+,
+                  depends on cert-manager, and uses CloudNativePG under the
+                  hood. Cross-cluster topologies also require network
+                  connectivity between clusters and the documented multi-cluster
+                  setup.
                 </p>
               </div>
               <a
@@ -386,11 +482,11 @@ export default function KubernetesOperatorPage() {
             Next step
           </p>
           <h2 className="mb-3 text-2xl font-bold text-white sm:text-3xl">
-            Start local, then expand
+            Start with the quick start, then expand
           </h2>
           <p className="mb-6 text-sm text-gray-400 sm:text-base">
-            Use the quick start for a local cluster. Then continue with the
-            hybrid and multi-cloud guides.
+            Use the quick start to launch the operator, then continue with
+            replication, hybrid, and multi-cluster guides.
           </p>
           <div className="flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap">
             <a

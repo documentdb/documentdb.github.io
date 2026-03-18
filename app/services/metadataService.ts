@@ -9,9 +9,9 @@ import strip from "strip-markdown";
 export const sanitizeMarkdown = async (markdown: string | undefined): Promise<string> => {
   if (!markdown) return '';
   
-  let processor = remark().use(strip).process(markdown);
+  const processor = remark().use(strip).process(markdown);
   
-  let output: string = String(await processor);
+  const output: string = String(await processor);
   
   return output.trim();
 };
