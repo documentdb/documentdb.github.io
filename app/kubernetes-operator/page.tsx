@@ -15,11 +15,11 @@ type OperatorBenefitIcon =
 
 const operatorBenefits = [
   {
-    eyebrow: "Compatibility",
-    title: "MongoDB-compatible",
+    eyebrow: "Workloads",
+    title: "Document workloads",
     description:
-      "Run DocumentDB with standard MongoDB drivers and tools, then manage it with Kubernetes custom resources.",
-    highlights: ["PyMongo", "Node.js", "mongosh"],
+      "Run DocumentDB with client drivers and tools, then manage it with Kubernetes custom resources.",
+    highlights: ["Client drivers", "Tools", "CRDs"],
     icon: "database" as const,
   },
   {
@@ -43,14 +43,14 @@ const operatorBenefits = [
     title: "Failover and recovery",
     description:
       "Add automatic failover, cross-cluster replication, and Backup and ScheduledBackup workflows for recovery.",
-    highlights: ["5-15s failover", "Cross-cluster", "Backup CRDs"],
+    highlights: ["Automatic failover", "Cross-cluster", "Backup CRDs"],
     icon: "replication" as const,
   },
   {
     eyebrow: "Security",
     title: "TLS and access controls",
     description:
-      "Choose preview or production TLS modes and integrate with secrets, SCRAM auth, RBAC, and secure cluster networking.",
+      "Choose from four TLS modes and integrate with secrets, SCRAM auth, RBAC, and secure cluster networking.",
     highlights: ["4 TLS modes", "SCRAM", "RBAC"],
     icon: "shield" as const,
   },
@@ -194,7 +194,7 @@ const setupSteps = [
     step: "01",
     title: "Prepare the cluster",
     description:
-      "Use kind or minikube locally, or a Kubernetes 1.35+ cluster such as AKS, EKS, or GKE for the current preview install path.",
+      "Use kind or minikube locally, or a Kubernetes 1.35+ cluster such as AKS, EKS, or GKE to run the operator preview.",
   },
   {
     step: "02",
@@ -206,15 +206,15 @@ const setupSteps = [
     step: "03",
     title: "Create a DocumentDB resource",
     description:
-      "Apply a DocumentDB custom resource to launch a MongoDB-compatible database built on PostgreSQL, then expand into replicated topologies as needed.",
+      "Apply a DocumentDB custom resource to launch a document database built on PostgreSQL, then expand into replicated topologies as needed.",
   },
 ] as const;
 
 const operatorHighlights = [
-  "MongoDB-compatible",
+  "Document workloads",
   "Built on PostgreSQL",
   "MIT licensed",
-  "5-15s failover",
+  "Automatic failover",
   "Backup + ScheduledBackup CRDs",
   "AKS / EKS / GKE",
   "kubectl plugin workflows",
@@ -222,7 +222,7 @@ const operatorHighlights = [
 ] as const;
 
 const bestFitScenarios = [
-  "Teams moving MongoDB-compatible workloads from local clusters to managed Kubernetes.",
+  "Teams moving document workloads from local clusters to managed Kubernetes.",
   "Platform teams standardizing PostgreSQL-backed DocumentDB operations across cloud and on-prem clusters.",
   "Operators that need failover, backup, promotion, and recovery workflows across clusters.",
 ] as const;
@@ -234,12 +234,12 @@ helm install documentdb-operator documentdb/documentdb-operator \\
 export const metadata = getMetadata({
   title: "DocumentDB Kubernetes Operator",
   description:
-    "Run MongoDB-compatible DocumentDB on Kubernetes with a PostgreSQL foundation, replication, HA, backups, TLS, and hybrid or multi-cloud topologies.",
+    "Run DocumentDB on Kubernetes with a PostgreSQL foundation, replication, HA, backups, TLS, and hybrid or multi-cloud topologies.",
   extraKeywords: [
     "Kubernetes",
     "operator",
     "Helm",
-    "MongoDB compatible",
+    "document database",
     "PostgreSQL",
     "CloudNativePG",
     "multi-cloud",
@@ -268,7 +268,7 @@ export default function KubernetesOperatorPage() {
                 DocumentDB Kubernetes Operator
               </h1>
               <p className="mb-4 max-w-3xl text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-                Run MongoDB-compatible DocumentDB on Kubernetes.{" "}
+                Run DocumentDB on Kubernetes.{" "}
                 <span className="inline-block">Built on PostgreSQL for local, hybrid, and multi-cloud paths.</span>
               </p>
               <p className="mb-7 max-w-xl text-base leading-7 text-gray-300 sm:text-lg">
@@ -311,9 +311,9 @@ export default function KubernetesOperatorPage() {
                   Built for Kubernetes-native document database operations
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-gray-400">
-                  Use the operator when you want MongoDB-compatible DocumentDB
-                  on PostgreSQL with Kubernetes-native lifecycle management for
-                  local clusters, HA topologies, or multi-cluster deployments.
+                  Use the operator when you want DocumentDB on PostgreSQL with
+                  Kubernetes-native lifecycle management for local clusters, HA
+                  topologies, or multi-cluster deployments.
                 </p>
               </div>
 
@@ -425,8 +425,7 @@ export default function KubernetesOperatorPage() {
               <p className="text-sm font-semibold text-white">See the install shape</p>
               <p className="mt-2 text-sm leading-6 text-gray-400">
                 Install cert-manager first, then add the operator chart. The
-                current preview install path brings in CloudNativePG as a
-                dependency.
+                chart includes CloudNativePG as a dependency.
               </p>
             </div>
             <CommandSnippet command={operatorQuickStartCommand} label="Helm" />
@@ -458,9 +457,9 @@ export default function KubernetesOperatorPage() {
                   What to expect before you start
                 </p>
                 <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-400">
-                  The current preview install path targets Kubernetes 1.35+,
-                  depends on cert-manager, and uses CloudNativePG under the
-                  hood. Cross-cluster topologies also require network
+                  The operator preview targets Kubernetes 1.35+, requires
+                  cert-manager to be installed first, and uses CloudNativePG
+                  under the hood. Cross-cluster topologies also require network
                   connectivity between clusters and the documented multi-cluster
                   setup.
                 </p>
