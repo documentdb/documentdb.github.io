@@ -22,7 +22,7 @@
     DocumentDB: Open-Source Announcement
   category: azure-cosmos-db-blog
   description: |-
-    We are excited to announce the official release of DocumentDB—an open-source document database platform and the engine powering Azure Cosmos DB for MongoDB (vCore), built on PostgreSQL. This marks a significant milestone in creating an interoperable, portable, and fully supported production-ready document data store.
+    We are excited to announce the official release of DocumentDB—an open-source document database platform and the engine powering Azure DocumentDB, built on PostgreSQL. This marks a significant milestone in creating an interoperable, portable, and fully supported production-ready document data store.
   tags:
     - Community
     - Growth
