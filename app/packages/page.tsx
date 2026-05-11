@@ -50,8 +50,8 @@ const nextGuides = [
 ] as const;
 
 const allReleasesUrl = "https://github.com/documentdb/documentdb/releases";
-const currentAptVersionExample = "0.110-0";
-const currentRpmVersionExample = "0.110.0-1.el9";
+const currentAptVersionExample = "0.111-0";
+const currentRpmVersionExample = "0.111.0-1.el9";
 const currentReleaseExamples = [
   `ubuntu22.04-postgresql-18-documentdb_${currentAptVersionExample}_amd64.deb`,
   `deb13-postgresql-18-documentdb_${currentAptVersionExample}_amd64.deb`,
