@@ -77,9 +77,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Build with Next.js
+        # This repository is the organization Pages site served at the root of
+        # the custom domain (documentdb.io), so the build must NOT set
+        # NEXT_BASE_PATH. Setting it to the repository name (the usual trick
+        # for project pages) prefixes every internal link and asset URL with
+        # /documentdb.github.io/, which GitHub Pages then 301-redirects back
+        # to the root on every request and leaves the prefixed URL visible in
+        # the address bar after client-side navigation.
         env:
-          NEXT_BASE_PATH: ${{ github.event.repository.name }}
-          JEKYLL_BASE_PATH: /${{ github.event.repository.name }}/blogs
+          JEKYLL_BASE_PATH: /blogs
         run: npm run build
       - name: Download DocumentDB packages from latest release
         run: .github/scripts/download_packages.sh
