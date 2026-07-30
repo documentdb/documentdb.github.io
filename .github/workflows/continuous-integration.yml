@@ -78,6 +78,8 @@ jobs:
         # `next build` does not lint, so without this an ESLint or TypeScript
         # upgrade can land without its effect on the lint rules ever running.
         run: npm run lint
+      - name: Test
+        run: npm test
       - name: Build Next.js site
         # Validate that the site builds successfully
         #

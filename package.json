@@ -12,7 +12,8 @@
     "compile:samples": "tsx scripts/compile-samples.tsx",
     "compile:clean": "tsx scripts/compile-clean.tsx",
     "start": "npx serve out",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "vitest run"
   },
   "dependencies": {
     "change-case": "^5.4.4",
@@ -50,6 +51,7 @@
     "serve": "^14.2.5",
     "tailwindcss": "^4.1.18",
     "tsx": "^4.21.0",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10"
   }
 }
