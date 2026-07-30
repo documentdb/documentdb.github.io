@@ -29,7 +29,8 @@ export default function ReferenceLayout({
         ></div>
       </div>
       <div className="relative flex h-screen">
-        <div className="w-80 bg-neutral-800/50 backdrop-blur-sm border-r border-neutral-700/50 flex flex-col h-full">
+        {/* Sidebar (desktop only; mobile gets the disclosure below) */}
+        <div className="hidden w-80 bg-neutral-800/50 backdrop-blur-sm border-r border-neutral-700/50 md:flex flex-col h-full">
           <div className="p-6 border-b border-neutral-700/50 flex-shrink-0">
             <Link href="/docs" className="text-blue-400 hover:text-blue-300 text-sm mb-4 flex items-center transition-colors">
               <svg
@@ -51,8 +52,17 @@ export default function ReferenceLayout({
           </div>
           <Index groupedReferences={groupedReferences} />
         </div>
-        <article className="flex-1 p-8 overflow-y-auto h-full">
+        <article className="flex-1 p-4 sm:p-8 overflow-y-auto h-full">
           <div className="max-w-4xl">
+            {/* Mobile reference navigation */}
+            <details className="mb-6 rounded-lg border border-neutral-700/50 bg-neutral-800/50 md:hidden">
+              <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-gray-200">
+                MQL reference navigation
+              </summary>
+              <div className="max-h-[60vh] overflow-y-auto border-t border-neutral-700/50">
+                <Index groupedReferences={groupedReferences} />
+              </div>
+            </details>
             {children}
           </div>
         </article>
