@@ -16,7 +16,7 @@ export default function Grid({ items }: {
             <h4 className="text-blue-300 font-mono font-medium group-hover:text-blue-200">
               {page.name}
             </h4>
-            <p className="text-xs text-gray-400 font-italic">
+            <p className="text-xs text-gray-400 italic">
               {page.description}
             </p>
           </div>
