@@ -20,6 +20,23 @@ updates:
       prefix: npm
       include: scope
     groups:
+      # The ESLint packages are peer-locked to each other and must move
+      # together. eslint-config-next@15 peer-requires
+      # eslint@"^7.23.0 || ^8.0.0 || ^9.0.0", so a lone eslint 10 bump
+      # fails to install with ERESOLVE; eslint-config-next@16 relaxes
+      # that to eslint@">=9.0.0". Grouping all update types, majors
+      # included, keeps them in a single installable PR. This group is
+      # listed first so it claims these packages before the catch-all
+      # group below.
+      eslint:
+        patterns:
+          - eslint
+          - eslint-config-next
+          - "@next/eslint-plugin-next"
+        update-types:
+          - major
+          - minor
+          - patch
       # Batch routine minor/patch bumps into a single PR to keep the
       # review load low. Majors still arrive as individual PRs so each
       # one can be evaluated on its own.
