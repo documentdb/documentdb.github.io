@@ -9,11 +9,19 @@ on:
   pull_request:
     branches:
       - main
+# Supersede in-flight runs for a pull request when new commits arrive, so a
+# rebase or force-push does not leave several runs racing on stale commits.
+# Pushes to main are never cancelled: every commit on the default branch
+# should get a recorded result.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   # YAML schema validation job
   yaml-schema-validation:
     name: Validate YAML files against schemas
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -21,18 +29,19 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: 24
-      - name: Install dependencies
-        run: |
-          npm install yaml-ls-check
       - name: Validate YAML files
-        run: |
-          npx yaml-ls-check .\articles
-          npx yaml-ls-check .\blogs
-          npx yaml-ls-check .\reference
+        # Pass the repository root as an absolute path. yaml-ls-check reads its
+        # schema mapping from `<root>/.vscode/settings.json`, so the root it is
+        # given has to be the directory holding `.vscode`. Passing a
+        # subdirectory silently skips schema validation and checks only YAML
+        # syntax; passing a relative path breaks the mapping's `./schema/`
+        # references.
+        run: npx --yes yaml-ls-check "$GITHUB_WORKSPACE"
   # Build validation job
   build-validation:
     name: Validate Next.js build
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -47,8 +56,28 @@ jobs:
         with:
           ruby-version: 3.3
           bundler-cache: true
+      - name: Check lockfile resolves against the public registry
+        # A lockfile generated behind a registry proxy records that proxy's
+        # backing-feed URLs, which public CI and outside contributors cannot
+        # fetch. Catch it here rather than after it is merged.
+        run: |
+          node -e "
+          const lock = require('./package-lock.json');
+          const bad = Object.entries(lock.packages)
+            .filter(([, v]) => v.resolved && !v.resolved.startsWith('https://registry.npmjs.org/'));
+          if (bad.length) {
+            console.error('package-lock.json has ' + bad.length + ' resolved URL(s) outside registry.npmjs.org:');
+            bad.slice(0, 10).forEach(([name, v]) => console.error('  ' + name + ' -> ' + v.resolved));
+            process.exit(1);
+          }
+          console.log('All resolved URLs point at registry.npmjs.org.');
+          "
       - name: Install dependencies
         run: npm ci
+      - name: Lint
+        # `next build` does not lint, so without this an ESLint or TypeScript
+        # upgrade can land without its effect on the lint rules ever running.
+        run: npm run lint
       - name: Build Next.js site
         # Validate that the site builds successfully
         #
