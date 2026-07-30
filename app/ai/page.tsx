@@ -8,6 +8,7 @@ export const metadata = getMetadata({
   title: "DocumentDB for AI - Vector Search, RAG, and Embeddings",
   description:
     "Build AI applications with DocumentDB: a Mongo API-compatible document model, native vector search, PostgreSQL reliability, and self-hosted deployment.",
+  path: "/ai/",
   extraKeywords: [
     "AI database",
     "vector search",

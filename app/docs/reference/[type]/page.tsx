@@ -20,8 +20,9 @@ export async function generateMetadata({ params }: { params: Promise<{ type: str
   const title = capitalCase(pluralize(type));
   const description = getTypeDescription(type);
   return getMetadata({
-    title: `${title} - DocumentDB MQL Reference`, 
+    title: `${title} - DocumentDB MQL Reference`,
     description: await sanitizeMarkdown(description),
+    path: `/docs/reference/${type}/`,
     extraKeywords: ['reference', type]
   });
 }

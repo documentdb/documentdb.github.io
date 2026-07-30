@@ -17,8 +17,9 @@ export async function generateMetadata({ params }: { params: Promise<{ type: str
   const title = `${capitalCase(category)} ${capitalCase(pluralize(type))}`;
   const description = getCategoryDescription(type, category);
   return getMetadata({
-    title: `${title} - DocumentDB MQL Reference`, 
+    title: `${title} - DocumentDB MQL Reference`,
     description: await sanitizeMarkdown(description),
+    path: `/docs/reference/${type}/${category}/`,
     extraKeywords: ['reference', type, category]
   });
 }

@@ -235,6 +235,7 @@ export const metadata = getMetadata({
   title: "DocumentDB Kubernetes Operator",
   description:
     "Run DocumentDB on Kubernetes with a PostgreSQL foundation, replication, HA, backups, TLS, and hybrid or multi-cloud topologies.",
+  path: "/kubernetes-operator/",
   extraKeywords: [
     "Kubernetes",
     "operator",

@@ -2,7 +2,14 @@ import Image from "next/image";
 import Link from "next/link";
 import CommandSnippet from "./components/CommandSnippet";
 import { documentdbKubernetesOperatorDocsUrl } from "./services/externalLinks";
+import { getMetadata } from "./services/metadataService";
 import { withBasePath } from "./services/sitePath";
+
+export const metadata = getMetadata({
+  title: 'DocumentDB - Open Source Document Database',
+  description: 'A powerful, scalable open-source document database solution built on PostgreSQL for modern applications.',
+  path: '/',
+});
 
 type CapabilityIconName =
   | "foundation"

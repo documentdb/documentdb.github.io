@@ -20,6 +20,8 @@ export async function generateMetadata({ params }: { params: Promise<{ type: str
   return getMetadata({
     title: `${data.frontmatter.title || name} - DocumentDB MQL Reference`,
     description: data.frontmatter.description || '',
+    path: `/docs/reference/${type}/${category}/${name}/`,
+    type: 'article',
     extraKeywords: ['reference', type, category, name]
   });
 }

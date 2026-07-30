@@ -1,5 +1,15 @@
 import Link from "next/link";
 import { getArticleContent } from "../services/articleService";
+import { getMetadata } from "../services/metadataService";
+
+export function generateMetadata() {
+  const articleContent = getArticleContent();
+  return getMetadata({
+    title: `${articleContent.landing.title} - DocumentDB`,
+    description: articleContent.landing.description,
+    path: '/docs/',
+  });
+}
 
 export default function Docs() {
   const articleContent = getArticleContent();

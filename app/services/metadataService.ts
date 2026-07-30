@@ -16,17 +16,32 @@ export const sanitizeMarkdown = async (markdown: string | undefined): Promise<st
   return output.trim();
 };
 
-export const getMetadata = ({ title, description, extraKeywords = [] }: { title: string, description: string, extraKeywords?: string[] }): Metadata => ({
+export const siteUrl = 'https://documentdb.io';
+
+export const getMetadata = ({ title, description, path, type = 'website', extraKeywords = [] }: {
+  title: string,
+  description: string,
+  /**
+   * Site-relative path of the page (e.g. '/docs/reference/'), used as the
+   * canonical URL. Pages without a known path get no canonical tag.
+   */
+  path?: string,
+  /** Open Graph object type; use 'article' for docs/reference content pages. */
+  type?: 'website' | 'article',
+  extraKeywords?: string[],
+}): Metadata => ({
+  metadataBase: new URL(siteUrl),
   keywords: [...getBaseKeywords(), ...extraKeywords],
   title,
   description,
+  ...(path ? { alternates: { canonical: path } } : {}),
   openGraph: {
-    type: 'article',
+    type,
     title,
     description,
     images: [
       {
-        url: 'https://documentdb.io/images/social-card.png',
+        url: `${siteUrl}/images/social-card.png`,
       }
     ]
   },
@@ -36,7 +51,7 @@ export const getMetadata = ({ title, description, extraKeywords = [] }: { title:
     description,
     images: [
       {
-        url: 'https://documentdb.io/images/social-card.png',
+        url: `${siteUrl}/images/social-card.png`,
       }
     ]
   },

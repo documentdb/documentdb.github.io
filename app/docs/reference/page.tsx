@@ -12,6 +12,7 @@ export async function generateMetadata() {
   return getMetadata({
     title: 'DocumentDB MQL Reference',
     description: await sanitizeMarkdown(description),
+    path: '/docs/reference/',
     extraKeywords: ['reference']
   });
 }
