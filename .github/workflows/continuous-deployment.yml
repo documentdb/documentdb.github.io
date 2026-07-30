@@ -22,14 +22,14 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout source
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
       - name: Install required packages
         run: |
           until sudo apt-get update; do sleep 1; done
           sudo apt-get install -y createrepo-c dpkg-dev dpkg-sig gnupg2 python3
       - name: Setup GPG
         id: import_gpg
-        uses: crazy-max/ghaction-import-gpg@v6
+        uses: crazy-max/ghaction-import-gpg@v7
         with:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
         continue-on-error: true
@@ -51,7 +51,7 @@ jobs:
           echo "DOCUMENTDB_VERSION=${{ vars.DOCUMENTDB_VERSION || 'latest' }}" >> $GITHUB_ENV
           echo "MULTI_VERSION=${{ vars.MULTI_VERSION || 'true' }}" >> $GITHUB_ENV
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -61,7 +61,7 @@ jobs:
           ruby-version: 3.3
           bundler-cache: true
       - name: Restore cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             .next/cache
@@ -122,7 +122,7 @@ jobs:
                   raise SystemExit("deb13 assets exist but deb13 is missing from the APT Release file")
           PY
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: ./out
   # Deployment job
@@ -140,7 +140,7 @@ jobs:
       id-token: write
     steps:
       - name: Setup Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
         with:
           # Automatically inject basePath in your Next.js configuration file and disable
           # server side image optimization (https://nextjs.org/docs/api-reference/next/image#unoptimized).
@@ -149,4 +149,4 @@ jobs:
           static_site_generator: next
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
