@@ -45,7 +45,7 @@
     "@types/react-syntax-highlighter": "^15.5.13",
     "autoprefixer": "^10.4.23",
     "eslint": "^9.39.2",
-    "eslint-config-next": "^15.5.4",
+    "eslint-config-next": "^16.2.12",
     "ink": "^7.1.1",
     "minimatch": "^10.1.1",
     "serve": "^14.2.5",
