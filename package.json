@@ -46,7 +46,7 @@
     "autoprefixer": "^10.4.23",
     "eslint": "^9.39.2",
     "eslint-config-next": "^15.5.4",
-    "ink": "^6.6.0",
+    "ink": "^7.1.1",
     "minimatch": "^10.1.1",
     "serve": "^14.2.5",
     "tailwindcss": "^4.1.18",
