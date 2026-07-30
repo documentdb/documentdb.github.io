@@ -1,5 +1,5 @@
 source "https://rubygems.org"
 
-gem "ffi", "~> 1.15.5"
-gem "jekyll", "~> 4.3.4"
+gem "ffi", "~> 1.17.4"
+gem "jekyll", "~> 4.4.1"
 gem "webrick", "~> 1.8"
