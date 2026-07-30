@@ -19,6 +19,18 @@ updates:
     commit-message:
       prefix: npm
       include: scope
+    ignore:
+      # TypeScript 7 is the native port, and its compiler API is not the
+      # one Next.js links against. `next build` fails outright:
+      #   "TypeScript 7.0.2 does not provide the compiler API required by
+      #    Next.js. Enable experimental.useTypeScriptCli in your Next.js
+      #    config to use the TypeScript CLI, or install TypeScript 6
+      #    instead."
+      # Hold at 6.x until Next.js supports it, rather than reopening the
+      # same unmergeable PR every week.
+      - dependency-name: typescript
+        versions:
+          - 7.x
     groups:
       # The ESLint packages are peer-locked to each other and must move
       # together. eslint-config-next@15 peer-requires

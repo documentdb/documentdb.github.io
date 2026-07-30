@@ -36,7 +36,6 @@
     "@eslint/eslintrc": "^3.3.3",
     "@next/eslint-plugin-next": "^16.1.1",
     "@tailwindcss/postcss": "^4.1.18",
-    "@types/js-yaml": "^4.0.9",
     "@types/minimatch": "^6.0.0",
     "@types/node": "^26.1.2",
     "@types/pluralize": "^0.0.33",
@@ -51,6 +50,6 @@
     "serve": "^14.2.5",
     "tailwindcss": "^4.1.18",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
+    "typescript": "^6.0.3"
   }
 }
