@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import yaml from 'js-yaml';
+import { load as loadYaml } from 'js-yaml';
 import matter from 'gray-matter';
 import { Article } from '../types/Article';
 import { Link } from '../types/Link';
@@ -1031,7 +1031,7 @@ function updateDocumentDbLocalContent(content: string): string {
 export function getArticleContent(): Article {
   const contentPath = path.join(articlesDirectory, 'content.yml');
   const fileContents = fs.readFileSync(contentPath, 'utf8');
-  return yaml.load(fileContents) as Article;
+  return loadYaml(fileContents) as Article;
 }
 
 export function getArticleNavigation(section: string): Link[] {
@@ -1042,7 +1042,7 @@ export function getArticleNavigation(section: string): Link[] {
   }
 
   const fileContents = fs.readFileSync(navPath, 'utf8');
-  const rawLinks = yaml.load(fileContents) as Link[];
+  const rawLinks = loadYaml(fileContents) as Link[];
   const normalizedLinks = splitPrebuiltNavigation(section, rawLinks);
   
   // Transform Markdown file links to published relative URIs

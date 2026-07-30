@@ -5,7 +5,7 @@ import path from 'path';
 import { spawnSync } from 'child_process';
 import React from 'react';
 import { render, Box, Text } from 'ink';
-import yaml from 'js-yaml';
+import { load as loadYaml } from 'js-yaml';
 
 /**
  * Configuration for the samples registry
@@ -103,7 +103,7 @@ async function compileSamples(config: SamplesConfig): Promise<CompileResult> {
       throw new Error(`Registry file not found: ${config.registryFile}`);
     }
 
-    const registry = yaml.load(fs.readFileSync(registryPath, 'utf8')) as Registry;
+    const registry = loadYaml(fs.readFileSync(registryPath, 'utf8')) as Registry;
 
     if (!registry?.samples || !Array.isArray(registry.samples)) {
       throw new Error('registry.yml must contain a top-level "samples" array');
