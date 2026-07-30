@@ -6,6 +6,33 @@
     <title>{% if page.title %}{{ page.title }} · {% endif %}DocumentDB</title>
     <meta name="description" content="{{ page.description | default: site.description | escape }}">
     <meta name="theme-color" content="#09090b">
+
+    {% assign social_title = page.title | default: site.title %}
+    {% assign social_description = page.description | default: site.description %}
+    {% if page.cover_image %}
+      {% if page.cover_image contains '://' %}
+        {% assign social_image = page.cover_image %}
+      {% else %}
+        {% assign social_image = page.cover_image | absolute_url %}
+      {% endif %}
+    {% else %}
+      {% assign social_image = site.url | append: '/images/social-card.png' %}
+    {% endif %}
+    <meta property="og:site_name" content="DocumentDB">
+    <meta property="og:type" content="{% if page.date %}article{% else %}website{% endif %}">
+    <meta property="og:title" content="{{ social_title | escape }}">
+    <meta property="og:description" content="{{ social_description | escape }}">
+    <meta property="og:url" content="{{ page.url | absolute_url }}">
+    <meta property="og:image" content="{{ social_image }}">
+    {% if page.date %}
+    <meta property="article:published_time" content="{{ page.date | date_to_xmlschema }}">
+    {% endif %}
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ social_title | escape }}">
+    <meta name="twitter:description" content="{{ social_description | escape }}">
+    <meta name="twitter:image" content="{{ social_image }}">
+
+    <link rel="alternate" type="application/atom+xml" title="DocumentDB Blog" href="{{ '/feed.xml' | relative_url }}">
     <link rel="stylesheet" href="{{ '/assets/blog.css' | relative_url }}">
   </head>
   <body>
