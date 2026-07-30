@@ -1,0 +1,61 @@
+# Automated dependency updates.
+#
+# Dependabot runs on GitHub's infrastructure, so lockfile updates always
+# resolve against the public npm registry. This keeps `resolved` URLs in
+# package-lock.json canonical regardless of any registry proxy a
+# contributor may have configured locally.
+version: 2
+updates:
+  # Next.js site dependencies
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    # Only touch package.json when a bump requires it; in-range updates
+    # stay confined to package-lock.json.
+    versioning-strategy: increase-if-necessary
+    commit-message:
+      prefix: npm
+      include: scope
+    groups:
+      # Batch routine minor/patch bumps into a single PR to keep the
+      # review load low. Majors still arrive as individual PRs so each
+      # one can be evaluated on its own.
+      npm-minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
+  # Jekyll toolchain for the blogs section
+  - package-ecosystem: bundler
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: bundler
+      include: scope
+    groups:
+      bundler-minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
+  # Workflow actions (actions/checkout, actions/setup-node, ...)
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: actions
+    groups:
+      github-actions:
+        update-types:
+          - major
+          - minor
+          - patch
