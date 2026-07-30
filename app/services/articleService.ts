@@ -5,6 +5,7 @@ import matter from 'gray-matter';
 import { Article } from '../types/Article';
 import { Link } from '../types/Link';
 import { buildAptInstallCommand, buildRpmInstallCommand } from '../lib/packageInstall';
+import { documentdbDiscordUrl } from './externalLinks';
 
 const articlesDirectory = path.join(process.cwd(), 'articles');
 const dockerGuideContent = `# Docker Quick Start
@@ -372,7 +373,7 @@ For extension-specific help or bugs:
 - [GitHub repository](https://github.com/microsoft/vscode-documentdb)
 - [GitHub discussions](https://github.com/microsoft/vscode-documentdb/discussions)
 - [GitHub issues](https://github.com/microsoft/vscode-documentdb/issues)
-- [DocumentDB Discord](https://discord.gg/vH7bYu524D)
+- [DocumentDB Discord](${documentdbDiscordUrl})
 
 ## Next steps
 

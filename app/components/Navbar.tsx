@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { documentdbDiscordUrl } from "../services/externalLinks";
 import { withBasePath } from "../services/sitePath";
 
 type NavItem = {
@@ -24,7 +25,7 @@ const navItems: NavItem[] = [
   },
   {
     label: "Discord",
-    href: "https://discord.gg/vH7bYu524D",
+    href: documentdbDiscordUrl,
     kind: "anchor",
     newTab: true,
     icon: "discord",
