@@ -38,7 +38,7 @@
     "@tailwindcss/postcss": "^4.1.18",
     "@types/js-yaml": "^4.0.9",
     "@types/minimatch": "^5.1.2",
-    "@types/node": "^20.19.27",
+    "@types/node": "^26.1.2",
     "@types/pluralize": "^0.0.33",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
