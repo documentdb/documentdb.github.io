@@ -244,18 +244,21 @@ function getMarkdownComponents() {
       );
     },
 
-    // Links
-    a: ({ children, href, ...props }: any) => (
-      <a
-        href={href}
-        className="text-blue-400 hover:text-blue-300 transition-colors"
-        target="_blank"
-        rel="noopener noreferrer"
-        {...props}
-      >
-        {children}
-      </a>
-    ),
+    // Links: only external links open in a new tab; internal links (/docs/...,
+    // /samples, #anchors) navigate in place
+    a: ({ children, href, ...props }: any) => {
+      const isExternal = /^https?:\/\//i.test(href ?? '');
+      return (
+        <a
+          href={href}
+          className="text-blue-400 hover:text-blue-300 transition-colors"
+          {...(isExternal ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+          {...props}
+        >
+          {children}
+        </a>
+      );
+    },
 
     // Strong text
     strong: ({ children, ...props }: any) => (
