@@ -44,7 +44,7 @@
     "@types/react-dom": "^19.2.3",
     "@types/react-syntax-highlighter": "^15.5.13",
     "autoprefixer": "^10.4.23",
-    "eslint": "^9.39.2",
+    "eslint": "^10.8.0",
     "eslint-config-next": "^15.5.4",
     "ink": "^7.1.1",
     "minimatch": "^10.1.1",
