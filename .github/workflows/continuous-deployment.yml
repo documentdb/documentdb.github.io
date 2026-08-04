@@ -27,33 +27,106 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v7
-      - name: Install required packages
+      - name: Resolve optional build features
+        # The static site is always built. Mirroring the release packages and
+        # signing them are separate opt-outs so that a fork with no secrets can
+        # still run this workflow end to end.
+        id: features
+        env:
+          # The `secrets` context is not readable from a step-level `if:`, so
+          # the presence of the signing key has to be resolved into a step
+          # output first. Binding the secret to this one step also keeps it out
+          # of every other step's environment.
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          # A fork has neither the signing key nor a reason to spend several
+          # minutes mirroring release assets, so package generation defaults
+          # off outside this repository. `BUILD_PACKAGES` overrides it either
+          # way - but note that turning it off upstream publishes a site with
+          # no /deb, /rpm and no keyring, which breaks `apt-get update` for
+          # everyone already pointed at the repository.
+          BUILD_PACKAGES: ${{ vars.BUILD_PACKAGES }}
+          IS_UPSTREAM: ${{ github.repository == 'documentdb/documentdb.github.io' }}
+        run: |
+          set -euo pipefail
+          requested=$(printf '%s' "$BUILD_PACKAGES" | tr '[:upper:]' '[:lower:]')
+          case "$requested" in
+            true|false) packages="$requested" ;;
+            '') packages="$IS_UPSTREAM" ;;
+            *)
+              echo "::error::BUILD_PACKAGES must be 'true' or 'false' (got '$BUILD_PACKAGES')"
+              exit 1
+              ;;
+          esac
+
+          if [ "$packages" = 'true' ] && [ -n "$GPG_PRIVATE_KEY" ]; then
+            sign=true
+          else
+            sign=false
+          fi
+
+          echo "packages=$packages" >> "$GITHUB_OUTPUT"
+          echo "sign=$sign" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "### Build configuration"
+            echo ""
+            echo "| Feature | Enabled | Controlled by |"
+            echo "| --- | --- | --- |"
+            echo "| Static site | true | always built |"
+            echo "| Package repositories | $packages | \`BUILD_PACKAGES\` variable |"
+            echo "| Package signing | $sign | \`GPG_PRIVATE_KEY\` secret |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$packages" = 'true' ] && [ "$sign" != 'true' ]; then
+            echo "::warning::GPG_PRIVATE_KEY is not set - the package repositories will be published unsigned."
+          fi
+      - name: Install packaging tools
+        if: steps.features.outputs.packages == 'true'
         run: |
           until sudo apt-get update; do sleep 1; done
           sudo apt-get install -y createrepo-c dpkg-dev dpkg-sig gnupg2 python3
       - name: Setup GPG
         id: import_gpg
+        if: steps.features.outputs.sign == 'true'
+        # Deliberately no `continue-on-error`: a key that is configured but
+        # cannot be imported has to fail the run. Swallowing that error
+        # republishes the site with an unsigned repository in place of a signed
+        # one, which breaks `apt-get update` for every client pinned with
+        # `signed-by`. Signing is optional; silently losing it is not.
         uses: crazy-max/ghaction-import-gpg@v7
         with:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
-        continue-on-error: true
-      - name: Set GPG fingerprint and version config
+      - name: Configure package build
+        if: steps.features.outputs.packages == 'true'
+        env:
+          SIGN: ${{ steps.features.outputs.sign }}
+          FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
+          KEY_ID: ${{ steps.import_gpg.outputs.keyid }}
+          KEY_NAME: ${{ steps.import_gpg.outputs.name }}
+          KEY_EMAIL: ${{ steps.import_gpg.outputs.email }}
+          # Configure which DocumentDB release to mirror. Both can be
+          # overridden by repository variables.
+          DOCUMENTDB_VERSION: ${{ vars.DOCUMENTDB_VERSION || 'latest' }}
+          MULTI_VERSION: ${{ vars.MULTI_VERSION || 'true' }}
         run: |
-          # Configure GPG signing
-          if [ -n "${{ steps.import_gpg.outputs.fingerprint }}" ]; then
-            echo "GPG_FINGERPRINT=${{ steps.import_gpg.outputs.fingerprint }}" >> $GITHUB_ENV
-            echo "✅ GPG key loaded successfully"
-            echo "   Fingerprint: ${{ steps.import_gpg.outputs.fingerprint }}"
-            echo "   Key ID: ${{ steps.import_gpg.outputs.keyid }}"
-            echo "   User ID: ${{ steps.import_gpg.outputs.name }} <${{ steps.import_gpg.outputs.email }}>"
+          set -euo pipefail
+          if [ "$SIGN" = 'true' ]; then
+            if [ -z "$FINGERPRINT" ]; then
+              echo "::error::The GPG key imported without a fingerprint; refusing to publish an unsigned repository."
+              exit 1
+            fi
+            echo "GPG_FINGERPRINT=$FINGERPRINT" >> "$GITHUB_ENV"
+            echo "GPG key loaded successfully"
+            echo "  Fingerprint: $FINGERPRINT"
+            echo "  Key ID: $KEY_ID"
+            echo "  User ID: $KEY_NAME <$KEY_EMAIL>"
           else
-            echo "⚠️ No GPG key configured - packages will not be signed"
-            echo "   To enable signing, add GPG_PRIVATE_KEY to repository secrets"
+            echo "No GPG key configured - packages will not be signed."
+            echo "To enable signing, add GPG_PRIVATE_KEY to the repository secrets."
           fi
-          
-          # Configure DocumentDB version (can be overridden by repository variables)
-          echo "DOCUMENTDB_VERSION=${{ vars.DOCUMENTDB_VERSION || 'latest' }}" >> $GITHUB_ENV
-          echo "MULTI_VERSION=${{ vars.MULTI_VERSION || 'true' }}" >> $GITHUB_ENV
+
+          echo "DOCUMENTDB_VERSION=$DOCUMENTDB_VERSION" >> "$GITHUB_ENV"
+          echo "MULTI_VERSION=$MULTI_VERSION" >> "$GITHUB_ENV"
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
@@ -108,12 +181,17 @@ jobs:
             exit 1
           fi
       - name: Download DocumentDB packages from latest release
+        if: steps.features.outputs.packages == 'true'
         run: .github/scripts/download_packages.sh
       - name: Verify generated package components
+        if: steps.features.outputs.packages == 'true'
+        env:
+          SIGN: ${{ steps.features.outputs.sign }}
         run: |
           set -euo pipefail
           python3 - <<'PY'
           import json
+          import os
           from pathlib import Path
 
           release_info = Path("out/packages/release-info.json")
@@ -150,6 +228,28 @@ jobs:
               release_text = release_file.read_text()
               if "deb13" not in release_text:
                   raise SystemExit("deb13 assets exist but deb13 is missing from the APT Release file")
+
+          # A run that imported a signing key must not publish an unsigned
+          # repository: apt rejects a suite whose InRelease/Release.gpg vanished,
+          # so a silently skipped signature is a client-visible outage rather
+          # than a cosmetic regression.
+          if os.environ.get("SIGN") == "true":
+              if any(name.endswith(".deb") for name in assets):
+                  for artifact in (
+                      Path("out/deb/dists/stable/Release.gpg"),
+                      Path("out/deb/dists/stable/InRelease"),
+                      Path("out/documentdb-archive-keyring.gpg"),
+                  ):
+                      if not artifact.exists():
+                          raise SystemExit(
+                              f"Signing was enabled but {artifact} was not produced"
+                          )
+
+              # RPM metadata signing is best-effort inside the download script,
+              # so surface it as a warning instead of failing the deployment.
+              for repomd in sorted(Path("out/rpm").glob("*/repodata/repomd.xml")):
+                  if not Path(f"{repomd}.asc").exists():
+                      print(f"::warning::{repomd} was not signed")
           PY
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v5

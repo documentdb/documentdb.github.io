@@ -112,6 +112,31 @@ Documentation articles and API reference content are managed in a separate repos
 > - API reference content (`api-reference/`)
 >
 
+### Testing the Deployment Workflow in a Fork
+
+The [deployment workflow](.github/workflows/continuous-deployment.yml) builds the static site, mirrors the DocumentDB release packages into APT and YUM repositories, signs those repositories, and publishes everything to GitHub Pages.
+
+Only the static site build is mandatory. Packaging and signing are resolved automatically at the start of the run, so a fork with no repository secrets can exercise the whole workflow:
+
+1. Enable GitHub Pages in your fork (**Settings** > **Pages** > **Source**: *GitHub Actions*)
+
+1. Push to `main` in your fork, or run the workflow manually from the **Actions** tab
+
+1. Check the run summary, which reports which optional features were enabled and why
+
+The two optional halves are controlled independently:
+
+| Setting | Type | Default | Effect when enabled |
+| --- | --- | --- | --- |
+| `BUILD_PACKAGES` | Variable | On in `documentdb/documentdb.github.io`, off in forks | Downloads the release `.deb` and `.rpm` assets and builds the APT and YUM repositories |
+| `GPG_PRIVATE_KEY` | Secret | *unset* | Signs the APT `Release` file and the RPM metadata, and publishes `documentdb-archive-keyring.gpg` |
+| `DOCUMENTDB_VERSION` | Variable | `latest` | Release tag the packages are mirrored from |
+
+Set `BUILD_PACKAGES` to `true` in your fork if you specifically want to test the packaging path; signing is then skipped unless you also add your own `GPG_PRIVATE_KEY`.
+
+> [!IMPORTANT]
+> Signing is optional, but it never fails quietly. When `GPG_PRIVATE_KEY` is set, the run fails if the key cannot be imported or the signatures are not produced. Publishing an unsigned repository over a signed one breaks `apt-get update` for every client that already trusts the keyring.
+
 ## Content Configuration
 
 Documentation content is automatically compiled during builds from external repositories. The mapping is configured in [content.config.json](content.config.json).

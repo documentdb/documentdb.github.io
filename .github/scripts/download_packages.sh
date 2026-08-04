@@ -15,9 +15,13 @@ sign_deb_package() {
   if [ -n "$GPG_FINGERPRINT" ] && [ -f "$package_file" ]; then
     echo "    Signing DEB package: $(basename "$package_file")"
     if command -v dpkg-sig >/dev/null 2>&1; then
-      dpkg-sig --sign builder --gpg-options "--default-key $GPG_FINGERPRINT" "$package_file" || echo "    Warning: Could not sign $(basename "$package_file")"
+      # Per-package signatures are not what apt verifies (it checks the signed
+      # Release file), so a failure here is reported rather than fatal. It is
+      # still surfaced as a workflow annotation so a broken signing key cannot
+      # scroll past unnoticed in the log.
+      dpkg-sig --sign builder --gpg-options "--default-key $GPG_FINGERPRINT" "$package_file" || echo "::warning::Could not sign $(basename "$package_file")"
     else
-      echo "    Warning: dpkg-sig not available, skipping DEB package signing"
+      echo "::warning::dpkg-sig not available, skipping DEB package signing"
     fi
   fi
 }
