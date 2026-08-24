@@ -251,6 +251,101 @@ jobs:
                   if not Path(f"{repomd}.asc").exists():
                       print(f"::warning::{repomd} was not signed")
           PY
+      # The metadata checks above prove the repository FILES exist. They do not
+      # prove the repository is INSTALLABLE, and that gap has already shipped a
+      # broken repository once: when v0.116-0 introduced the multi-package
+      # layout, the asset filter still matched only `postgresql-N-documentdb`,
+      # so 14 of 22 packages - including the `documentdb` meta package and
+      # everything it depends on - were silently dropped. Every file the
+      # verifier looks for was present and correct; `apt install documentdb`
+      # was simply unsatisfiable.
+      #
+      # So resolve the real thing against the repository we are about to
+      # publish. This is dependency RESOLUTION only (`apt-get -s`, `dnf
+      # --assumeno`): it reads the indexes and solves the graph without
+      # downloading ~500 MB of PostgreSQL and PostGIS, which keeps the check to
+      # a few seconds while still catching the entire "package missing from the
+      # pool / unsatisfiable dependency" class.
+      - name: Smoke test the generated repository (dependency resolution)
+        if: steps.features.outputs.packages == 'true'
+        run: |
+          set -euo pipefail
+
+          # The pool is only meaningful if the meta package is actually in it.
+          # Fail loudly rather than "passing" a repository that has nothing to
+          # resolve.
+          if ! ls out/deb/pool/ubuntu24/documentdb_*_all.deb >/dev/null 2>&1; then
+            echo "::error::out/deb/pool/ubuntu24 has no documentdb meta package - the APT pool is incomplete"
+            exit 1
+          fi
+          if ! ls out/rpm/rhel9/documentdb-*.noarch.rpm >/dev/null 2>&1; then
+            echo "::error::out/rpm/rhel9 has no documentdb meta package - the RPM pool is incomplete"
+            exit 1
+          fi
+
+          python3 -m http.server 8099 --directory out >/tmp/repo-http.log 2>&1 &
+          HTTP_PID=$!
+          trap 'kill "$HTTP_PID" 2>/dev/null || true' EXIT
+          for _ in $(seq 1 30); do
+            curl -fsS -o /dev/null "http://127.0.0.1:8099/deb/dists/stable/Release" && break
+            sleep 1
+          done
+
+          echo "::group::APT resolution (ubuntu24 component)"
+          # --network host so the container reaches the runner's http.server.
+          # [trusted=yes] because this local mirror is unsigned when the
+          # deployment runs without a signing key; signature verification is
+          # asserted separately by the "Verify generated package components"
+          # step above.
+          docker run --rm --network host ubuntu:24.04 bash -c '
+            set -e
+            export DEBIAN_FRONTEND=noninteractive
+            apt-get update -qq >/dev/null
+            apt-get install -y -qq curl ca-certificates gnupg lsb-release >/dev/null
+            install -d /usr/share/postgresql-common/pgdg
+            curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+              | gpg --dearmor -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.gpg
+            echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.gpg] https://apt.postgresql.org/pub/repos/apt noble-pgdg main" \
+              > /etc/apt/sources.list.d/pgdg.list
+            echo "deb [trusted=yes] http://127.0.0.1:8099/deb stable ubuntu24" \
+              > /etc/apt/sources.list.d/documentdb.list
+            apt-get update -qq
+            # -s solves the dependency graph and exits non-zero if it cannot.
+            apt-get install -s documentdb > /tmp/sim.txt
+            # Resolving is necessary but not sufficient: assert the transaction
+            # actually pulls the stack, so a meta package that degenerated into
+            # an empty shell cannot pass.
+            for pkg in documentdb documentdb-common documentdb-gateway documentdb-postgresql-tools; do
+              grep -q "Inst $pkg " /tmp/sim.txt || { echo "APT plan is missing $pkg"; cat /tmp/sim.txt; exit 1; }
+            done
+            grep -qE "Inst postgresql-1[78]-documentdb " /tmp/sim.txt || { echo "APT plan pulls no extension package"; exit 1; }
+            echo "APT OK: $(grep -c "^Inst " /tmp/sim.txt) packages in the plan"
+          '
+          echo "::endgroup::"
+
+          echo "::group::DNF resolution (rhel9 pool)"
+          docker run --rm --network host rockylinux/rockylinux:9 bash -c '
+            set -e
+            dnf install -y -q dnf-plugins-core >/dev/null 2>&1
+            dnf install -y -q https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-x86_64/pgdg-redhat-repo-latest.noarch.rpm >/dev/null 2>&1
+            dnf install -y -q epel-release >/dev/null 2>&1
+            dnf config-manager --set-enabled crb
+            dnf -qy module disable postgresql >/dev/null 2>&1
+            printf "%s\n" "[documentdb]" "name=DocumentDB" "baseurl=http://127.0.0.1:8099/rpm/rhel9" "enabled=1" "gpgcheck=0" \
+              > /etc/yum.repos.d/documentdb.repo
+            # --assumeno always exits non-zero (the answer is "no"), so judge the
+            # transaction it printed rather than the exit code.
+            dnf install --assumeno documentdb > /tmp/sim.txt 2>&1 || true
+            if grep -qE "^Error|nothing provides|Problem:" /tmp/sim.txt; then
+              echo "DNF could not resolve documentdb:"; cat /tmp/sim.txt; exit 1
+            fi
+            for pkg in documentdb-common documentdb-gateway documentdb-postgresql-tools; do
+              grep -q "$pkg" /tmp/sim.txt || { echo "DNF plan is missing $pkg"; cat /tmp/sim.txt; exit 1; }
+            done
+            grep -qE "postgresql1[78]-documentdb" /tmp/sim.txt || { echo "DNF plan pulls no extension package"; exit 1; }
+            echo "DNF OK"
+          '
+          echo "::endgroup::"
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v5
         with:
