@@ -266,6 +266,9 @@ jobs:
       # downloading ~500 MB of PostgreSQL and PostGIS, which keeps the check to
       # a few seconds while still catching the entire "package missing from the
       # pool / unsatisfiable dependency" class.
+      - name: Verify the site's fallback release matches the mirrored release
+        if: steps.features.outputs.packages == 'true'
+        run: node .github/scripts/check_release_drift.js
       - name: Smoke test the generated repository (dependency resolution)
         if: steps.features.outputs.packages == 'true'
         run: |

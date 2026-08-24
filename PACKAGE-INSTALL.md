@@ -102,6 +102,14 @@ mongosh 'mongodb://admin:<password>@127.0.0.1:10260/mydb?tls=true&tlsAllowInvali
         --eval 'db.runCommand({ping: 1})'
 ```
 
+If the password contains `@`, `:`, `/` or other reserved characters it must be percent-encoded
+in the URI (`@` becomes `%40`). To avoid encoding entirely, pass the credentials as flags:
+
+```bash
+mongosh localhost:10260 -u admin -p --authenticationMechanism SCRAM-SHA-256 \
+        --tls --tlsAllowInvalidCertificates --eval 'db.runCommand({ping: 1})'
+```
+
 A first database and collection are created on first write:
 
 ```javascript
@@ -163,10 +171,21 @@ instead; re-run `documentdb-setup` to restart it.
 **Remove or reset:**
 
 ```bash
+# Stop the stack first — package removal deletes files but does not stop a
+# running gateway. On systemd hosts:
+sudo systemctl stop documentdb-local@18.target
+# Without systemd the wizard started the gateway directly; kill that process.
+
 sudo documentdb-setup --restore                              # detach the managed integration
 sudo documentdb-local-reset --pg-version 18 --confirm-destroy # DESTROYS the data directory
-sudo apt remove documentdb    # or: sudo dnf remove documentdb
+
+# Name the package you installed AND the extension: autoremove does not reap
+# postgresql-18-documentdb, and `remove` would leave its config behind.
+sudo apt purge --autoremove documentdb-18 postgresql-18-documentdb
+sudo dnf remove documentdb-18 postgresql18-documentdb && sudo dnf autoremove
 ```
+
+If you installed the `documentdb` meta package rather than `documentdb-18`, name that instead.
 
 ### What the packages are
 
