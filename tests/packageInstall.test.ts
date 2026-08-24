@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
+  aptServesFullStack,
   aptTargetLabels,
   aptTargetPgVersions,
   buildAptInstallCommand,
   buildRpmInstallCommand,
+  rpmServesFullStack,
   rpmTargetLabels,
 } from '../app/lib/packageInstall';
 import type {
@@ -89,9 +91,16 @@ describe('buildAptInstallCommand', () => {
     expect(command).toContain(`documentdb.io/deb stable ${distro}`);
   });
 
-  it.each(aptMatrix)('installs postgresql-$pg-documentdb for $distro/$arch', ({ distro, arch, pg }) => {
+  it.each(aptMatrix)('installs the right package for $distro/$arch/pg$pg', ({ distro, arch, pg }) => {
     const command = buildAptInstallCommand(distro, arch, pg);
-    expect(command).toContain(`sudo apt install -y postgresql-${pg}-documentdb`);
+    // v0.116-0 ships the full package set for Tier-1 targets only. There the
+    // per-major stand-alone pulls the whole stack; everywhere else the
+    // repository still serves the extension alone, and offering `documentdb-N`
+    // would be an install command that cannot resolve.
+    const expected = aptServesFullStack(distro, pg)
+      ? `documentdb-${pg}`
+      : `postgresql-${pg}-documentdb`;
+    expect(command).toContain(`sudo apt install -y ${expected}`);
   });
 
   it('does not offer PostgreSQL 18 on Debian 11', () => {
@@ -126,9 +135,29 @@ describe('buildRpmInstallCommand', () => {
     expect(command).toContain(`baseurl=https://documentdb.io/rpm/${distro}`);
   });
 
-  it.each(rpmMatrix)('installs postgresql$pg-documentdb for $distro/$arch', ({ distro, arch, pg }) => {
+  it.each(rpmMatrix)('installs the right package for $distro/$arch/pg$pg', ({ distro, arch, pg }) => {
     const command = buildRpmInstallCommand(distro, arch, pg);
-    expect(command).toContain(`sudo dnf install -y postgresql${pg}-documentdb`);
+    const expected = rpmServesFullStack(distro, pg)
+      ? `documentdb-${pg}`
+      : `postgresql${pg}-documentdb`;
+    expect(command).toContain(`sudo dnf install -y ${expected}`);
+  });
+
+  it('serves the full stack only where v0.116-0 published it', () => {
+    // PostgreSQL 16 resolves the older extension-only build even on a Tier-1
+    // target, so it must keep the extension command.
+    expect(rpmServesFullStack('rhel9', '18')).toBe(true);
+    expect(rpmServesFullStack('rhel9', '16')).toBe(false);
+    expect(rpmServesFullStack('rhel8', '18')).toBe(false);
+    expect(aptServesFullStack('ubuntu24', '18')).toBe(true);
+    expect(aptServesFullStack('ubuntu24', '16')).toBe(false);
+    expect(aptServesFullStack('ubuntu22', '18')).toBe(false);
+    expect(buildAptInstallCommand('ubuntu22', 'amd64', '18')).toContain(
+      'sudo apt install -y postgresql-18-documentdb',
+    );
+    expect(buildAptInstallCommand('ubuntu24', 'amd64', '18')).toContain(
+      'sudo apt install -y documentdb-18',
+    );
   });
 
   it('enables gpgcheck against the DocumentDB signing key', () => {

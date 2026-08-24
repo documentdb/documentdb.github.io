@@ -6,8 +6,11 @@ import CommandSnippet from "../components/CommandSnippet";
 import {
   aptTargetPgVersions,
   aptTargetLabels,
+  aptServesFullStack,
   buildAptInstallCommand,
   buildRpmInstallCommand,
+  buildSetupCommand,
+  rpmServesFullStack,
   type AptArch,
   type AptDistro,
   type AptPgVersion,
@@ -16,6 +19,7 @@ import {
   type RpmPgVersion,
   rpmTargetLabels,
 } from "../lib/packageInstall";
+import { useReleaseInfo } from "../lib/releaseInfo";
 
 type InstallMethod = "docker" | "packages";
 type PackageFamily = "apt" | "rpm";
@@ -50,28 +54,48 @@ const nextGuides = [
 ] as const;
 
 const allReleasesUrl = "https://github.com/documentdb/documentdb/releases";
-// Latest GitHub release, used for the direct .deb/.rpm download examples.
-const latestReleaseAptVersion = "0.114-0";
-const latestReleaseRpmVersion = "0.114.0-1.el9";
-// Version currently served by the APT/RPM package repositories, which can lag
-// GitHub Releases. Used for the version-pinning examples.
-const repoAptVersionExample = "0.113-0";
-const repoRpmVersionExample = "0.113.0-1.el9";
-const currentReleaseExamples = [
-  `ubuntu22.04-postgresql-18-documentdb_${latestReleaseAptVersion}_amd64.deb`,
-  `deb13-postgresql-18-documentdb_${latestReleaseAptVersion}_amd64.deb`,
-  `rhel9-postgresql18-documentdb-${latestReleaseRpmVersion}.x86_64.rpm`,
+
+// The v0.116-0 packaging redesign replaced the single extension package with
+// this set. Listed here so the page explains what an install actually brings
+// in, instead of naming one package and silently pulling four more.
+const packageRoles = [
+  {
+    name: "documentdb / documentdb-N",
+    role: "Meta and per-major stand-alone package. Pins PostgreSQL and owns the systemd lifecycle.",
+  },
+  {
+    name: "postgresql-N-documentdb",
+    role: "The PostgreSQL extension itself (files only).",
+  },
+  {
+    name: "documentdb-gateway",
+    role: "Wire-protocol runtime that serves the MongoDB-compatible endpoint.",
+  },
+  {
+    name: "documentdb-postgresql-tools",
+    role: "Administrator helpers: documentdb-tune, documentdb-createcluster, documentdb-register-gateway, documentdb-gateway-admin.",
+  },
+  {
+    name: "documentdb-common",
+    role: "Shared payload: documentdb-setup, the systemd units, helper scripts and sample data.",
+  },
 ] as const;
 
 export default function PackagesPage() {
+  const release = useReleaseInfo();
   const [method, setMethod] = useState<InstallMethod>("docker");
   const [packageFamily, setPackageFamily] = useState<PackageFamily>("apt");
-  const [aptTarget, setAptTarget] = useState<AptDistro>("ubuntu22");
+  // Default to the paved road (Ubuntu 24.04 + PostgreSQL 18). It is the target
+  // the release is built and end-to-end tested against, and the only one whose
+  // repository component serves the full package set - defaulting to an
+  // extension-only target showed first-time visitors the older, smaller
+  // experience.
+  const [aptTarget, setAptTarget] = useState<AptDistro>("ubuntu24");
   const [rpmTarget, setRpmTarget] = useState<RpmDistro>("rhel9");
   const [aptArch, setAptArch] = useState<AptArch>("amd64");
   const [rpmArch, setRpmArch] = useState<RpmArch>("x86_64");
-  const [aptPgVersion, setAptPgVersion] = useState<AptPgVersion>("16");
-  const [rpmPgVersion, setRpmPgVersion] = useState<RpmPgVersion>("16");
+  const [aptPgVersion, setAptPgVersion] = useState<AptPgVersion>("18");
+  const [rpmPgVersion, setRpmPgVersion] = useState<RpmPgVersion>("18");
   const availableAptPgVersions = aptTargetPgVersions[aptTarget];
 
   useEffect(() => {
@@ -80,10 +104,29 @@ export default function PackagesPage() {
     }
   }, [aptPgVersion, availableAptPgVersions]);
 
+  const latestReleaseAptVersion = release.aptVersion;
+  const latestReleaseRpmVersion = release.rpmVersion;
+  // The repository serves the mirrored release, so the pinning examples use the
+  // same versions rather than a separately maintained pair that fell behind.
+  const repoAptVersionExample = release.aptVersion;
+  const repoRpmVersionExample = release.rpmVersion;
+  const currentReleaseExamples = [
+    `ubuntu24.04-documentdb_${release.metaVersion}_all.deb`,
+    `ubuntu24.04-postgresql-18-documentdb_${latestReleaseAptVersion}_amd64.deb`,
+    `rhel9-postgresql18-documentdb-${latestReleaseRpmVersion}.x86_64.rpm`,
+  ] as const;
+
   const aptCommand = buildAptInstallCommand(aptTarget, aptArch, aptPgVersion);
   const rpmCommand = buildRpmInstallCommand(rpmTarget, rpmArch, rpmPgVersion);
-  const selectedPackageNames =
+  // Tier-1 targets resolve the full v0.116-0 stack, so the selected package is
+  // the per-major stand-alone rather than the bare extension.
+  const isFullStack =
     packageFamily === "apt"
+      ? aptServesFullStack(aptTarget, aptPgVersion)
+      : rpmServesFullStack(rpmTarget, rpmPgVersion);
+  const selectedPackageNames = isFullStack
+    ? `documentdb-${packageFamily === "apt" ? aptPgVersion : rpmPgVersion}`
+    : packageFamily === "apt"
       ? `postgresql-${aptPgVersion}-documentdb`
       : `postgresql${rpmPgVersion}-documentdb`;
   const selectedTargetText =
@@ -289,9 +332,36 @@ export default function PackagesPage() {
                 <code className="text-gray-300">rum</code> for PostgreSQL 16/17.
               </p>
               <p className="mt-2 text-sm text-gray-400">
-                It installs the PostgreSQL extension package. The published package repository
-                does not currently include a gateway package, setup helper, or systemd service.
+                {isFullStack
+                  ? "It installs the full DocumentDB stack for this target: the extension, the gateway runtime, the administrator tools and the systemd units."
+                  : "It installs the PostgreSQL extension package. This target is not yet covered by the v0.116-0 package layout, so the repository serves the extension alone — no gateway package, setup helper, or systemd service."}
               </p>
+              {isFullStack ? (
+                <>
+                  <p className="mt-4 text-sm text-gray-400">
+                    Then run the setup wizard. It creates the PostgreSQL instance, installs the
+                    extensions, bootstraps the admin user and starts the gateway — the install
+                    above on its own does not leave a reachable endpoint. It prompts for the
+                    admin password; pass{" "}
+                    <code className="text-gray-300">--admin-password-stdin --yes</code> for an
+                    unattended install.
+                  </p>
+                  <CommandSnippet command={buildSetupCommand()} label="Setup" />
+                  <p className="mt-3 text-sm text-gray-400">
+                    The gateway then listens on port{" "}
+                    <code className="text-gray-300">10260</code>. It binds all interfaces by
+                    default, so firewall the port and supply a real certificate before exposing
+                    it to a network. See the{" "}
+                    <a
+                      className="text-blue-400 hover:text-blue-300"
+                      href="https://github.com/documentdb/documentdb.github.io/blob/main/PACKAGE-INSTALL.md"
+                    >
+                      package installation guide
+                    </a>{" "}
+                    for verification, day-2 and upgrade steps.
+                  </p>
+                </>
+              ) : null}
               {packageFamily === "apt" ? (
                 <p className="mt-2 text-sm text-gray-400">
                   Running in a clean Debian/Ubuntu container as <code className="text-gray-300">root</code>?
@@ -303,14 +373,36 @@ export default function PackagesPage() {
               ) : null}
               <div className="mt-4 rounded-lg border border-neutral-700 bg-neutral-900/60 p-4">
                 <p className="mb-3 text-sm font-semibold text-white">
-                  Need the MongoDB-compatible gateway?
+                  {isFullStack
+                    ? "What gets installed"
+                    : "Need the MongoDB-compatible gateway?"}
                 </p>
-                <p className="mt-3 text-sm text-gray-400">
-                  Use the Docker image for the fastest gateway-backed local setup. If you want a
-                  package-backed host install that still works with <code className="text-gray-300">mongosh</code>,
-                  the Linux package guide includes the exact non-root gateway follow-up commands
-                  and host build prerequisites.
-                </p>
+                {isFullStack ? (
+                  <>
+                    <p className="mb-3 text-sm text-gray-400">
+                      DocumentDB ships as five packages. Installing{" "}
+                      <code className="text-gray-300">{selectedPackageNames}</code> pulls in
+                      everything below.
+                    </p>
+                    <dl className="space-y-2 text-sm">
+                      {packageRoles.map((entry) => (
+                        <div key={entry.name} className="sm:flex sm:gap-3">
+                          <dt className="shrink-0 font-mono text-xs text-blue-300 sm:w-64 sm:text-sm">
+                            {entry.name}
+                          </dt>
+                          <dd className="text-gray-400">{entry.role}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </>
+                ) : (
+                  <p className="mt-3 text-sm text-gray-400">
+                    Use the Docker image for the fastest gateway-backed local setup. If you want a
+                    package-backed host install that still works with <code className="text-gray-300">mongosh</code>,
+                    the Linux package guide includes the exact non-root gateway follow-up commands
+                    and host build prerequisites.
+                  </p>
+                )}
               </div>
               {packageFamily === "apt" ? (
                 <p className="mt-2 text-sm text-amber-300">
@@ -398,12 +490,12 @@ export default function PackagesPage() {
                 <p className="mb-1 text-xs font-semibold text-gray-400">APT — list then pin</p>
                 <div className="rounded-md border border-neutral-700 bg-black p-3">
                   <code className="text-xs text-green-400 sm:text-sm">
-                    apt-cache madison postgresql-16-documentdb
+                    apt-cache madison postgresql-18-documentdb
                   </code>
                 </div>
                 <div className="mt-2 rounded-md border border-neutral-700 bg-black p-3">
                   <code className="text-xs text-green-400 sm:text-sm">
-                    sudo apt install postgresql-16-documentdb=&lt;VERSION&gt;
+                    sudo apt install postgresql-18-documentdb=&lt;VERSION&gt;
                   </code>
                 </div>
               </div>
@@ -411,12 +503,12 @@ export default function PackagesPage() {
                 <p className="mb-1 text-xs font-semibold text-gray-400">RPM — list then pin</p>
                 <div className="rounded-md border border-neutral-700 bg-black p-3">
                   <code className="text-xs text-green-400 sm:text-sm">
-                    dnf --showduplicates list postgresql16-documentdb
+                    dnf --showduplicates list postgresql18-documentdb
                   </code>
                 </div>
                 <div className="mt-2 rounded-md border border-neutral-700 bg-black p-3">
                   <code className="text-xs text-green-400 sm:text-sm">
-                    sudo dnf install postgresql16-documentdb-&lt;VERSION&gt;
+                    sudo dnf install postgresql18-documentdb-&lt;VERSION&gt;
                   </code>
                 </div>
               </div>
@@ -473,13 +565,13 @@ export default function PackagesPage() {
               <div className="rounded-md border border-neutral-700 bg-black p-3">
                 <code className="text-xs text-green-400 sm:text-sm">
                   sudo apt update && apt search documentdb && apt-cache policy
-                  postgresql-16-documentdb
+                  postgresql-18-documentdb
                 </code>
               </div>
               <div className="rounded-md border border-neutral-700 bg-black p-3">
                 <code className="text-xs text-green-400 sm:text-sm">
                   sudo dnf clean all && dnf search documentdb && rpm -qi
-                  postgresql16-documentdb
+                  postgresql18-documentdb
                 </code>
               </div>
             </div>
