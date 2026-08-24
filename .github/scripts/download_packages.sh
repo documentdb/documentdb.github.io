@@ -113,11 +113,18 @@ if not published:
 
 requested = os.environ.get("DOCUMENTDB_VERSION", "latest")
 if requested != "latest":
-    primary = next((r for r in published if r["tag_name"] == requested), None)
-    if primary is None:
+    # The API returns releases newest-first.
+    index = next((i for i, r in enumerate(published)
+                  if r["tag_name"] == requested), None)
+    if index is None:
         sys.exit(f"Error: Version {requested} not found in releases")
-    rest = [r for r in published if r["tag_name"] != requested]
-    ordered = [primary] + rest
+    # A pin means "serve this version". Only the pinned release and OLDER ones
+    # may contribute: pulling gap-fillers from NEWER releases would defeat the
+    # pin, and worse, it would mix releases that depend on each other. Pinning
+    # to a release that predates the multi-package layout would otherwise add a
+    # newer `documentdb` meta package whose `documentdb-N (>= X)` dependency the
+    # pinned extension cannot satisfy - an unsatisfiable repository.
+    ordered = published[index:]
 else:
     ordered = published
 
