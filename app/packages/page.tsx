@@ -438,52 +438,89 @@ export default function PackagesPage() {
                     <th className="px-3 py-2 font-semibold">Architectures</th>
                     <th className="px-3 py-2 font-semibold">PostgreSQL versions</th>
                     <th className="px-3 py-2 font-semibold">Package naming</th>
+                    <th className="px-3 py-2 font-semibold">Version served</th>
                   </tr>
                 </thead>
                 <tbody className="text-gray-300">
                   <tr className="border-b border-neutral-800">
                     <td className="px-3 py-3 font-semibold text-blue-300">APT</td>
-                    <td className="px-3 py-3">Ubuntu 24.04 (full stack)</td>
+                    <td className="px-3 py-3">Ubuntu 24.04 (full stack) · <code className="text-gray-200">ubuntu24</code></td>
                     <td className="px-3 py-3">amd64, arm64</td>
                     <td className="px-3 py-3">17, 18</td>
                     <td className="px-3 py-3">
                       <code className="text-gray-200">documentdb-&lt;pg&gt;</code>
                     </td>
+                    <td className="px-3 py-3">0.116</td>
                   </tr>
                   <tr className="border-b border-neutral-800">
                     <td className="px-3 py-3 font-semibold text-blue-300">APT</td>
-                    <td className="px-3 py-3">Ubuntu 22.04, Debian 11/12/13 (extension only)</td>
+                    <td className="px-3 py-3">Ubuntu 24.04 (extension only) · <code className="text-gray-200">ubuntu24</code></td>
+                    <td className="px-3 py-3">amd64, arm64</td>
+                    <td className="px-3 py-3">16</td>
+                    <td className="px-3 py-3">
+                      <code className="text-gray-200">postgresql-16-documentdb</code>
+                    </td>
+                    <td className="px-3 py-3">0.114</td>
+                  </tr>
+                  <tr className="border-b border-neutral-800">
+                    <td className="px-3 py-3 font-semibold text-blue-300">APT</td>
+                    <td className="px-3 py-3">Ubuntu 22.04 · <code className="text-gray-200">ubuntu22</code><br />Debian 11/12/13 · <code className="text-gray-200">deb11</code> / <code className="text-gray-200">deb12</code> / <code className="text-gray-200">deb13</code><br />(extension only)</td>
                     <td className="px-3 py-3">amd64, arm64</td>
                     <td className="px-3 py-3">16, 17, 18 (Debian 11: 16, 17)</td>
                     <td className="px-3 py-3">
                       <code className="text-gray-200">postgresql-&lt;pg&gt;-documentdb</code>
                     </td>
+                    <td className="px-3 py-3">0.114</td>
                   </tr>
                   <tr className="border-b border-neutral-800">
                     <td className="px-3 py-3 font-semibold text-red-300">RPM</td>
-                    <td className="px-3 py-3">RHEL-compatible 9 (full stack)</td>
+                    <td className="px-3 py-3">RHEL-compatible 9 (full stack) · <code className="text-gray-200">rpm/rhel9</code></td>
                     <td className="px-3 py-3">x86_64, aarch64</td>
                     <td className="px-3 py-3">17, 18</td>
                     <td className="px-3 py-3">
                       <code className="text-gray-200">documentdb-&lt;pg&gt;</code>
                     </td>
+                    <td className="px-3 py-3">0.116</td>
+                  </tr>
+                  <tr className="border-b border-neutral-800">
+                    <td className="px-3 py-3 font-semibold text-red-300">RPM</td>
+                    <td className="px-3 py-3">RHEL-compatible 9 (extension only) · <code className="text-gray-200">rpm/rhel9</code></td>
+                    <td className="px-3 py-3">x86_64, aarch64</td>
+                    <td className="px-3 py-3">16</td>
+                    <td className="px-3 py-3">
+                      <code className="text-gray-200">postgresql16-documentdb</code>
+                    </td>
+                    <td className="px-3 py-3">0.114</td>
                   </tr>
                   <tr>
                     <td className="px-3 py-3 font-semibold text-red-300">RPM</td>
                     <td className="px-3 py-3">
-                       RHEL-compatible 8 (extension only, tested on Rocky Linux)
+                       RHEL-compatible 8 (extension only, tested on Rocky Linux) · <code className="text-gray-200">rpm/rhel8</code>
                     </td>
                     <td className="px-3 py-3">x86_64, aarch64</td>
                     <td className="px-3 py-3">16, 17, 18</td>
                     <td className="px-3 py-3">
                       <code className="text-gray-200">postgresql&lt;pg&gt;-documentdb</code>
                     </td>
+                    <td className="px-3 py-3">0.114</td>
                   </tr>
                 </tbody>
               </table>
+              <p className="mt-3 text-xs text-amber-300">
+                <strong>PostgreSQL 16 is extension-only on every distribution</strong>, including
+                Ubuntu 24.04 and RHEL 9. There is no <code>documentdb-16</code> — requesting it
+                fails with <em>&quot;has no installation candidate&quot;</em> (APT) or{" "}
+                <em>&quot;No match for argument&quot;</em> (DNF). On PostgreSQL 16 you get the
+                extension alone, at 0.114: no gateway, no <code>documentdb-setup</code>, no
+                systemd units. The packaged stack requires PostgreSQL 17 or 18.
+              </p>
               <p className="mt-3 text-xs text-gray-400">
                 Use Package Finder above to generate the exact command for your selected
-                target instead of scanning all combinations manually.
+                target, or see the{" "}
+                <Link href="/docs/getting-started/packages" className="text-blue-400 hover:text-blue-300">
+                  Linux Packages Quick Start
+                </Link>{" "}
+                for every repository component and install command written out in full.
               </p>
               <p className="mt-2 text-xs text-gray-500">
                 Debian 13 packages are available in the <code>deb13</code> APT component and
