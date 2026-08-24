@@ -1,7 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
-import CommandSnippet from "./components/CommandSnippet";
-import { documentdbKubernetesOperatorQuickStartUrl } from "./services/externalLinks";
+import QuickStartTabs from "./components/QuickStartTabs";
+import {
+  documentdbKubernetesOperatorQuickStartUrl,
+  documentdbVsCodeExtensionMarketplaceUrl,
+  documentdbVsCodeLocalQuickStartDeepLink,
+} from "./services/externalLinks";
 import { getMetadata } from "./services/metadataService";
 import {
   documentdbGitHubForks,
@@ -39,7 +43,7 @@ const quickRunCommand = `docker run -dt --name documentdb \\
   --username <YOUR_USERNAME> \\
   --password <YOUR_PASSWORD>`;
 
-const quickStartSteps = [
+const dockerQuickStartSteps = [
   {
     step: "01",
     description: "Run DocumentDB Local with Docker.",
@@ -51,6 +55,23 @@ const quickStartSteps = [
   {
     step: "03",
     description: "Continue with the docs or Linux packages for the setup you need.",
+  },
+];
+
+const vscodeQuickStartSteps = [
+  {
+    step: "01",
+    description: "Install the DocumentDB extension for Visual Studio Code.",
+  },
+  {
+    step: "02",
+    description:
+      "Open the DocumentDB Local setup and let the extension create and start the container for you.",
+  },
+  {
+    step: "03",
+    description:
+      "Browse databases, run queries, and edit documents without leaving the editor.",
   },
 ];
 
@@ -372,29 +393,20 @@ export default function Home() {
                   Quick start
                 </span>
                 <h2 className="mt-4 text-xl font-semibold text-white sm:text-2xl">
-                  Run locally with Docker
+                  Run DocumentDB locally
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-gray-400">
-                  Start DocumentDB Local with Docker, then connect on port
-                  10260.
+                  Start DocumentDB Local with Docker, or let the VS Code
+                  extension set it up for you.
                 </p>
               </div>
-              <CommandSnippet command={quickRunCommand} label="Docker" />
-              <ol className="mt-5 overflow-hidden rounded-2xl border border-neutral-800/80 bg-neutral-900/50">
-                {quickStartSteps.map((item) => (
-                  <li
-                    key={item.step}
-                    className="grid grid-cols-[auto_1fr] items-center gap-3 border-t border-neutral-800/80 px-4 py-3.5 first:border-t-0"
-                  >
-                    <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-blue-400/30 bg-blue-500/10 text-[11px] font-semibold text-blue-200">
-                      {item.step}
-                    </span>
-                    <p className="text-sm leading-6 text-gray-300">
-                      {item.description}
-                    </p>
-                  </li>
-                ))}
-              </ol>
+              <QuickStartTabs
+                dockerCommand={quickRunCommand}
+                dockerSteps={dockerQuickStartSteps}
+                vscodeSteps={vscodeQuickStartSteps}
+                vscodeDeepLinkUrl={documentdbVsCodeLocalQuickStartDeepLink}
+                vscodeMarketplaceUrl={documentdbVsCodeExtensionMarketplaceUrl}
+              />
               <div className="mt-4 flex flex-col gap-2 text-sm sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
                 <Link
                   href="/docs/getting-started/docker"

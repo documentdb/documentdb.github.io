@@ -13,3 +13,17 @@ export const documentdbKubernetesOperatorQuickStartUrl =
 
 export const documentdbKubernetesOperatorGitHubUrl =
   'https://github.com/documentdb/documentdb-kubernetes-operator';
+
+export const documentdbVsCodeExtensionMarketplaceUrl =
+  'https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-documentdb';
+
+// Deep link into the extension's DocumentDB Local setup wizard.
+//
+// The path names the action; an empty path means "connect", which is what every link published
+// before the extension supported actions relies on. See the extension's
+// docs/user-manual/how-to-construct-url.md for the full vocabulary.
+//
+// Requires the extension to be installed: a `vscode://` URL for an absent extension does nothing
+// visible at all, so never present this without the marketplace link beside it.
+export const documentdbVsCodeLocalQuickStartDeepLink =
+  'vscode://ms-azuretools.vscode-documentdb/local';
