@@ -17,7 +17,13 @@ distribution has caught up to it yet, so the repository currently serves two sha
 - Both `amd64`/`x86_64` and `arm64`/`aarch64` variants are published.
 - The full stack is published for PostgreSQL **17** and **18**. The extension package alone is
   additionally available for PostgreSQL **16** on every distribution.
+- **PostgreSQL 16 is extension-only everywhere**, including Ubuntu 24.04 and RHEL 9: there is no
+  `documentdb-16`, and `postgresql-16-documentdb` is served at **0.114**, while 17/18 are at
+  0.116. Choosing PostgreSQL 16 therefore gives you no gateway and no `documentdb-setup`.
 - Debian 11 currently resolves PostgreSQL `16` and `17` only.
+- **Debian 13 only:** `apt.postgresql.org` also publishes DocumentDB for Trixie, and its version
+  string (`0.114-0-1.pgdg13+1`) outranks this repository's (`0.114-0`), so PGDG's build installs
+  by default.
 
 > On the extension-only distributions there is still no packaged gateway, setup helper, or
 > systemd service. To get a MongoDB-compatible endpoint there, follow
@@ -166,7 +172,18 @@ sudo systemctl stop    documentdb-local@18.target
 ```
 
 On hosts without systemd (containers, some dev images) the wizard starts the gateway directly
-instead; re-run `documentdb-setup` to restart it.
+instead; the `systemctl` commands above fail with *"System has not been booted with systemd"*.
+Use `documentdb-setup --status` to inspect it and re-run `documentdb-setup` to restart it.
+
+**Running SQL against the managed instance.** The private PostgreSQL instance is owned by the
+`documentdb-local` system user and listens on a socket, so a bare `psql` will not find it:
+
+```bash
+sudo -u documentdb-local psql -h /run/documentdb-local/18/postgresql -p 9718 -d postgres
+```
+
+Use that connection for the `ALTER EXTENSION` statements under Upgrading, and to read versions
+with `SELECT extname, extversion FROM pg_extension WHERE extname LIKE 'documentdb%';`.
 
 **Remove or reset:**
 

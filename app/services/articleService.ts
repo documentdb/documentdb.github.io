@@ -116,21 +116,54 @@ Since v0.116-0 DocumentDB ships as a set of packages rather than a lone extensio
 
 | Package | Role |
 | --- | --- |
-| \`documentdb\` (meta) + \`documentdb-N\` | Full stand-alone install. Pins PostgreSQL major N and owns the systemd lifecycle. |
+| \`documentdb\` (meta) | Convenience package for the paved road — it simply depends on \`documentdb-18\`. |
+| \`documentdb-N\` | Full stand-alone install for PostgreSQL major N. Pulls in the extension, gateway, tools and \`documentdb-common\`, and owns the systemd lifecycle. |
 | \`postgresql-N-documentdb\` | The PostgreSQL extension itself (files only). |
 | \`documentdb-gateway\` | Wire-protocol runtime serving the MongoDB-compatible endpoint. |
 | \`documentdb-postgresql-tools\` | Admin helpers: \`documentdb-tune\`, \`documentdb-createcluster\`, \`documentdb-register-gateway\`, \`documentdb-gateway-admin\`. |
 | \`documentdb-common\` | Shared payload: \`documentdb-setup\`, the systemd units, helper scripts, sample data. |
 
-The full set is published for **Ubuntu 24.04** and **RHEL-compatible 9** on PostgreSQL 17 and 18. Ubuntu 22.04, Debian 11/12/13 and RHEL-compatible 8 still resolve the **extension package only** — for those, see [Extension-only hosts](#extension-only-hosts) below.
+> **The full stack is published for Ubuntu 24.04 and RHEL-compatible 9, on PostgreSQL 17 and 18 only.**
+>
+> **PostgreSQL 16 is extension-only everywhere**, including Ubuntu 24.04 and RHEL 9. There is no \`documentdb-16\` — asking for it fails with *"has no installation candidate"* (APT) or *"No match for argument"* (DNF). On PostgreSQL 16 you get \`postgresql-16-documentdb\` alone: no gateway, no \`documentdb-setup\`, no systemd units.
+>
+> Ubuntu 22.04, Debian 11/12/13 and RHEL-compatible 8 are extension-only on every major — see [Extension-only hosts](#extension-only-hosts).
+
+### Which version you get
+
+The repository serves the newest release that was actually built for your target, so the version differs by tier:
+
+| Target | Version served |
+| --- | --- |
+| Ubuntu 24.04 / RHEL 9 on PostgreSQL 17 or 18 | **0.116** (\`0.116-0\` on DEB, \`0.116.0-1.el9\` on RPM) |
+| PostgreSQL 16, any distribution | **0.114** |
+| Ubuntu 22.04, Debian 11/12/13, RHEL-compatible 8 | **0.114** |
+
+The examples below use the 0.116 strings. Substitute what your target serves — \`apt-cache madison <pkg>\` and \`dnf --showduplicates list <pkg>\` always show the truth.
 
 ## Choose the right package command
 
-Use the [Package Finder](/packages) to generate the exact install command for your distro, architecture, and PostgreSQL version.
+The [Package Finder](/packages) generates the command for any distro, architecture and PostgreSQL version. It needs JavaScript, so every combination is also written out below for scripted and headless installs.
 
 > The package commands assume a regular Linux host where you use \`sudo\`. In a clean container running as \`root\`, omit \`sudo\`.
 >
 > On Debian and Ubuntu in a clean container, also run \`export DEBIAN_FRONTEND=noninteractive\` first. Without it, \`tzdata\` prompts for input during \`apt install\` and the install hangs with no visible error.
+
+### The APT repository component and package for each target
+
+The DocumentDB APT repository is \`https://documentdb.io/deb stable <component>\`. Pick the component that matches your distribution:
+
+| Distribution | PGDG suite | DocumentDB component | Install |
+| --- | --- | --- | --- |
+| Ubuntu 24.04 | \`noble-pgdg\` | \`ubuntu24\` | \`documentdb-18\` or \`documentdb-17\` (full stack) |
+| Ubuntu 22.04 | \`jammy-pgdg\` | \`ubuntu22\` | \`postgresql-18-documentdb\` (extension only) |
+| Debian 11 | \`bullseye-pgdg\` | \`deb11\` | \`postgresql-17-documentdb\` (extension only; **PostgreSQL 18 is not installable here**) |
+| Debian 12 | \`bookworm-pgdg\` | \`deb12\` | \`postgresql-18-documentdb\` (extension only) |
+| Debian 13 | \`trixie-pgdg\` | \`deb13\` | \`postgresql-18-documentdb\` (extension only) |
+
+For RPM the repository is \`https://documentdb.io/rpm/rhel9\` or \`https://documentdb.io/rpm/rhel8\`. RHEL 9 installs \`documentdb-18\` / \`documentdb-17\` (full stack); RHEL 8 installs \`postgresql18-documentdb\` (extension only) and uses \`EL-8\` in the PGDG and EPEL URLs, with \`--set-enabled powertools\` instead of \`crb\`.
+
+> **Debian 13 only:** \`apt.postgresql.org\` also publishes DocumentDB extension packages for Trixie, and its version string (\`0.114-0-1.pgdg13+1\`) sorts above the one in this repository (\`0.114-0\`), so PGDG's build is what installs by default. It is a different build of the same release. Pin explicitly with \`apt install postgresql-18-documentdb=<VERSION>\` if you need this repository's copy.
 
 ## Install the packages
 
@@ -140,11 +173,17 @@ Use the [Package Finder](/packages) to generate the exact install command for yo
 ${buildAptInstallCommand('ubuntu24', 'amd64', '18')}
 \`\`\`
 
+For PostgreSQL 17 on the same host, install \`documentdb-17\` instead of \`documentdb-18\`. The \`documentdb\` meta package is equivalent to \`documentdb-18\`.
+
 ### RPM example (RHEL-compatible 9, PostgreSQL 18)
 
 \`\`\`bash
 ${buildRpmInstallCommand('rhel9', 'x86_64', '18')}
 \`\`\`
+
+For PostgreSQL 17, install \`documentdb-17\`. The \`documentdb\` meta package is equivalent to \`documentdb-18\`.
+
+> **Why the \`crb\` line matters.** DocumentDB's extension depends on PostGIS, which pulls in \`gdal*-libs\`, which needs \`libqhull_r.so.7\` — and that library ships only in **CRB** (CodeReady Builder; \`powertools\` on EL8). If CRB is not enabled, \`dnf install\` fails with dozens of lines like \`nothing provides libqhull_r.so.7()(64bit) needed by gdal313-libs\`, naming GDAL but never the missing repository. Do not drop that line.
 
 ## Set up and connect
 
@@ -213,7 +252,21 @@ sudo systemctl restart documentdb-local@18.target
 sudo systemctl stop    documentdb-local@18.target
 \`\`\`
 
-On hosts without systemd the wizard starts the gateway directly; re-run \`documentdb-setup\` to restart it.
+**On hosts without systemd** — containers and some dev images — the wizard says so at the end of setup and starts the gateway directly instead. The \`systemctl\` commands above will fail with *"System has not been booted with systemd"*; use \`documentdb-setup --status\` to inspect it and re-run \`documentdb-setup\` to restart it. \`documentdb-setup --restore\` stops the directly-started gateway for you.
+
+### Running SQL against the managed instance
+
+\`documentdb-setup\` creates a private PostgreSQL instance owned by the \`documentdb-local\` system user, listening on a socket rather than TCP, so a bare \`psql\` will not find it. Connect as that user through the per-major socket directory:
+
+\`\`\`bash
+sudo -u documentdb-local psql -h /run/documentdb-local/18/postgresql -p 9718 -d postgres
+\`\`\`
+
+That is the connection to use for the \`ALTER EXTENSION\` statements under [Upgrading](#upgrading), and to read the installed versions:
+
+\`\`\`sql
+SELECT extname, extversion FROM pg_extension WHERE extname LIKE 'documentdb%';
+\`\`\`
 
 Remove or reset:
 
@@ -248,7 +301,9 @@ PostgreSQL applies intermediate upgrade scripts automatically. In-place upgrades
 
 ## Extension-only hosts
 
-Ubuntu 22.04, Debian 11/12/13 and RHEL-compatible 8 currently serve the extension package alone — no gateway, setup helper, or systemd units. On those hosts the install command ends in \`postgresql-<PG>-documentdb\` (APT) or \`postgresql<PG>-documentdb\` (RPM), and there is no \`documentdb-setup\`.
+Ubuntu 22.04, Debian 11/12/13 and RHEL-compatible 8 serve the extension package alone — no gateway, setup helper, or systemd units — and so does **PostgreSQL 16 on every distribution**. On those targets the install command ends in \`postgresql-<PG>-documentdb\` (APT) or \`postgresql<PG>-documentdb\` (RPM), there is no \`documentdb-setup\`, and the version served is 0.114. See the component and package table under [Choose the right package command](#choose-the-right-package-command) for the exact repository line per distribution.
+
+**Debian 11 does not support PostgreSQL 18.** \`apt install postgresql-18-documentdb\` there fails with \`Depends: postgresql-18-postgis-3 but it is not installable\` — the upstream Bullseye PostGIS build does not exist. Use PostgreSQL 16 or 17.
 
 Confirm the extension landed with package metadata:
 
