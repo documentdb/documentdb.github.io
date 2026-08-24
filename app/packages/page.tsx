@@ -141,9 +141,11 @@ export default function PackagesPage() {
             Download DocumentDB
           </h1>
           <p className="mx-auto max-w-3xl text-lg text-gray-300">
-            Choose Docker for the fastest local setup, or Linux packages for PostgreSQL
-            extension installs. The generated package commands configure the PostgreSQL
-            dependency repositories and install the DocumentDB extension package.
+            Choose Docker for the fastest local setup, or Linux packages for a persistent
+            install. On Ubuntu 24.04 and RHEL-compatible 9 the packages install the full
+            DocumentDB stack — the PostgreSQL extension, the wire-protocol gateway, the
+            administrator tools and systemd units. Other distributions currently receive the
+            extension package alone.
           </p>
           <div className="mt-4 flex flex-wrap justify-center gap-3 text-sm">
             <span className="rounded-full border border-green-500/30 bg-green-500/20 px-3 py-1 text-green-300">
@@ -441,17 +443,35 @@ export default function PackagesPage() {
                 <tbody className="text-gray-300">
                   <tr className="border-b border-neutral-800">
                     <td className="px-3 py-3 font-semibold text-blue-300">APT</td>
-                    <td className="px-3 py-3">Ubuntu 22.04/24.04, Debian 11/12/13</td>
+                    <td className="px-3 py-3">Ubuntu 24.04 (full stack)</td>
+                    <td className="px-3 py-3">amd64, arm64</td>
+                    <td className="px-3 py-3">17, 18</td>
+                    <td className="px-3 py-3">
+                      <code className="text-gray-200">documentdb-&lt;pg&gt;</code>
+                    </td>
+                  </tr>
+                  <tr className="border-b border-neutral-800">
+                    <td className="px-3 py-3 font-semibold text-blue-300">APT</td>
+                    <td className="px-3 py-3">Ubuntu 22.04, Debian 11/12/13 (extension only)</td>
                     <td className="px-3 py-3">amd64, arm64</td>
                     <td className="px-3 py-3">16, 17, 18 (Debian 11: 16, 17)</td>
                     <td className="px-3 py-3">
                       <code className="text-gray-200">postgresql-&lt;pg&gt;-documentdb</code>
                     </td>
                   </tr>
+                  <tr className="border-b border-neutral-800">
+                    <td className="px-3 py-3 font-semibold text-red-300">RPM</td>
+                    <td className="px-3 py-3">RHEL-compatible 9 (full stack)</td>
+                    <td className="px-3 py-3">x86_64, aarch64</td>
+                    <td className="px-3 py-3">17, 18</td>
+                    <td className="px-3 py-3">
+                      <code className="text-gray-200">documentdb-&lt;pg&gt;</code>
+                    </td>
+                  </tr>
                   <tr>
                     <td className="px-3 py-3 font-semibold text-red-300">RPM</td>
                     <td className="px-3 py-3">
-                       RHEL-compatible 8/9 (tested on Rocky Linux)
+                       RHEL-compatible 8 (extension only, tested on Rocky Linux)
                     </td>
                     <td className="px-3 py-3">x86_64, aarch64</td>
                     <td className="px-3 py-3">16, 17, 18</td>

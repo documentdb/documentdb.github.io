@@ -165,7 +165,12 @@ instead; re-run `documentdb-setup` to restart it.
 ```bash
 sudo documentdb-setup --restore                              # detach the managed integration
 sudo documentdb-local-reset --pg-version 18 --confirm-destroy # DESTROYS the data directory
-sudo apt remove documentdb    # or: sudo dnf remove documentdb
+
+# Removing the meta package alone leaves the stack installed — it only owns the
+# dependency on the per-major package. Remove that too, and let autoremove reap
+# documentdb-common, documentdb-gateway and documentdb-postgresql-tools.
+sudo apt remove --autoremove documentdb documentdb-18
+sudo dnf remove documentdb documentdb-18 && sudo dnf autoremove
 ```
 
 ### What the packages are
