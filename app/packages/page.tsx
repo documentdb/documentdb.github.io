@@ -498,7 +498,10 @@ export default function PackagesPage() {
             </summary>
             <div className="mt-4 space-y-4">
               <p className="text-sm text-gray-400">
-                Use the commands below to discover available versions before pinning. Replace{" "}
+                Use the commands below to discover available versions before pinning. The
+                examples name the extension package; substitute{" "}
+                <code className="text-gray-300">{selectedPackageNames}</code> to pin the package
+                your selected target actually installs. Replace{" "}
                 <code className="text-gray-300">&lt;VERSION&gt;</code> with the version string
                 shown by the list command (e.g.{" "}
                 <code className="text-gray-300">{repoAptVersionExample}</code> for APT,{" "}
@@ -604,10 +607,12 @@ export default function PackagesPage() {
               3. Connect and try it
             </h2>
             <p className="text-sm leading-6 text-gray-400">
-              Docker starts a gateway-backed local endpoint on port 10260. Linux packages install
-              the PostgreSQL extension; the Linux package guide adds the extra source-gateway
-              steps needed when you want a host install that still exposes a MongoDB-compatible
-              endpoint.
+              Docker starts a gateway-backed local endpoint on port 10260. On Ubuntu 24.04 and
+              RHEL-compatible 9 the packages give you the same thing: install, then run{" "}
+              <code className="text-gray-300">sudo documentdb-setup --admin-user admin</code>,
+              which creates the database and starts the gateway. On the extension-only
+              distributions the Linux package guide covers the additional source-gateway steps
+              needed to expose a MongoDB-compatible endpoint.
             </p>
           </div>
 

@@ -163,6 +163,13 @@ mongosh 'mongodb://admin:<PASSWORD>@127.0.0.1:10260/mydb?tls=true&tlsAllowInvali
         --eval 'db.runCommand({ping: 1})'
 \`\`\`
 
+If the password contains \`@\`, \`:\`, \`/\` or other reserved characters it must be percent-encoded in the URI (\`@\` becomes \`%40\`), otherwise the URI misparses. To avoid encoding entirely, pass the credentials as flags instead:
+
+\`\`\`bash
+mongosh localhost:10260 -u admin -p --authenticationMechanism SCRAM-SHA-256 \\
+        --tls --tlsAllowInvalidCertificates --eval 'db.runCommand({ping: 1})'
+\`\`\`
+
 A database and collection are created on first write:
 
 \`\`\`javascript
@@ -211,15 +218,21 @@ On hosts without systemd the wizard starts the gateway directly; re-run \`docume
 Remove or reset:
 
 \`\`\`bash
+# Stop the stack first — package removal deletes files but does not stop a
+# running gateway. On systemd hosts:
+sudo systemctl stop documentdb-local@18.target
+# Without systemd the wizard started the gateway directly; kill that process.
+
 sudo documentdb-setup --restore                               # detach the managed integration
 sudo documentdb-local-reset --pg-version 18 --confirm-destroy  # DESTROYS the data directory
 
-# Removing the meta package alone leaves the stack installed - it only owns the
-# dependency on the per-major package. Remove that too and let autoremove reap
-# the shared payload.
-sudo apt remove --autoremove documentdb documentdb-18
-sudo dnf remove documentdb documentdb-18 && sudo dnf autoremove
+# Name the package you installed AND the extension: autoremove does not reap
+# postgresql-18-documentdb, and \`remove\` would leave config behind.
+sudo apt purge --autoremove documentdb-18 postgresql-18-documentdb
+sudo dnf remove documentdb-18 postgresql18-documentdb && sudo dnf autoremove
 \`\`\`
+
+(If you installed the \`documentdb\` meta package rather than \`documentdb-18\`, name that instead.)
 
 ## Upgrading
 
