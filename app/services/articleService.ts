@@ -195,7 +195,22 @@ sudo documentdb-setup --admin-user admin
 
 It creates the PostgreSQL instance, installs the extensions, bootstraps the admin user, starts the gateway, and enables \`documentdb-local@<major>.target\` so the stack survives reboot. It **prompts for the admin password**; for servers and CI pass \`--admin-password-file <file>\` or \`--admin-password-stdin\` together with \`--yes\`.
 
-\`mongosh\` is not shipped by these packages — install it from the [official instructions](https://www.mongodb.com/docs/mongodb-shell/install/), then:
+\`mongosh\` is not shipped by these packages. Install it from MongoDB's own repository — these are the commands for the two paved-road targets, and the [official instructions](https://www.mongodb.com/docs/mongodb-shell/install/) cover every other platform:
+
+\`\`\`bash
+# Ubuntu 24.04
+curl -fsSL https://www.mongodb.org/static/pgp/server-8.0.asc | sudo gpg --dearmor -o /usr/share/keyrings/mongodb-server-8.0.gpg
+echo "deb [signed-by=/usr/share/keyrings/mongodb-server-8.0.gpg] https://repo.mongodb.org/apt/ubuntu noble/mongodb-org/8.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-8.0.list >/dev/null
+sudo apt update && sudo apt install -y mongodb-mongosh
+
+# RHEL-compatible 9
+printf '%s\\n' '[mongodb-org-8.0]' 'name=MongoDB Repository' \\
+  'baseurl=https://repo.mongodb.org/yum/redhat/9/mongodb-org/8.0/x86_64/' \\
+  'gpgcheck=1' 'enabled=1' 'gpgkey=https://pgp.mongodb.com/server-8.0.asc' | sudo tee /etc/yum.repos.d/mongodb-org-8.0.repo >/dev/null
+sudo dnf install -y mongodb-mongosh
+\`\`\`
+
+Then connect:
 
 \`\`\`bash
 mongosh 'mongodb://admin:<PASSWORD>@127.0.0.1:10260/mydb?tls=true&tlsAllowInvalidCertificates=true' \\
