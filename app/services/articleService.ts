@@ -133,7 +133,7 @@ ${buildRpmInstallCommand('rhel9', 'x86_64', '18')}
 For PostgreSQL 17, install \`documentdb-17\`; the \`documentdb\` meta package is equivalent to \`documentdb-18\`. For any other distribution, architecture or major, use the [Package Finder](/packages).
 
 > [!NOTE]
-> In a container running as \`root\`, drop \`sudo\`. On Debian/Ubuntu also \`export DEBIAN_FRONTEND=noninteractive\` first, or \`tzdata\` prompts and the install hangs with no visible error.
+> In a container running as \`root\`, drop the leading \`sudo\` (it is often not installed). Leave \`sudo -u <user>\` commands alone — those switch user rather than elevate; run them as \`su <user> -c '...'\` instead. On Debian/Ubuntu also \`export DEBIAN_FRONTEND=noninteractive\` first, or \`tzdata\` prompts and the install hangs with no visible error.
 
 > [!WARNING]
 > **On ARM, change three strings** — the commands above are written for x86_64.
@@ -174,10 +174,10 @@ printf '%s\\n' '[mongodb-org-8.0]' 'name=MongoDB Repository' \\
 sudo dnf install -y mongodb-mongosh
 \`\`\`
 
-Then connect. Passing credentials as flags avoids URI escaping entirely:
+Then connect. A bare \`-p\` makes \`mongosh\` **prompt** for the password, so pass it inline in scripts and CI — otherwise a non-interactive shell sends an empty password and fails with the unhelpful \`MongoServerError: Invalid key\`:
 
 \`\`\`bash
-mongosh localhost:10260 -u admin -p --authenticationMechanism SCRAM-SHA-256 \\
+mongosh localhost:10260 -u admin -p '<PASSWORD>' --authenticationMechanism SCRAM-SHA-256 \\
         --tls --tlsAllowInvalidCertificates --eval 'db.runCommand({ping: 1})'
 \`\`\`
 
@@ -232,6 +232,9 @@ sudo systemctl stop    documentdb-local@18.target
 \`\`\`
 
 **Without systemd** (containers, some dev images) the wizard starts the gateway directly and says so. \`systemctl\` will fail with *"System has not been booted with systemd"* — use \`documentdb-setup --status\` to inspect, re-run \`documentdb-setup\` to restart, \`--restore\` to stop.
+
+> [!NOTE]
+> On a **minimal RHEL-compatible image, install \`procps-ng\` first**. \`documentdb-setup\` locates the directly-started gateway with \`pgrep\`; without it \`--restore\` reports success while the gateway keeps serving, and a later re-run then fails with \`Port 10260 is already in use\`. Debian and Ubuntu images already ship \`procps\`.
 
 ### Running SQL against the managed instance
 
@@ -310,10 +313,11 @@ An air-gapped host has no route to PGDG either, and DocumentDB pulls PostgreSQL,
 
 ### Stage the bundle (connected machine)
 
-With the same repositories configured as for an online install:
+With the same repositories configured as for an online install — run the [Install](#install) command for your distribution **up to and including \`apt update\` / the \`dnf config-manager\` line, but not the final \`install\`**:
 
 \`\`\`bash
 # Debian / Ubuntu
+sudo apt-get install -y dpkg-dev
 mapfile -t PKGS < <(apt-cache depends --recurse --no-recommends --no-suggests \\
     --no-conflicts --no-breaks --no-replaces --no-enhances documentdb-18 \\
   | grep '^[a-zA-Z0-9]' | sort -u)
@@ -337,14 +341,14 @@ Expect ~200 packages / 200 MB (DEB) or ~270 / 170 MB (RPM), mostly PostGIS and G
 
 ### Install from the bundle (air-gapped target)
 
-Copy \`bundle/\` across and point the package manager at it — the local index restores full dependency resolution:
+Copy \`bundle/\` across — including the \`Packages\`/\`Packages.gz\` or \`repodata/\` index inside it, which is what makes the next step resolve — and point the package manager at it:
 
 \`\`\`bash
 # Debian / Ubuntu
-echo "deb [trusted=yes] file:/path/to/bundle ./" \\
+echo "deb [trusted=yes] file:///path/to/bundle ./" \\
   | sudo tee /etc/apt/sources.list.d/documentdb-offline.list
 sudo apt-get update
-sudo apt install documentdb-18
+sudo apt install -y documentdb-18
 \`\`\`
 
 \`\`\`bash
@@ -352,8 +356,11 @@ sudo apt install documentdb-18
 printf '%s\\n' '[documentdb-offline]' 'name=DocumentDB offline bundle' \\
   'baseurl=file:///path/to/bundle' 'enabled=1' 'gpgcheck=0' \\
   | sudo tee /etc/yum.repos.d/documentdb-offline.repo
-sudo dnf install documentdb-18
+sudo dnf install -y --disablerepo='*' --enablerepo=documentdb-offline documentdb-18
 \`\`\`
+
+> [!IMPORTANT]
+> The \`--disablerepo\`/\`--enablerepo\` pair is not optional. DNF **aborts the whole transaction** if any enabled repository is unreachable, and every RHEL-compatible image ships \`baseos\`, \`appstream\` and \`extras\` enabled — so without it the install fails with \`Error: Failed to download metadata for repo 'baseos'\` even though your bundle is perfectly good. APT differs here: it only warns about unreachable sources and continues.
 
 \`[trusted=yes]\` / \`gpgcheck=0\` accept the unsigned local directory. Upstream signatures were verified at staging time; \`sha256sum\` the transfer if it crosses an untrusted boundary.
 
@@ -361,7 +368,7 @@ Then continue with **Set up and connect** above — \`documentdb-setup\` needs n
 
 ### Smaller offline cases
 
-If the target already has PostgreSQL and the PGDG extension dependencies (\`postgresql-N-cron\`, \`-pgvector\`, \`-postgis-3\`), you do not need a bundle:
+If the target already has PostgreSQL, the PGDG extension dependencies (\`postgresql-N-cron\`, \`-pgvector\`, \`-postgis-3\`) and \`jq\`, you do not need a bundle:
 
 - **Extension only, one file** — \`sudo apt install ./ubuntu24.04-postgresql-18-documentdb_0.116-0_amd64.deb\`. No gateway and no \`documentdb-setup\`.
 - **Full stack from the release assets** — pass all six files for your platform to a *single* \`apt install\` / \`dnf install\`. Local files resolve dependencies only against enabled repositories, so the meta package on its own fails with \`Depends: documentdb-18 ... but it is not installable\`.
