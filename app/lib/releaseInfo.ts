@@ -18,8 +18,18 @@ export type ReleaseInfo = {
   aptVersion: string;
   /** Extension package version on RPM, e.g. "0.116.0-1.el9". */
   rpmVersion: string;
-  /** Version of every non-extension package, e.g. "0.116.0". */
+  /**
+   * Version of every non-extension package, e.g. "0.116.0".
+   *
+   * The extension keeps the control-file form (`0.116-0`) while the meta,
+   * per-major, gateway, tools and common packages use the flat dotted form.
+   * Pinning examples MUST pick the right one for the package being pinned:
+   * `apt install documentdb-18=0.116-0` fails with "Version '0.116-0' for
+   * 'documentdb-18' was not found", because that package is `0.116.0`.
+   */
   metaVersion: string;
+  /** RPM form of the non-extension packages, e.g. "0.116.0-1". */
+  metaRpmVersion: string;
   releaseUrl: string;
   assetNames: readonly string[];
 };
@@ -33,6 +43,7 @@ export const FALLBACK_RELEASE: ReleaseInfo = {
   aptVersion: "0.116-0",
   rpmVersion: "0.116.0-1.el9",
   metaVersion: "0.116.0",
+  metaRpmVersion: "0.116.0-1",
   releaseUrl: "https://github.com/documentdb/documentdb/releases/tag/v0.116-0",
   assetNames: [],
 };
@@ -103,7 +114,20 @@ export function parseReleaseInfo(payload: unknown): ReleaseInfo {
     firstMatch(names, /^documentdb-(\d+\.\d+\.\d+)-\d+\.noarch\.rpm$/) ??
     FALLBACK_RELEASE.metaVersion;
 
-  return { tagName, aptVersion, rpmVersion, metaVersion, releaseUrl, assetNames: names };
+  // e.g. documentdb-0.116.0-1.noarch.rpm -> 0.116.0-1
+  const metaRpmVersion =
+    firstMatch(names, /^documentdb-(\d+\.\d+\.\d+-\d+)\.noarch\.rpm$/) ??
+    FALLBACK_RELEASE.metaRpmVersion;
+
+  return {
+    tagName,
+    aptVersion,
+    rpmVersion,
+    metaVersion,
+    metaRpmVersion,
+    releaseUrl,
+    assetNames: names,
+  };
 }
 
 /**
