@@ -179,6 +179,10 @@ ${buildAptInstallCommand('ubuntu24', 'amd64', '18')}
 
 For PostgreSQL 17 on the same host, install \`documentdb-17\` instead of \`documentdb-18\`. The \`documentdb\` meta package is equivalent to \`documentdb-18\`.
 
+> **On arm64, swap \`arch=amd64\` → \`arch=arm64\`** in the \`documentdb.list\` line. The repository publishes both (\`Architectures: amd64 arm64\`), so nothing else in the command changes. To make the line arch-agnostic, use \`arch=$(dpkg --print-architecture)\` instead.
+>
+> Leaving \`amd64\` on an ARM host fails in a way that does not name the architecture: \`apt update\` succeeds, then the install reports \`documentdb-18 : Depends: postgresql-18-documentdb but it is not installable\`. The meta and stand-alone packages are \`Architecture: all\` and resolve fine; only the extension package is arch-specific, so it is the one that goes missing.
+
 ### RPM example (RHEL-compatible 9, PostgreSQL 18)
 
 \`\`\`bash
@@ -186,6 +190,10 @@ ${buildRpmInstallCommand('rhel9', 'x86_64', '18')}
 \`\`\`
 
 For PostgreSQL 17, install \`documentdb-17\`. The \`documentdb\` meta package is equivalent to \`documentdb-18\`.
+
+> **On aarch64, swap \`EL-9-x86_64\` → \`EL-9-aarch64\`** in the PGDG repository RPM URL, and \`codeready-builder-for-rhel-9-x86_64-rpms\` → \`codeready-builder-for-rhel-9-aarch64-rpms\` in the fallback \`config-manager\` line. On EL8 the same swap applies to \`EL-8-x86_64\`. To make the URL arch-agnostic, use \`EL-9-$(uname -m)\` instead.
+>
+> PGDG ships a *separate* \`pgdg-redhat-repo\` package per architecture, and the file name \`pgdg-redhat-repo-latest.noarch.rpm\` is identical for both — so the wrong one installs without complaint. It writes x86_64 repository URLs and keys, and the next \`dnf\` call fails with \`Bad GPG signature\` on \`pgdg-common\` even though \`epel\`, \`crb\` and \`documentdb\` all verify normally. The signature error names the repository but never the architecture, so it reads like a broken mirror.
 
 > **Why the \`crb\` line matters.** DocumentDB's extension depends on PostGIS, which pulls in \`gdal*-libs\`, which needs \`libqhull_r.so.7\` — and that library ships only in **CRB** (CodeReady Builder; \`powertools\` on EL8). If CRB is not enabled, \`dnf install\` fails with dozens of lines like \`nothing provides libqhull_r.so.7()(64bit) needed by gdal313-libs\`, naming GDAL but never the missing repository. Do not drop that line.
 
