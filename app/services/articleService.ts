@@ -197,6 +197,69 @@ For PostgreSQL 17, install \`documentdb-17\`. The \`documentdb\` meta package is
 
 > **Why the \`crb\` line matters.** DocumentDB's extension depends on PostGIS, which pulls in \`gdal*-libs\`, which needs \`libqhull_r.so.7\` — and that library ships only in **CRB** (CodeReady Builder; \`powertools\` on EL8). If CRB is not enabled, \`dnf install\` fails with dozens of lines like \`nothing provides libqhull_r.so.7()(64bit) needed by gdal313-libs\`, naming GDAL but never the missing repository. Do not drop that line.
 
+## Offline / air-gapped install
+
+A host with no route to this repository also has no route to PGDG — and DocumentDB depends on PostgreSQL itself plus \`pg_cron\`, \`pgvector\` and PostGIS, which are PGDG packages. Downloading the DocumentDB release assets alone is not enough. Stage the whole dependency closure on a connected machine and carry it across.
+
+Run the staging step on a machine with the **same distribution, release and architecture** as the target; the closure is specific to all three.
+
+### Stage the bundle (connected machine)
+
+Configure the repositories exactly as in the examples above, then download the closure and index it:
+
+\`\`\`bash
+# Debian / Ubuntu
+mapfile -t PKGS < <(apt-cache depends --recurse --no-recommends --no-suggests \\
+    --no-conflicts --no-breaks --no-replaces --no-enhances documentdb-18 \\
+  | grep '^[a-zA-Z0-9]' | sort -u)
+mkdir -p bundle && cd bundle
+apt-get download "\${PKGS[@]}"
+dpkg-scanpackages . /dev/null > Packages && gzip -k Packages
+\`\`\`
+
+\`\`\`bash
+# RHEL-compatible
+sudo dnf install -y dnf-plugins-core createrepo_c
+mkdir -p bundle
+sudo dnf download --resolve --alldeps --destdir bundle documentdb-18
+createrepo_c bundle
+\`\`\`
+
+> **Use the full-closure flags, not \`--download-only\`.** \`apt-get install --download-only\` and a bare \`dnf download --resolve\` skip anything already installed on the staging machine. The bundle looks complete and then fails on a clean target with errors like \`Depends: adduser but it is not installable\`. \`apt-cache depends --recurse\` and \`dnf download --alldeps\` ignore local install state, which is what you want here.
+
+Expect roughly 200 packages / 200 MB for the DEB closure and 270 packages / 170 MB for the RPM closure — mostly PostGIS and its GDAL dependencies. Two warnings from the DEB step are harmless: \`Download is performed unsandboxed as root\`, and a long \`dpkg-scanpackages: warning: Packages in archive but missing from override file\` list, which is just an artifact of passing \`/dev/null\` as the override file.
+
+### Install from the bundle (air-gapped target)
+
+Copy \`bundle/\` across and point the package manager at it. Because the target now has a real repository index, this is a single command with full dependency resolution — no ordered list of files:
+
+\`\`\`bash
+# Debian / Ubuntu
+echo "deb [trusted=yes] file:/path/to/bundle ./" \\
+  | sudo tee /etc/apt/sources.list.d/documentdb-offline.list
+sudo apt-get update
+sudo apt install documentdb-18
+\`\`\`
+
+\`\`\`bash
+# RHEL-compatible
+printf '%s\\n' '[documentdb-offline]' 'name=DocumentDB offline bundle' \\
+  'baseurl=file:///path/to/bundle' 'enabled=1' 'gpgcheck=0' \\
+  | sudo tee /etc/yum.repos.d/documentdb-offline.repo
+sudo dnf install documentdb-18
+\`\`\`
+
+\`[trusted=yes]\` and \`gpgcheck=0\` tell the package manager to accept a local directory that has no repository signature of its own. The upstream signatures were verified when the bundle was staged; if it crosses an untrusted boundary, check the transfer with \`sha256sum\`.
+
+Then continue with **Set up and connect** below — \`documentdb-setup\` needs no network.
+
+### Smaller offline cases
+
+If the target already has PostgreSQL and the PGDG extension dependencies (\`postgresql-N-cron\`, \`-pgvector\`, \`-postgis-3\`), you do not need a bundle:
+
+- **Extension only, one file** — \`sudo apt install ./ubuntu24.04-postgresql-18-documentdb_0.116-0_amd64.deb\`. No gateway and no \`documentdb-setup\`.
+- **Full stack from the release assets** — pass all six files for your platform to a single \`apt install\` / \`dnf install\`. They must go in one command: \`apt\` and \`dnf\` resolve dependencies only from repository indexes, so a dependency on a bare local file is unresolvable and the meta package on its own fails with \`Depends: documentdb-18 ... but it is not installable\`. That is not a defect in the packages — it happens to any local \`.deb\` or \`.rpm\` whose dependencies are not in an enabled repository.
+
 ## Set up and connect
 
 Installing the packages puts files on disk; it does not create a database or start the endpoint. The setup wizard does that:
