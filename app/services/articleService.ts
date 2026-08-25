@@ -166,7 +166,7 @@ ${buildRpmInstallCommand('rhel9', 'x86_64', '18')}
 For PostgreSQL 17, install \`documentdb-17\`; the \`documentdb\` meta package is equivalent to \`documentdb-18\`. For any other distribution, architecture or major, use the [Package Finder](/packages).
 
 > [!NOTE]
-> In a container running as \`root\`, drop the leading \`sudo\` (it is often not installed). Leave \`sudo -u <user>\` commands alone — those switch user rather than elevate; run them as \`su <user> -c '...'\` instead. On Debian/Ubuntu also \`export DEBIAN_FRONTEND=noninteractive\` first, or \`tzdata\` prompts and the install hangs with no visible error.
+> In a container running as \`root\`, drop the leading \`sudo\` (it is often not installed). Leave \`sudo -u <user>\` commands alone — those switch user rather than elevate; run them as \`su -s /bin/bash <user> -c '...'\` instead. The \`-s\` is required because \`documentdb-local\` has \`/usr/sbin/nologin\` as its shell, so a bare \`su <user> -c\` fails with \`This account is currently not available.\` On Debian/Ubuntu also \`export DEBIAN_FRONTEND=noninteractive\` first, or \`tzdata\` prompts and the install hangs with no visible error.
 
 > [!WARNING]
 > **On ARM, change three strings** — the commands above are written for x86_64.
