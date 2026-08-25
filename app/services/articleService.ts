@@ -30,7 +30,7 @@ Then start the container:
 
 \`\`\`bash
 docker run -dt --name documentdb \\
-  -p 10260:10260 \\
+  -p 127.0.0.1:10260:10260 \\
   ghcr.io/documentdb/documentdb/documentdb-local:latest \\
   --username <YOUR_USERNAME> \\
   --password <YOUR_PASSWORD> \\
@@ -38,6 +38,9 @@ docker run -dt --name documentdb \\
 \`\`\`
 
 > Replace \`<YOUR_USERNAME>\` and \`<YOUR_PASSWORD>\` with your own credentials.
+>
+> \`-p 127.0.0.1:10260:10260\` keeps the endpoint on loopback. A bare \`-p 10260:10260\`
+> publishes it on **every** interface, which is rarely what you want on a laptop.
 >
 > \`--init-data true\` seeds the built-in sample data into \`sampledb\`, which the
 > verification step below queries. It is **not** enabled by default — without it the
@@ -54,6 +57,14 @@ docker ps --filter "name=documentdb"
 
 You should see the container in an \`Up\` state with port \`10260\` published.
 
+> [!IMPORTANT]
+> \`docker ps\` reports \`Up\` well before DocumentDB accepts connections. Wait for the
+> readiness banner, or the first \`mongosh\` call fails with a connection error:
+>
+> \`\`\`bash
+> until docker logs documentdb 2>&1 | grep -q "=== DocumentDB is ready ==="; do sleep 2; done
+> \`\`\`
+
 ## Verify the connection
 
 Use \`mongosh\` to confirm authentication, TLS, and the gateway endpoint are working:
@@ -67,14 +78,14 @@ mongosh localhost:10260 \\
   --tlsAllowInvalidCertificates
 \`\`\`
 
-Then run a quick health check and inspect the built-in sample data:
+Then run a quick health check. The sample data below needs \`--init-data true\` on the \`docker run\` above — without it \`sampledb\` does not exist:
 
 \`\`\`javascript
 db.runCommand({ ping: 1 })
 
 use sampledb
 
-db.users.find({}, { name: 1, email: 1, _id: 0 }).limit(3)
+db.users.find({}, { firstName: 1, lastName: 1, email: 1, _id: 0 }).limit(3)
 \`\`\`
 
 If you prefer certificate validation instead of \`--tlsAllowInvalidCertificates\`, follow the certificate steps in [DocumentDB Local](/docs/documentdb-local).
@@ -88,6 +99,28 @@ The quick start command above is ideal for disposable local environments. When y
 - Use \`--init-data-path\` to run your own \`.js\` initialization scripts with \`mongosh\` at startup
 
 The built-in sample dataset includes \`users\`, \`products\`, \`orders\`, and \`analytics\` collections in \`sampledb\`.
+
+## Stop, start, and remove
+
+\`\`\`bash
+docker stop documentdb       # stop, keep the data
+docker start documentdb      # bring it back later
+docker restart documentdb
+docker logs documentdb       # gateway and startup output
+\`\`\`
+
+To update the image or start over:
+
+\`\`\`bash
+# DESTROYS the container and its anonymous data volume
+docker rm -fv documentdb
+docker pull ghcr.io/documentdb/documentdb/documentdb-local:latest
+# then run the Start DocumentDB command again
+\`\`\`
+
+Until you remove it, re-running \`docker run --name documentdb\` fails with
+\`Conflict. The container name "/documentdb" is already in use\`. Mount a named volume
+(\`-v documentdb-data:/data\`) before storing anything you want to keep.
 
 ## Troubleshooting and debugging
 
@@ -169,7 +202,7 @@ sudo apt update && sudo apt install -y mongodb-mongosh
 
 # RHEL-compatible 9
 printf '%s\\n' '[mongodb-org-8.0]' 'name=MongoDB Repository' \\
-  'baseurl=https://repo.mongodb.org/yum/redhat/9/mongodb-org/8.0/x86_64/' \\
+  "baseurl=https://repo.mongodb.org/yum/redhat/9/mongodb-org/8.0/$(uname -m)/" \\
   'gpgcheck=1' 'enabled=1' 'gpgkey=https://pgp.mongodb.com/server-8.0.asc' | sudo tee /etc/yum.repos.d/mongodb-org-8.0.repo >/dev/null
 sudo dnf install -y mongodb-mongosh
 \`\`\`
@@ -593,7 +626,7 @@ If you want certificate validation instead of \`tlsAllowInvalidCertificates=true
 copy the generated certificate from the container and point the driver at it.
 
 \`\`\`bash
-docker cp documentdb:/home/documentdb/gateway/pg_documentdb_gw/cert.pem ~/documentdb-cert.pem
+docker cp documentdb:/home/documentdb/.local/state/documentdb-gateway/tls/cert.pem ~/documentdb-cert.pem
 \`\`\`
 
 \`\`\`javascript
@@ -710,7 +743,7 @@ If you started with DocumentDB Local sample data, add this snippet after \`clien
 \`\`\`python
 for user in client["sampledb"]["users"].find(
     {},
-    {"_id": 0, "name": 1, "email": 1},
+    {"_id": 0, "firstName": 1, "lastName": 1, "email": 1},
 ).limit(3):
     print(user)
 \`\`\`
@@ -720,7 +753,7 @@ for user in client["sampledb"]["users"].find(
 If you want certificate validation instead of \`tlsAllowInvalidCertificates=true\`, copy the generated certificate from the container and pass it to \`MongoClient\`.
 
 \`\`\`bash
-docker cp documentdb:/home/documentdb/gateway/pg_documentdb_gw/cert.pem ~/documentdb-cert.pem
+docker cp documentdb:/home/documentdb/.local/state/documentdb-gateway/tls/cert.pem ~/documentdb-cert.pem
 \`\`\`
 
 \`\`\`python
@@ -777,7 +810,7 @@ If you prefer a host installation instead of Docker, use [Linux Packages Quick S
 
 > Replace \`<YOUR_USERNAME>\` and \`<YOUR_PASSWORD>\` with your own credentials.
 >
-> DocumentDB Local loads built-in sample data into \`sampledb\` by default. It also uses a self-signed certificate by default, so the fastest local \`mongosh\` connection adds \`--tlsAllowInvalidCertificates\`.
+> DocumentDB Local starts **empty** — pass \`--init-data true\` on the \`docker run\` above to seed the \`sampledb\` sample data used below. It also uses a self-signed certificate by default, so the fastest local \`mongosh\` connection adds \`--tlsAllowInvalidCertificates\`.
 
 ## Connect and verify the connection
 
@@ -802,14 +835,14 @@ Successful output confirms authentication, TLS, and the gateway endpoint are wor
 
 ## Explore the built-in sample data
 
-DocumentDB Local loads sample collections into \`sampledb\` by default.
+Sample data is **opt-in**: this section needs a container started with \`--init-data true\`. Without it \`sampledb\` does not exist and these queries return nothing.
 
 \`\`\`javascript
 use sampledb
 
 db.users.find(
   {},
-  { name: 1, email: 1, _id: 0 }
+  { firstName: 1, lastName: 1, email: 1, _id: 0 }
 ).limit(3)
 
 db.products.find(
@@ -845,7 +878,7 @@ If you want certificate validation instead of \`--tlsAllowInvalidCertificates\`,
 the generated certificate from the container and pass it to \`mongosh\`.
 
 \`\`\`bash
-docker cp documentdb:/home/documentdb/gateway/pg_documentdb_gw/cert.pem ~/documentdb-cert.pem
+docker cp documentdb:/home/documentdb/.local/state/documentdb-gateway/tls/cert.pem ~/documentdb-cert.pem
 
 mongosh localhost:10260 \\
   -u <YOUR_USERNAME> \\
