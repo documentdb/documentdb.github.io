@@ -537,7 +537,7 @@ Connect to DocumentDB from Node.js using the official MongoDB driver.
 
 ## Prerequisites
 
-- Node.js 18 or later
+- Node.js 20.19 or later (required by the current \`mongodb\` driver)
 - npm
 - [Docker](https://www.docker.com/)
 - Basic familiarity with JavaScript
