@@ -128,7 +128,7 @@ If something does not work as expected:
 
 - Confirm port \`10260\` is available and that \`docker ps\` shows the container running
 - Inspect startup, authentication, and TLS errors with \`docker logs documentdb\`
-- Restart the container with \`--log-level debug\` for more verbose local diagnostics
+- For more gateway detail, re-create the container with \`-e DOCUMENTDB_LOG_LEVEL=debug\`. The \`--log-level\` flag is validated at startup but does not currently change what the container logs, and environment variables are fixed at \`docker run\` — \`docker restart\` cannot change either.
 - Use the certificate flow in [DocumentDB Local](/docs/documentdb-local) if your client should validate TLS certificates
 - Use [Mongo Shell Quick Start](/docs/getting-started/mongo-shell-quickstart) for a fuller shell walkthrough
 
@@ -477,7 +477,7 @@ If you prefer a host installation instead of Docker, use [Linux Packages Quick S
 
 Once connected:
 
-1. Expand the connection and open \`sampledb\` if you started with DocumentDB Local sample data.
+1. Expand the connection and open \`sampledb\`. This exists only if you started the container with \`--init-data true\`; without it DocumentDB Local starts empty.
 2. Open a collection such as \`users\` or \`products\`.
 3. Switch between the **Table**, **Tree**, and **JSON** views to confirm the extension is reading data correctly.
 4. Create your own database and collection from the context menu, then add a test document like:
@@ -738,7 +738,7 @@ You should see the recent movie documents printed after a successful \`ping\`.
 
 ## Explore the built-in sample data
 
-If you started with DocumentDB Local sample data, add this snippet after \`client.admin.command("ping")\`:
+Sample data is **opt-in** — this needs a container started with \`--init-data true\`. Without it \`sampledb\` does not exist and the query returns nothing. Add this snippet after \`client.admin.command("ping")\`:
 
 \`\`\`python
 for user in client["sampledb"]["users"].find(
@@ -1025,7 +1025,7 @@ If setup does not work on the first try:
 - Confirm the container is running and port \`10260\` is published with \`docker ps\`.
 - Inspect startup, authentication, and TLS errors with \`docker logs documentdb\`.
 - If you want certificate validation instead of \`tlsAllowInvalidCertificates=true\`, follow the certificate steps in [DocumentDB Local](/docs/documentdb-local).
-- For more verbose local diagnostics, restart DocumentDB Local with \`--log-level debug\`; the available runtime options are documented in [DocumentDB Local](/docs/documentdb-local).
+- For more verbose local diagnostics, re-create DocumentDB Local with \`-e DOCUMENTDB_LOG_LEVEL=debug\` (the \`--log-level\` flag is currently a no-op); the available runtime options are documented in [DocumentDB Local](/docs/documentdb-local).
 - If you are installing on a host instead of Docker, use [Linux Packages Quick Start](/docs/getting-started/packages) or the [Package Finder](/packages) to get the correct apt or rpm flow.
 `;
 
