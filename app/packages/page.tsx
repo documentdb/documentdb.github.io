@@ -535,27 +535,33 @@ export default function PackagesPage() {
             </summary>
             <div className="mt-4 space-y-4">
               <p className="text-sm text-gray-400">
-                Use the commands below to discover available versions before pinning. The
-                examples name the extension package; substitute{" "}
-                <code className="text-gray-300">{selectedPackageNames}</code> to pin the package
-                your selected target actually installs. Replace{" "}
-                <code className="text-gray-300">&lt;VERSION&gt;</code> with the version string
-                shown by the list command (e.g.{" "}
-                <code className="text-gray-300">{repoAptVersionExample}</code> for APT,{" "}
-                <code className="text-gray-300">{repoRpmVersionExample}</code> for RPM). The
-                package repositories can lag the newest GitHub release, so pin to a version the
-                list command actually shows.
+                Use the commands below to discover available versions before pinning, and pin{" "}
+                <code className="text-gray-300">{selectedPackageNames}</code> — the package your
+                selected target actually installs.
+              </p>
+              <p className="text-sm text-amber-300">
+                The two package families carry <strong>different version strings</strong>, so the
+                right <code className="text-gray-300">&lt;VERSION&gt;</code> depends on which you
+                pin. The extension is{" "}
+                <code className="text-gray-300">{repoAptVersionExample}</code> (APT) /{" "}
+                <code className="text-gray-300">{repoRpmVersionExample}</code> (RPM), while{" "}
+                <code className="text-gray-300">documentdb</code>,{" "}
+                <code className="text-gray-300">documentdb-&lt;pg&gt;</code> and the gateway are{" "}
+                <code className="text-gray-300">{release.metaVersion}</code> (APT) /{" "}
+                <code className="text-gray-300">{release.metaRpmVersion}</code> (RPM). Pinning{" "}
+                <code className="text-gray-300">documentdb-18={repoAptVersionExample}</code>{" "}
+                fails — always take the string the list command prints.
               </p>
               <div>
                 <p className="mb-1 text-xs font-semibold text-gray-400">APT — list then pin</p>
                 <div className="rounded-md border border-neutral-700 bg-black p-3">
                   <code className="text-xs text-green-400 sm:text-sm">
-                    apt-cache madison postgresql-18-documentdb
+                    apt-cache madison {selectedPackageNames}
                   </code>
                 </div>
                 <div className="mt-2 rounded-md border border-neutral-700 bg-black p-3">
                   <code className="text-xs text-green-400 sm:text-sm">
-                    sudo apt install postgresql-18-documentdb=&lt;VERSION&gt;
+                    sudo apt install {selectedPackageNames}=&lt;VERSION&gt;
                   </code>
                 </div>
               </div>
@@ -563,12 +569,12 @@ export default function PackagesPage() {
                 <p className="mb-1 text-xs font-semibold text-gray-400">RPM — list then pin</p>
                 <div className="rounded-md border border-neutral-700 bg-black p-3">
                   <code className="text-xs text-green-400 sm:text-sm">
-                    dnf --showduplicates list postgresql18-documentdb
+                    dnf --showduplicates list {selectedPackageNames}
                   </code>
                 </div>
                 <div className="mt-2 rounded-md border border-neutral-700 bg-black p-3">
                   <code className="text-xs text-green-400 sm:text-sm">
-                    sudo dnf install postgresql18-documentdb-&lt;VERSION&gt;
+                    sudo dnf install {selectedPackageNames}-&lt;VERSION&gt;
                   </code>
                 </div>
               </div>

@@ -33,14 +33,18 @@ docker run -dt --name documentdb \\
   -p 10260:10260 \\
   ghcr.io/documentdb/documentdb/documentdb-local:latest \\
   --username <YOUR_USERNAME> \\
-  --password <YOUR_PASSWORD>
+  --password <YOUR_PASSWORD> \\
+  --init-data true
 \`\`\`
 
 > Replace \`<YOUR_USERNAME>\` and \`<YOUR_PASSWORD>\` with your own credentials.
 >
-> DocumentDB Local loads built-in sample data into \`sampledb\` by default. See
-> [DocumentDB Local](/docs/documentdb-local) for \`--skip-init-data\`,
-> \`--init-data-path\`, certificate setup, and additional runtime options.
+> \`--init-data true\` seeds the built-in sample data into \`sampledb\`, which the
+> verification step below queries. It is **not** enabled by default — without it the
+> container starts with no \`sampledb\` and \`use sampledb\` returns nothing. The data is
+> seeded once per data volume; re-create the volume to seed again. See
+> [DocumentDB Local](/docs/documentdb-local) for \`--init-data-path\`, certificate setup,
+> and additional runtime options.
 
 ## Verify the container
 
@@ -80,7 +84,7 @@ If you prefer certificate validation instead of \`--tlsAllowInvalidCertificates\
 The quick start command above is ideal for disposable local environments. When you need more control:
 
 - Use \`--data-path\` with a mounted host directory to keep data across container restarts
-- Use \`--skip-init-data\` if you want an empty instance instead of the default \`sampledb\` collections
+- Omit \`--init-data true\` if you want an empty instance instead of the \`sampledb\` collections
 - Use \`--init-data-path\` to run your own \`.js\` initialization scripts with \`mongosh\` at startup
 
 The built-in sample dataset includes \`users\`, \`products\`, \`orders\`, and \`analytics\` collections in \`sampledb\`.
@@ -946,17 +950,46 @@ If \`mongosh\` does not connect on the first try:
 - [Samples Gallery](/samples)
 `;
 
-const documentdbLocalDataInitializationContent = `## Data initialization
+const documentdbLocalDataInitializationContent = `## Container image tags
 
-DocumentDB Local starts with built-in sample data by default. The container creates a
-\`sampledb\` database with the \`users\`, \`products\`, \`orders\`, and \`analytics\`
-collections so you can explore queries right away.
+The \`latest\` tag is a convenience alias. Pin an explicit tag for anything reproducible:
+
+| Tag | Contents |
+|---|---|
+| \`ghcr.io/documentdb/documentdb/documentdb-local:pg18-0.116.0\` | DocumentDB 0.116.0 on PostgreSQL 18 |
+| \`…:pg17-0.116.0\` | DocumentDB 0.116.0 on PostgreSQL 17 |
+| \`…:pg16-0.116.0\` · \`…:pg15-0.116.0\` | PostgreSQL 16 and 15 |
+| \`…:latest\` | Currently identical to \`pg17-0.116.0\` |
+
+> \`latest\` tracks **PostgreSQL 17**, while the \`documentdb\` package on Linux pins
+> **PostgreSQL 18**. If you evaluate in Docker and then deploy from packages, you change
+> major version unless you pin the tag deliberately.
+
+Every image records what it was built from:
+
+\`\`\`bash
+docker run --rm --entrypoint cat ghcr.io/documentdb/documentdb/documentdb-local:pg18-0.116.0 /version.txt
+\`\`\`
+
+## Data initialization
+
+DocumentDB Local starts **empty**. Pass \`--init-data true\` to seed a \`sampledb\` database
+with the \`users\`, \`products\`, \`orders\`, and \`analytics\` collections:
+
+\`\`\`bash
+docker run -dt -p 10260:10260 --name documentdb \\
+  ghcr.io/documentdb/documentdb/documentdb-local:latest \\
+  --username <YOUR_USERNAME> --password <YOUR_PASSWORD> --init-data true
+\`\`\`
+
+Seeding happens once per data volume, on a fresh volume. Re-create the volume to seed again.
 
 ### Control initialization behavior
 
 | Requirement | Arg | Env | Default | Description |
 |---|---|---|---|---|
-| Skip built-in sample data | \`--skip-init-data\` | \`SKIP_INIT_DATA\` | \`false\` | Start without loading the default sample collections. |
+| Load built-in sample data | \`--init-data [true\\|false]\` | \`INIT_DATA\` | \`false\` | Seed the \`sampledb\` sample collections on a fresh data volume. |
+| Skip built-in sample data | \`--skip-init-data\` | \`SKIP_INIT_DATA\` | — | Legacy alias for \`--init-data false\`. Does not affect \`--init-data-path\`. |
 | Run custom initialization scripts | \`--init-data-path [PATH]\` | \`INIT_DATA_PATH\` | \`/init_doc_db.d\` | Execute every \`.js\` file in the mounted directory with \`mongosh\`. |
 
 The built-in sample dataset currently includes 5 users, 5 products, 4 orders, and 2

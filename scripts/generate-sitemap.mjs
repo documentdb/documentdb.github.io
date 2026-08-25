@@ -33,6 +33,7 @@ const excludedTopLevelDirectories = new Set([
 ]);
 
 let noindexPagesSkipped = 0;
+const brokenPages = [];
 
 /**
  * True when the page asks crawlers not to index it. Reads the meta tag in
@@ -44,6 +45,20 @@ function isNoindex(html) {
       /\bname=["']?robots["']?/i.test(tag) &&
       /\bcontent=["'][^"']*\bnoindex\b/i.test(tag),
   );
+}
+
+/**
+ * Detects a page that rendered as Next's error document rather than as content.
+ *
+ * A server-side `redirect()` in a statically exported route cannot redirect —
+ * there is no server — so Next emits an error document instead. It is served
+ * with HTTP 200 and a `<html id="__next_error__">` shell, which means neither a
+ * status-code link check nor a crawler can tell it from a real page. Two such
+ * routes were listed in this sitemap and linked from live pages before this
+ * check existed. Fail the build rather than advertise them again.
+ */
+function isErrorDocument(html) {
+  return /<html[^>]*\bid=["']__next_error__["']/i.test(html);
 }
 
 function xmlEscape(value) {
@@ -65,7 +80,10 @@ function collectPages(directory, relativePath = '') {
   const indexFile = path.join(directory, 'index.html');
 
   if (fs.existsSync(indexFile)) {
-    if (isNoindex(fs.readFileSync(indexFile, 'utf8'))) {
+    const html = fs.readFileSync(indexFile, 'utf8');
+    if (isErrorDocument(html)) {
+      brokenPages.push(relativePath === '' ? '/' : `/${relativePath}/`);
+    } else if (isNoindex(html)) {
       noindexPagesSkipped += 1;
     } else {
       pages.push({
@@ -96,6 +114,21 @@ if (!fs.existsSync(outDir)) {
 }
 
 const pages = collectPages(outDir).sort((a, b) => a.url.localeCompare(b.url));
+
+if (brokenPages.length > 0) {
+  console.error(
+    [
+      'These routes rendered as Next error documents rather than as pages:',
+      ...brokenPages.map((url) => `  ${url}`),
+      '',
+      'They would be served with HTTP 200 and an empty body, so neither a status-code',
+      'link check nor a crawler can tell them from real pages. The usual cause is a',
+      'server-side redirect() in a statically exported route, which cannot redirect.',
+      'Render a page instead (see app/components/MovedNotice.tsx).',
+    ].join('\n'),
+  );
+  process.exit(1);
+}
 
 if (pages.length === 0) {
   console.error('No pages found in out/ - refusing to write an empty sitemap.');
