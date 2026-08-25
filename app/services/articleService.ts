@@ -179,33 +179,35 @@ ${buildAptInstallCommand('ubuntu24', 'amd64', '18')}
 
 For PostgreSQL 17 on the same host, install \`documentdb-17\` instead of \`documentdb-18\`. The \`documentdb\` meta package is equivalent to \`documentdb-18\`.
 
-> **On arm64, swap \`arch=amd64\` → \`arch=arm64\`** in the \`documentdb.list\` line. The repository publishes both (\`Architectures: amd64 arm64\`), so nothing else in the command changes. To make the line arch-agnostic, use \`arch=$(dpkg --print-architecture)\` instead.
->
-> Leaving \`amd64\` on an ARM host fails in a way that does not name the architecture: \`apt update\` succeeds, then the install reports \`documentdb-18 : Depends: postgresql-18-documentdb but it is not installable\`. The meta and stand-alone packages are \`Architecture: all\` and resolve fine; only the extension package is arch-specific, so it is the one that goes missing.
-
 ### RPM example (RHEL-compatible 9, PostgreSQL 18)
 
 \`\`\`bash
 ${buildRpmInstallCommand('rhel9', 'x86_64', '18')}
 \`\`\`
 
-For PostgreSQL 17, install \`documentdb-17\`. The \`documentdb\` meta package is equivalent to \`documentdb-18\`.
+For PostgreSQL 17, install \`documentdb-17\`.
 
-> **On aarch64, swap \`EL-9-x86_64\` → \`EL-9-aarch64\`** in the PGDG repository RPM URL, and \`codeready-builder-for-rhel-9-x86_64-rpms\` → \`codeready-builder-for-rhel-9-aarch64-rpms\` in the fallback \`config-manager\` line. On EL8 the same swap applies to \`EL-8-x86_64\`. To make the URL arch-agnostic, use \`EL-9-$(uname -m)\` instead.
+> [!WARNING]
+> **On ARM, change three strings** — the commands above are written for x86_64.
 >
-> PGDG ships a *separate* \`pgdg-redhat-repo\` package per architecture, and the file name \`pgdg-redhat-repo-latest.noarch.rpm\` is identical for both — so the wrong one installs without complaint. It writes x86_64 repository URLs and keys, and the next \`dnf\` call fails with \`Bad GPG signature\` on \`pgdg-common\` even though \`epel\`, \`crb\` and \`documentdb\` all verify normally. The signature error names the repository but never the architecture, so it reads like a broken mirror.
+> | In | Replace | With |
+> | --- | --- | --- |
+> | APT \`documentdb.list\` line | \`arch=amd64\` | \`arch=$(dpkg --print-architecture)\` |
+> | RPM PGDG URL | \`EL-9-x86_64\` | \`EL-9-$(uname -m)\` (same for \`EL-8-x86_64\`) |
+> | RPM \`config-manager\` fallback | \`codeready-builder-for-rhel-9-x86_64-rpms\` | \`...-aarch64-rpms\` |
+>
+> Neither failure names the architecture. APT reports \`documentdb-18 : Depends: postgresql-18-documentdb but it is not installable\` — only the extension package is arch-specific, so it is the one that goes missing. DNF reports \`Bad GPG signature\` on \`pgdg-common\`, because PGDG ships a separate reporpm per architecture under an identical file name.
 
-> **Why the \`crb\` line matters.** DocumentDB's extension depends on PostGIS, which pulls in \`gdal*-libs\`, which needs \`libqhull_r.so.7\` — and that library ships only in **CRB** (CodeReady Builder; \`powertools\` on EL8). If CRB is not enabled, \`dnf install\` fails with dozens of lines like \`nothing provides libqhull_r.so.7()(64bit) needed by gdal313-libs\`, naming GDAL but never the missing repository. Do not drop that line.
+> [!IMPORTANT]
+> **Do not drop the \`crb\` line.** PostGIS pulls in \`gdal*-libs\`, which needs \`libqhull_r.so.7\`, and that ships only in CRB (\`powertools\` on EL8). Without it \`dnf install\` fails with \`nothing provides libqhull_r.so.7()(64bit)\`, naming GDAL but never the missing repository.
 
 ## Offline / air-gapped install
 
-A host with no route to this repository also has no route to PGDG — and DocumentDB depends on PostgreSQL itself plus \`pg_cron\`, \`pgvector\` and PostGIS, which are PGDG packages. Downloading the DocumentDB release assets alone is not enough. Stage the whole dependency closure on a connected machine and carry it across.
-
-Run the staging step on a machine with the **same distribution, release and architecture** as the target; the closure is specific to all three.
+An air-gapped host has no route to PGDG either, and DocumentDB pulls PostgreSQL, \`pg_cron\`, \`pgvector\` and PostGIS from there — the release assets alone are not enough. Stage the full dependency closure on a connected machine with the **same distribution, release and architecture** as the target.
 
 ### Stage the bundle (connected machine)
 
-Configure the repositories exactly as in the examples above, then download the closure and index it:
+With the same repositories configured as for an online install:
 
 \`\`\`bash
 # Debian / Ubuntu
@@ -225,13 +227,14 @@ sudo dnf download --resolve --alldeps --destdir bundle documentdb-18
 createrepo_c bundle
 \`\`\`
 
-> **Use the full-closure flags, not \`--download-only\`.** \`apt-get install --download-only\` and a bare \`dnf download --resolve\` skip anything already installed on the staging machine. The bundle looks complete and then fails on a clean target with errors like \`Depends: adduser but it is not installable\`. \`apt-cache depends --recurse\` and \`dnf download --alldeps\` ignore local install state, which is what you want here.
+> [!NOTE]
+> **Use the full-closure flags, not \`--download-only\`.** \`apt-get install --download-only\` and a bare \`dnf download --resolve\` skip whatever is already installed on the staging machine; the bundle looks complete and the target dies with \`Depends: adduser but it is not installable\`.
 
-Expect roughly 200 packages / 200 MB for the DEB closure and 270 packages / 170 MB for the RPM closure — mostly PostGIS and its GDAL dependencies. Two warnings from the DEB step are harmless: \`Download is performed unsandboxed as root\`, and a long \`dpkg-scanpackages: warning: Packages in archive but missing from override file\` list, which is just an artifact of passing \`/dev/null\` as the override file.
+Expect ~200 packages / 200 MB (DEB) or ~270 / 170 MB (RPM), mostly PostGIS and GDAL. The \`unsandboxed as root\` and \`dpkg-scanpackages ... override file\` warnings are harmless.
 
 ### Install from the bundle (air-gapped target)
 
-Copy \`bundle/\` across and point the package manager at it. Because the target now has a real repository index, this is a single command with full dependency resolution — no ordered list of files:
+Copy \`bundle/\` across and point the package manager at it — the local index restores full dependency resolution:
 
 \`\`\`bash
 # Debian / Ubuntu
@@ -249,7 +252,7 @@ printf '%s\\n' '[documentdb-offline]' 'name=DocumentDB offline bundle' \\
 sudo dnf install documentdb-18
 \`\`\`
 
-\`[trusted=yes]\` and \`gpgcheck=0\` tell the package manager to accept a local directory that has no repository signature of its own. The upstream signatures were verified when the bundle was staged; if it crosses an untrusted boundary, check the transfer with \`sha256sum\`.
+\`[trusted=yes]\` / \`gpgcheck=0\` accept the unsigned local directory. Upstream signatures were verified at staging time; \`sha256sum\` the transfer if it crosses an untrusted boundary.
 
 Then continue with **Set up and connect** below — \`documentdb-setup\` needs no network.
 
@@ -258,7 +261,7 @@ Then continue with **Set up and connect** below — \`documentdb-setup\` needs n
 If the target already has PostgreSQL and the PGDG extension dependencies (\`postgresql-N-cron\`, \`-pgvector\`, \`-postgis-3\`), you do not need a bundle:
 
 - **Extension only, one file** — \`sudo apt install ./ubuntu24.04-postgresql-18-documentdb_0.116-0_amd64.deb\`. No gateway and no \`documentdb-setup\`.
-- **Full stack from the release assets** — pass all six files for your platform to a single \`apt install\` / \`dnf install\`. They must go in one command: \`apt\` and \`dnf\` resolve dependencies only from repository indexes, so a dependency on a bare local file is unresolvable and the meta package on its own fails with \`Depends: documentdb-18 ... but it is not installable\`. That is not a defect in the packages — it happens to any local \`.deb\` or \`.rpm\` whose dependencies are not in an enabled repository.
+- **Full stack from the release assets** — pass all six files for your platform to a *single* \`apt install\` / \`dnf install\`. Local files resolve dependencies only against enabled repositories, so the meta package on its own fails with \`Depends: documentdb-18 ... but it is not installable\`.
 
 ## Set up and connect
 
