@@ -154,30 +154,19 @@ Install DocumentDB on Debian, Ubuntu, or RHEL-compatible hosts from the publishe
 ### Ubuntu 24.04, PostgreSQL 18 (APT)
 
 \`\`\`bash
-${buildAptInstallCommand('ubuntu24', 'amd64', '18')}
+${buildAptInstallCommand('ubuntu24', 'auto', '18')}
 \`\`\`
 
 ### RHEL-compatible 9, PostgreSQL 18 (RPM)
 
 \`\`\`bash
-${buildRpmInstallCommand('rhel9', 'x86_64', '18')}
+${buildRpmInstallCommand('rhel9', 'auto', '18')}
 \`\`\`
 
 For PostgreSQL 17, install \`documentdb-17\`; the \`documentdb\` meta package is equivalent to \`documentdb-18\`. For any other distribution, architecture or major, use the [Package Finder](/packages).
 
 > [!NOTE]
 > In a container running as \`root\`, drop the leading \`sudo\` (it is often not installed). Leave \`sudo -u <user>\` commands alone — those switch user rather than elevate; run them as \`su -s /bin/bash <user> -c '...'\` instead. The \`-s\` is required because \`documentdb-local\` has \`/usr/sbin/nologin\` as its shell, so a bare \`su <user> -c\` fails with \`This account is currently not available.\` On Debian/Ubuntu also \`export DEBIAN_FRONTEND=noninteractive\` first, or \`tzdata\` prompts and the install hangs with no visible error.
-
-> [!WARNING]
-> **On ARM, change three strings** — the commands above are written for x86_64.
->
-> | In | Replace | With |
-> | --- | --- | --- |
-> | APT \`documentdb.list\` line | \`arch=amd64\` | \`arch=$(dpkg --print-architecture)\` |
-> | RPM PGDG URL | \`EL-9-x86_64\` | \`EL-9-$(uname -m)\` (same for \`EL-8-x86_64\`) |
-> | RPM \`config-manager\` fallback | \`codeready-builder-for-rhel-9-x86_64-rpms\` | \`...-aarch64-rpms\` |
->
-> Neither failure names the architecture. APT reports \`documentdb-18 : Depends: postgresql-18-documentdb but it is not installable\` — only the extension package is arch-specific, so it is the one that goes missing. DNF reports \`Bad GPG signature\` on \`pgdg-common\`, because PGDG ships a separate reporpm per architecture under an identical file name.
 
 > [!IMPORTANT]
 > **Do not drop the \`crb\` line.** PostGIS pulls in \`gdal*-libs\`, which needs \`libqhull_r.so.7\`, and that ships only in CRB (\`powertools\` on EL8). Without it \`dnf install\` fails with \`nothing provides libqhull_r.so.7()(64bit)\`, naming GDAL but never the missing repository.
@@ -234,7 +223,7 @@ The gateway binds **all interfaces** (\`0.0.0.0:10260\` and \`[::]:10260\`) by d
 
 Before using this anywhere but a private machine:
 
-- Restrict the listener with \`DOCUMENTDB_LISTEN_ADDR=127.0.0.1:10260\` in \`/etc/documentdb/local/<major>/gateway.env\` and restart the service, or firewall port \`10260\`. **Re-running \`documentdb-setup\` silently rewrites that file back to a wildcard bind** (\`:10260\`) with no warning, and \`--status\` never prints the bind address — so a routine re-run re-exposes the endpoint on every interface without telling you. A firewall rule is the more durable control. Re-check with \`grep DOCUMENTDB_LISTEN_ADDR /etc/documentdb/local/<major>/gateway.env\` after any re-run.
+- Restrict the listener with \`DOCUMENTDB_LISTEN_ADDR=127.0.0.1:10260\` in \`/etc/documentdb/local/<major>/gateway.env\` and restart the service, or firewall port \`10260\`. **Re-running \`documentdb-setup\` silently resets this to a wildcard bind**, so re-check with \`grep DOCUMENTDB_LISTEN_ADDR /etc/documentdb/local/<major>/gateway.env\` afterwards. A firewall rule is the more durable control.
 - Replace the auto-generated self-signed certificate. \`tlsAllowInvalidCertificates=true\` disables certificate validation — point \`DOCUMENTDB_TLS_CERT_FILE\` / \`DOCUMENTDB_TLS_KEY_FILE\` at a real certificate and drop that option.
 - Use a strong admin password and create per-application users rather than sharing \`admin\`.
 
@@ -267,13 +256,7 @@ sudo systemctl stop    documentdb-local@18.target
 **Without systemd** (containers, some dev images) the wizard starts the gateway directly and says so. \`systemctl\` will fail with *"System has not been booted with systemd"*.
 
 > [!WARNING]
-> **The non-systemd lifecycle has known defects — prefer a systemd host for anything you care about.** Verified against 0.116:
->
-> - **\`documentdb-setup --status\` can report a false green.** It infers "active" from *something* holding port 10260, so an unrelated process on that port reads as a healthy gateway.
-> - **Re-running \`documentdb-setup\` to restart can hang forever** after printing \`SUCCESS: DocumentDB is ready\`, because the restarted PostgreSQL inherits the caller's stdout. Interrupting it — the only way out — also stops the gateway, leaving the service **down** despite the success message. Redirecting output to a file avoids the hang.
-> - **\`documentdb-setup --restore --pg-version N\` does not stop the gateway.** It prints \`SUCCESS: Restore complete\` and skips the orphan sweep, leaving a live endpoint still accepting authenticated writes with its state file deleted. An **unscoped** \`documentdb-setup --restore\` does stop it — but on a multi-major host it stops *every* major.
->
-> On a systemd host all of this is handled correctly by \`systemctl\`, which was exercised the same way without failures.
+> **Prefer a systemd host.** Without it, several 0.116 lifecycle commands misreport: \`--status\` can show "active" for any process holding port 10260, re-running \`documentdb-setup\` to restart can hang, and \`--restore --pg-version N\` reports success without stopping the gateway — use an unscoped \`documentdb-setup --restore\`, which stops every major on the host.
 
 > [!NOTE]
 > On a **minimal RHEL-compatible image, install \`procps-ng\` first**. \`documentdb-setup\` locates the directly-started gateway with \`pgrep\`; without it \`--restore\` reports success while the gateway keeps serving, and a later re-run then fails with \`Port 10260 is already in use\`. Debian and Ubuntu images already ship \`procps\`.
@@ -312,11 +295,7 @@ sudo dnf remove documentdb-18 postgresql18-documentdb && sudo dnf autoremove
 \`\`\`
 
 > [!IMPORTANT]
-> **Verify the stack is actually down before removing packages**, with \`ss -lnt | grep 10260\` or \`pgrep -af documentdb-gateway-daemon\`. If a gateway is still running when the packages go, it keeps serving authenticated traffic from a deleted binary and there is no shipped way left to stop it.
->
-> **On a multi-major host, \`--autoremove\` is dangerous.** \`documentdb-common\` owns \`documentdb-setup\`, \`documentdb-local-reset\` and the gateway binary, and only \`documentdb-N\` holds it. Removing one major can reap that shared payload out from under another major that is still running. Remove one major at a time and re-check the survivor.
->
-> \`documentdb-local-reset --confirm-destroy\` reports \`completely reset\` even for a major that was never installed, and even when it has left a PostgreSQL process running — treat its success message as advisory and verify.
+> Confirm the stack is actually down first — \`ss -lnt | grep 10260\`. A gateway still running when its packages go keeps serving from a deleted binary with no shipped way to stop it. On a multi-major host remove one major at a time and re-check the survivor: \`documentdb-common\` owns the shared tooling and only \`documentdb-N\` holds it, so \`--autoremove\` can take it from a major still in use.
 
 ## Upgrading
 
@@ -334,8 +313,7 @@ PostgreSQL applies intermediate upgrade scripts automatically. In-place upgrades
 
 The full stack is published only for **Ubuntu 24.04 and RHEL-compatible 9 on PostgreSQL 17 or 18**. Everywhere else — including **PostgreSQL 16 on every distribution** — the repository serves only the extension package. There is no \`documentdb-16\`; asking for it fails with *"has no installation candidate"* (APT) or *"No match for argument"* (DNF).
 
-> [!WARNING]
-> Installing the extension for an unsupported major does **not** stop \`documentdb-setup\` from configuring it. \`documentdb-setup --pg-version 16\` returns \`0\` and builds a working appliance — a 0.116 gateway serving a 0.114 catalog — with no warning that the combination is unsupported. Likewise, \`documentdb-setup --pg-version N\` succeeds even when the \`documentdb-N\` package is not installed; nothing then owns the resulting install, so a later \`apt autoremove\` can delete \`documentdb-setup\` and the gateway binary out from under it. Install the matching \`documentdb-N\` for every major you configure.
+Install the matching \`documentdb-N\` for every major you configure. \`documentdb-setup --pg-version N\` will happily configure a major whose package is absent — including PostgreSQL 16 — and nothing then owns the result, so a later \`apt autoremove\` can remove the tooling out from under it.
 
 | Distribution | PGDG suite | Repository component | Install |
 | --- | --- | --- | --- |
