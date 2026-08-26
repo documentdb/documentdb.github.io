@@ -8,6 +8,20 @@ import { buildAptInstallCommand, buildRpmInstallCommand } from '../lib/packageIn
 import { documentdbDiscordUrl } from './externalLinks';
 
 const articlesDirectory = path.join(process.cwd(), 'articles');
+
+// Sections served entirely from this file rather than from the cloned
+// articles/ tree. Getting Started holds quick starts only; the longer-form
+// deployment guides live in their own section, alongside DocumentDB Local.
+const virtualSections: Record<string, { landingTitle: string; pages: { slug: string; title: string }[] }> = {
+  'linux-packages': {
+    landingTitle: 'Linux Packages',
+    pages: [
+      { slug: '', title: 'Operating a Package Install' },
+      { slug: 'offline', title: 'Offline / Air-gapped Install' },
+    ],
+  },
+};
+
 const dockerGuideContent = `# Docker Quick Start
 
 Run DocumentDB locally with Docker and verify the setup before moving to driver code.
@@ -183,7 +197,7 @@ sudo dnf install -y mongodb-mongosh
 ## Set up and connect
 
 > [!IMPORTANT]
-> The wizard binds the gateway on **all interfaces** (\`0.0.0.0:10260\`) with a self-signed certificate. Firewall port \`10260\` before you run it on anything but a private machine, then read [Before exposing it to a network](/docs/getting-started/packages-operations#before-exposing-it-to-a-network).
+> The wizard binds the gateway on **all interfaces** (\`0.0.0.0:10260\`) with a self-signed certificate. Firewall port \`10260\` before you run it on anything but a private machine, then read [Before exposing it to a network](/docs/linux-packages#before-exposing-it-to-a-network).
 
 Installing the packages puts files on disk; it does not create a database or start the endpoint. The setup wizard does that:
 
@@ -215,8 +229,8 @@ A database and collection are created on first write:
 ## Where to go next
 
 - Build an application: [Node.js Quick Start](/docs/getting-started/nodejs-setup) or [Python Quick Start](/docs/getting-started/python-setup)
-- Secure it, manage services, run SQL, upgrade, uninstall, and hosts without systemd: [Operating a package install](/docs/getting-started/packages-operations)
-- Install without internet access: [Offline / air-gapped install](/docs/getting-started/packages-offline)
+- Secure it, manage services, run SQL, upgrade, uninstall, and hosts without systemd: [Operating a package install](/docs/linux-packages)
+- Install without internet access: [Offline / air-gapped install](/docs/linux-packages/offline)
 - Another distribution, architecture or PostgreSQL major: [Package Finder](/packages)
 
 ## Troubleshooting
@@ -226,7 +240,7 @@ A database and collection are created on first write:
 - \`MongoServerError: Invalid key\` — empty or wrong password; a bare \`-p\` prompts, so a non-interactive shell sends nothing
 - Anything else — \`sudo documentdb-setup --status\` reports the listener, service states and resolved paths
 
-More failure modes, including other distributions and hosts without systemd: [Operating a package install](/docs/getting-started/packages-operations#troubleshooting).
+More failure modes, including other distributions and hosts without systemd: [Operating a package install](/docs/linux-packages#troubleshooting).
 `;
 
 const linuxPackagesOperationsContent = `# Operating a package install
@@ -1042,8 +1056,6 @@ const articleTitleOverrides: Record<string, string> = {
   'getting-started/mongo-shell-quickstart': 'Mongo Shell Quick Start',
   'getting-started/nodejs-setup': 'Node.js Quick Start',
   'getting-started/packages': 'Linux Packages Quick Start',
-  'getting-started/packages-offline': 'Linux Packages: Offline Install',
-  'getting-started/packages-operations': 'Linux Packages: Operations',
   'getting-started/python-setup': 'Python Quick Start',
   'getting-started/vscode-extension-guide': 'Visual Studio Code Extension Guide',
   'getting-started/vscode-quickstart': 'Visual Studio Code Quick Start',
@@ -1133,14 +1145,6 @@ function splitPrebuiltNavigation(section: string, links: Link[]): Link[] {
       title: articleTitleOverrides['getting-started/packages'],
       link: '/docs/getting-started/packages',
     },
-    {
-      title: articleTitleOverrides['getting-started/packages-operations'],
-      link: '/docs/getting-started/packages-operations',
-    },
-    {
-      title: articleTitleOverrides['getting-started/packages-offline'],
-      link: '/docs/getting-started/packages-offline',
-    },
   ];
   const filteredLinks = links.filter((link) => !isPrebuiltPackages(link) && !isMergedVscodeGuide(link));
   const gettingStartedIndex = filteredLinks.find((link) => link.link === 'index.md');
@@ -1200,10 +1204,32 @@ function updateDocumentDbLocalContent(content: string): string {
 export function getArticleContent(): Article {
   const contentPath = path.join(articlesDirectory, 'content.yml');
   const fileContents = fs.readFileSync(contentPath, 'utf8');
-  return loadYaml(fileContents) as Article;
+  const article = loadYaml(fileContents) as Article;
+
+  // content.yml is cloned from the docs repo and does not know about sections
+  // served from this file, so surface them on the landing page here.
+  if (!article.landing.links.some((link) => link.link === '/docs/linux-packages')) {
+    const localIndex = article.landing.links.findIndex((link) => link.link === '/docs/documentdb-local');
+    const linuxPackagesLink = { title: 'Linux Packages', link: '/docs/linux-packages' };
+    article.landing.links.splice(
+      localIndex >= 0 ? localIndex + 1 : article.landing.links.length,
+      0,
+      linuxPackagesLink,
+    );
+  }
+
+  return article;
 }
 
 export function getArticleNavigation(section: string): Link[] {
+  const virtual = virtualSections[section];
+  if (virtual) {
+    return virtual.pages.map(page => ({
+      title: page.title,
+      link: page.slug ? `/docs/${section}/${page.slug}` : `/docs/${section}`,
+    }));
+  }
+
   const navPath = path.join(articlesDirectory, section, 'navigation.yml');
 
   if (!fs.existsSync(navPath)) {
@@ -1273,7 +1299,7 @@ export function getAllSections(): string[] {
     .filter(dirent => dirent.isDirectory())
     .map(dirent => dirent.name);
 
-  return sections;
+  return [...sections, ...Object.keys(virtualSections)];
 }
 
 export function getAllArticlePaths(): { section: string; slug: string[] }[] {
@@ -1281,6 +1307,14 @@ export function getAllArticlePaths(): { section: string; slug: string[] }[] {
   const paths: { section: string; slug: string[] }[] = [];
 
   sections.forEach(section => {
+    const virtual = virtualSections[section];
+    if (virtual) {
+      virtual.pages.forEach(page => {
+        paths.push({ section, slug: page.slug ? [page.slug] : [] });
+      });
+      return;
+    }
+
     const sectionPath = path.join(articlesDirectory, section);
     const files = fs.readdirSync(sectionPath, { withFileTypes: true })
       .filter(dirent => dirent.isFile() && dirent.name.endsWith('.md'))
@@ -1298,8 +1332,6 @@ export function getAllArticlePaths(): { section: string; slug: string[] }[] {
     if (section === 'getting-started') {
       paths.push({ section, slug: ['docker'] });
       paths.push({ section, slug: ['packages'] });
-      paths.push({ section, slug: ['packages-operations'] });
-      paths.push({ section, slug: ['packages-offline'] });
     }
   });
 
@@ -1325,6 +1357,32 @@ export function getArticleByPath(section: string, slug: string[] = []): {
   const file = slug.length > 0 ? slug[slug.length - 1] : 'index';
   const navigation = getArticleNavigation(section);
 
+  if (section === 'linux-packages' && file === 'index') {
+    return {
+      content: linuxPackagesOperationsContent,
+      frontmatter: {
+        title: 'Operating a Package Install',
+        description: 'Secure, manage, upgrade and remove a DocumentDB installed from Linux packages, plus known issues in 0.116.',
+      },
+      navigation,
+      section,
+      file,
+    };
+  }
+
+  if (section === 'linux-packages' && file === 'offline') {
+    return {
+      content: linuxPackagesOfflineContent,
+      frontmatter: {
+        title: 'Offline / Air-gapped Install',
+        description: 'Stage a full dependency closure on a connected machine and install DocumentDB on a host with no internet access.',
+      },
+      navigation,
+      section,
+      file,
+    };
+  }
+
   if (section === 'getting-started' && file === 'docker') {
     return {
       content: dockerGuideContent,
@@ -1344,32 +1402,6 @@ export function getArticleByPath(section: string, slug: string[] = []): {
       frontmatter: {
         title: articleTitleOverrides[getArticleKey(section, file)],
         description: 'Install the DocumentDB PostgreSQL extension with Linux packages and find package troubleshooting guidance.',
-      },
-      navigation,
-      section,
-      file,
-    };
-  }
-
-  if (section === 'getting-started' && file === 'packages-operations') {
-    return {
-      content: linuxPackagesOperationsContent,
-      frontmatter: {
-        title: 'Operating a Package Install',
-        description: 'Secure, manage, upgrade and remove a DocumentDB installed from Linux packages, plus known issues in 0.116.',
-      },
-      navigation,
-      section,
-      file,
-    };
-  }
-
-  if (section === 'getting-started' && file === 'packages-offline') {
-    return {
-      content: linuxPackagesOfflineContent,
-      frontmatter: {
-        title: 'Offline / Air-gapped Install',
-        description: 'Stage a full dependency closure on a connected machine and install DocumentDB on a host with no internet access.',
       },
       navigation,
       section,
