@@ -133,12 +133,14 @@ export default async function ArticlePage({ params }: PageProps) {
     const navigationLinks = navigation.map((item) => {
         // Better matching logic for active state
         // For index files, match both /section and /section/index
-        // For other files, match the specific file name
+        // For other files, match the specific file name. Compare the final path
+        // segment exactly - a substring test marks every sibling whose slug
+        // starts with this one (packages also matching packages-operations).
         const itemPath = item.link.replace('/docs/', '');
         const currentPath = file === 'index' ? section : `${section}/${file}`;
         const isActive = itemPath === currentPath ||
             (file === 'index' && itemPath === `${section}/index`) ||
-            (item.link.includes(file) && file !== 'index');
+            (file !== 'index' && item.link.split('/').pop() === file);
 
         return (
             <Link

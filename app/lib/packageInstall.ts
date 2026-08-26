@@ -1,7 +1,7 @@
 export type AptDistro = "ubuntu22" | "ubuntu24" | "deb11" | "deb12" | "deb13";
 export type RpmDistro = "rhel8" | "rhel9";
-export type AptArch = "amd64" | "arm64";
-export type RpmArch = "x86_64" | "aarch64";
+export type AptArch = "amd64" | "arm64" | "auto";
+export type RpmArch = "x86_64" | "aarch64" | "auto";
 export type AptPgVersion = "16" | "17" | "18";
 export type RpmPgVersion = "16" | "17" | "18";
 
@@ -78,6 +78,11 @@ export function buildAptInstallCommand(
   aptPgVersion: AptPgVersion,
 ): string {
   const pgdgSuite = aptPgdgSuites[aptTarget];
+  // "auto" resolves the architecture on the host running the command, so a
+  // single published example is copy-pasteable on both amd64 and arm64. The
+  // Package Finder passes a literal architecture, because there the user has
+  // chosen one explicitly.
+  const arch = aptArch === "auto" ? "$(dpkg --print-architecture)" : aptArch;
   // `documentdb-N` pulls the whole stack (extension + gateway + tools +
   // documentdb-common) and owns the systemd lifecycle for that major.
   const installTarget = aptServesFullStack(aptTarget, aptPgVersion)
@@ -89,7 +94,7 @@ sudo apt install -y curl ca-certificates gnupg && \\
 curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor --yes -o /usr/share/keyrings/postgresql.gpg && \\
 echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] https://apt.postgresql.org/pub/repos/apt ${pgdgSuite}-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list >/dev/null && \\
 curl -fsSL https://documentdb.io/documentdb-archive-keyring.gpg | sudo gpg --dearmor --yes -o /usr/share/keyrings/documentdb-archive-keyring.gpg && \\
-echo "deb [arch=${aptArch} signed-by=/usr/share/keyrings/documentdb-archive-keyring.gpg] https://documentdb.io/deb stable ${aptTarget}" | sudo tee /etc/apt/sources.list.d/documentdb.list >/dev/null && \\
+echo "deb [arch=${arch} signed-by=/usr/share/keyrings/documentdb-archive-keyring.gpg] https://documentdb.io/deb stable ${aptTarget}" | sudo tee /etc/apt/sources.list.d/documentdb.list >/dev/null && \\
 sudo apt update && \\
 sudo apt install -y ${installTarget}`;
 }
@@ -100,17 +105,20 @@ export function buildRpmInstallCommand(
   rpmPgVersion: RpmPgVersion,
 ): string {
   const rhelMajorVersion = rpmMajorVersions[rpmTarget];
+  // See buildAptInstallCommand: "auto" resolves on the host so one published
+  // example works on x86_64 and aarch64 alike.
+  const arch = rpmArch === "auto" ? "$(uname -m)" : rpmArch;
   const installTarget = rpmServesFullStack(rpmTarget, rpmPgVersion)
     ? `documentdb-${rpmPgVersion}`
     : `postgresql${rpmPgVersion}-documentdb`;
 
   return `sudo dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-${rhelMajorVersion}.noarch.rpm && \\
-sudo dnf install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-${rhelMajorVersion}-${rpmArch}/pgdg-redhat-repo-latest.noarch.rpm && \\
+sudo dnf install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-${rhelMajorVersion}-${arch}/pgdg-redhat-repo-latest.noarch.rpm && \\
 sudo dnf -qy module disable postgresql && \\
 sudo dnf install -y dnf-plugins-core && \\
 (sudo dnf config-manager --set-enabled crb || \\
  sudo dnf config-manager --set-enabled powertools || \\
- sudo dnf config-manager --set-enabled codeready-builder-for-rhel-${rhelMajorVersion}-${rpmArch}-rpms) && \\
+ sudo dnf config-manager --set-enabled codeready-builder-for-rhel-${rhelMajorVersion}-${arch}-rpms) && \\
 sudo rpm --import https://documentdb.io/documentdb-archive-keyring.gpg && \\
 printf '%s\\n' \\
   '[documentdb]' \\
