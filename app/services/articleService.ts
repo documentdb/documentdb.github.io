@@ -145,11 +145,11 @@ If something does not work as expected:
 
 const linuxPackagesGuideContent = `# Linux Packages Quick Start
 
-Install DocumentDB on Debian, Ubuntu, or RHEL-compatible hosts from the published package repository.
+Install DocumentDB from the published package repository and get a MongoDB-compatible endpoint on your own host.
 
-**Ubuntu 24.04 and RHEL-compatible 9, on PostgreSQL 17 or 18**, get the full stack — extension, gateway, setup wizard and systemd units. On any other host the repository serves the PostgreSQL extension but no MongoDB endpoint: use the [Docker Quick Start](/docs/getting-started/docker) for the same endpoint in one command, or see [Other targets](#other-targets).
+**Ubuntu 24.04 and RHEL-compatible 9, on PostgreSQL 17 or 18**, get the full stack — extension, gateway, setup wizard and systemd units. Every other target gets the PostgreSQL extension without the endpoint: use the [Docker Quick Start](/docs/getting-started/docker) for an endpoint in one command, or the [Package Finder](/packages) for any other distribution, architecture or PostgreSQL major.
 
-You will need [\`mongosh\`](https://www.mongodb.com/docs/mongodb-shell/install/) to verify the result.
+You do not need PostgreSQL already installed — the setup wizard creates and manages its own instance. The install does add the PGDG repository and pull PostgreSQL, PostGIS and around 200 packages, so pick a host you are willing to have PGDG on.
 
 ## Install
 
@@ -165,12 +165,25 @@ ${buildAptInstallCommand('ubuntu24', 'auto', '18')}
 ${buildRpmInstallCommand('rhel9', 'auto', '18')}
 \`\`\`
 
-For PostgreSQL 17, install \`documentdb-17\`. Keep the \`crb\` line on RHEL — without it \`dnf\` fails on \`libqhull_r.so.7\`. For any other distribution, architecture or major, use the [Package Finder](/packages).
+For PostgreSQL 17, install \`documentdb-17\`; there is no \`documentdb-16\`. Keep the \`crb\` line on RHEL — without it \`dnf\` fails on \`libqhull_r.so.7\`.
+
+Then install \`mongosh\`, which you need to talk to the endpoint:
+
+\`\`\`bash
+# Ubuntu 24.04
+curl -fsSL https://pgp.mongodb.com/server-8.0.asc | sudo gpg --dearmor -o /usr/share/keyrings/mongodb.gpg
+echo "deb [signed-by=/usr/share/keyrings/mongodb.gpg] https://repo.mongodb.org/apt/ubuntu noble/mongodb-org/8.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb.list
+sudo apt update && sudo apt install -y mongodb-mongosh
+
+# RHEL-compatible 9
+printf '[mongodb-org-8.0]\\nname=MongoDB\\nbaseurl=https://repo.mongodb.org/yum/redhat/9/mongodb-org/8.0/$basearch/\\ngpgcheck=1\\nenabled=1\\ngpgkey=https://pgp.mongodb.com/server-8.0.asc\\n' | sudo tee /etc/yum.repos.d/mongodb.repo
+sudo dnf install -y mongodb-mongosh
+\`\`\`
 
 ## Set up and connect
 
 > [!IMPORTANT]
-> The wizard starts the gateway on **all interfaces** (\`0.0.0.0:10260\` and \`[::]:10260\`) with a self-signed certificate, even though the connect string below says \`127.0.0.1\`. The PostgreSQL instance behind it stays on loopback. Keep port \`10260\` firewalled until you have read [Before exposing it to a network](/docs/getting-started/packages-operations#before-exposing-it-to-a-network).
+> The wizard binds the gateway on **all interfaces** (\`0.0.0.0:10260\`) with a self-signed certificate. Firewall port \`10260\` before you run it on anything but a private machine, then read [Before exposing it to a network](/docs/getting-started/packages-operations#before-exposing-it-to-a-network).
 
 Installing the packages puts files on disk; it does not create a database or start the endpoint. The setup wizard does that:
 
@@ -178,25 +191,26 @@ Installing the packages puts files on disk; it does not create a database or sta
 sudo documentdb-setup --admin-user admin
 \`\`\`
 
-It creates the PostgreSQL instance, installs the extensions, bootstraps the admin user, starts the gateway, and enables \`documentdb-local@<major>.target\` so the stack survives reboot. It **prompts for the admin password**; for servers and CI pass \`--admin-password-file <file>\` or \`--admin-password-stdin\` together with \`--yes\`.
+It creates the PostgreSQL instance, installs the extensions, starts the gateway, and enables it at boot. It **prompts for the admin password**.
 
-Then connect. Pass the password inline in scripts — a bare \`-p\` prompts, so a non-interactive shell sends an empty password and fails with the unhelpful \`MongoServerError: Invalid key\`:
+Now open a shell against the endpoint:
 
 \`\`\`bash
 mongosh localhost:10260 -u admin -p '<PASSWORD>' --authenticationMechanism SCRAM-SHA-256 \\
-        --tls --tlsAllowInvalidCertificates --eval 'db.runCommand({ping: 1})'
+        --tls --tlsAllowInvalidCertificates
 \`\`\`
 
 A database and collection are created on first write:
 
 \`\`\`javascript
-db.orders.insertOne({ item: "widget", qty: 5 })
-db.orders.find()
+> db.orders.insertOne({ item: "widget", qty: 5 })
+{ acknowledged: true, insertedId: ObjectId('...') }
+
+> db.orders.find()
+[ { _id: ObjectId('...'), item: 'widget', qty: 5 } ]
 \`\`\`
 
 **That is a working DocumentDB.** Confirm the service state with \`sudo documentdb-setup --status\` and the version with \`documentdb-gateway --version\`.
-
-> Do not use \`db.version()\` or \`buildInfo\` in \`mongosh\` to check the DocumentDB version — those report the emulated MongoDB wire version, not DocumentDB's.
 
 ## Where to go next
 
@@ -205,26 +219,14 @@ db.orders.find()
 - Install without internet access: [Offline / air-gapped install](/docs/getting-started/packages-offline)
 - Another distribution, architecture or PostgreSQL major: [Package Finder](/packages)
 
-## Other targets
-
-The full stack — gateway, \`documentdb-setup\` and systemd units — ships for **Ubuntu 24.04 and RHEL-compatible 9 on PostgreSQL 17 or 18**. Debian, Ubuntu 22.04, RHEL-compatible 8 and PostgreSQL 16 get the extension package only: PostgreSQL with BSON, indexing and the aggregation pipeline, but no MongoDB wire endpoint. There is no \`documentdb-16\`.
-
-Install the matching \`documentdb-N\` for every major you configure — \`documentdb-setup --pg-version N\` will configure a major whose package is absent, and nothing then owns the result.
-
-The [Package Finder](/packages) gives the exact package name, repository line and available version for every distribution, architecture and PostgreSQL major. For a MongoDB-compatible endpoint on an extension-only host, use the [Docker Quick Start](/docs/getting-started/docker).
-
 ## Troubleshooting
 
-- \`sudo documentdb-setup --status\` reports the listener, service states and resolved paths
-- \`has no installation candidate\` / \`No match for argument\` — that target is extension-only, or PGDG was not added first. See [Other targets](#other-targets)
+- \`has no installation candidate\` / \`No match for argument\` — PGDG was not added first, or that target is extension-only. Check the [Package Finder](/packages)
 - \`nothing provides libqhull_r.so.7\` — the \`crb\` line did not run
-- \`Bad GPG signature\` on \`pgdg-common\` — wrong architecture in the PGDG repository URL
-- \`apt install\` hangs in a container — \`export DEBIAN_FRONTEND=noninteractive\` first, and drop the leading \`sudo\` when running as \`root\` (but keep \`sudo -u <user>\`, which switches user; use \`su -s /bin/bash <user> -c '...'\` instead)
-- \`MongoServerError: Invalid key\` — empty or wrong password; a bare \`-p\` prompts and sends nothing in a non-interactive shell
-- Debian 11 has no PostgreSQL 18 (no upstream Bullseye PostGIS); use 16 or 17
-- Debian 13 also gets this extension from \`apt.postgresql.org\`, whose version sorts higher; pin with \`apt install postgresql-18-documentdb=<VERSION>\` for this repository's build
+- \`MongoServerError: Invalid key\` — empty or wrong password; a bare \`-p\` prompts, so a non-interactive shell sends nothing
+- Anything else — \`sudo documentdb-setup --status\` reports the listener, service states and resolved paths
 
-More: [Operating a package install](/docs/getting-started/packages-operations).
+More failure modes, including other distributions and hosts without systemd: [Operating a package install](/docs/getting-started/packages-operations#troubleshooting).
 `;
 
 const linuxPackagesOperationsContent = `# Operating a package install
@@ -321,6 +323,24 @@ These are defects in this release, not expected behaviour. On a systemd host non
 | Upgrade | \`documentdb-setup\` does not run \`ALTER EXTENSION documentdb_core UPDATE\`; run it yourself |
 
 **Prefer a systemd host for anything you care about.**
+
+## Troubleshooting
+
+Failure modes beyond the four in the [quick start](/docs/getting-started/packages#troubleshooting):
+
+- \`Bad GPG signature\` on \`pgdg-common\` — wrong architecture in the PGDG repository URL
+- \`apt install\` hangs in a container — \`export DEBIAN_FRONTEND=noninteractive\` first, and drop the leading \`sudo\` when running as \`root\`. Keep \`sudo -u <user>\`, which switches user; \`su <user> -c\` fails because \`postgres\` has \`/usr/sbin/nologin\`, so use \`su -s /bin/bash <user> -c '...'\`
+- Debian 11 has no PostgreSQL 18 (no upstream Bullseye PostGIS); use 16 or 17
+- Debian 13 also gets this extension from \`apt.postgresql.org\`, whose version sorts higher; pin with \`apt install postgresql-18-documentdb=<VERSION>\` for this repository's build
+- \`db.version()\` and \`buildInfo\` in \`mongosh\` report the emulated MongoDB wire version, not DocumentDB's — use \`documentdb-gateway --version\`
+
+## Multiple PostgreSQL majors
+
+Install the matching \`documentdb-N\` for every major you configure. \`documentdb-setup --pg-version N\` will happily configure a major whose package is absent, and nothing then owns the result — a later \`autoremove\` can reap \`documentdb-common\` out from under it.
+
+## Unattended setup
+
+\`documentdb-setup\` prompts for the admin password. For servers and CI, pass \`--admin-password-file <file>\` or \`--admin-password-stdin\` together with \`--yes\`.
 `;
 
 const linuxPackagesOfflineContent = `# Offline / air-gapped install
