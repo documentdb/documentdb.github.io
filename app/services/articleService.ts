@@ -163,7 +163,7 @@ Install DocumentDB from the published package repository and get a MongoDB-compa
 
 **Ubuntu 24.04 and RHEL-compatible 9, on PostgreSQL 17 or 18**, get the full stack — extension, gateway, setup wizard and systemd units. Every other target gets the PostgreSQL extension without the endpoint: use the [Docker Quick Start](/docs/getting-started/docker) for an endpoint in one command, or the [Package Finder](/packages) for any other distribution, architecture or PostgreSQL major.
 
-You do not need PostgreSQL already installed — the setup wizard creates and manages its own instance. The install does add the PGDG repository and pull PostgreSQL, PostGIS and around 200 packages, so pick a host you are willing to have PGDG on.
+You do not need PostgreSQL already installed — the setup wizard creates and manages its own instance. The install does add the PGDG repository and pull PostgreSQL, PostGIS and around 160 packages (about 140 MB), so pick a host you are willing to have PGDG on.
 
 ## Install
 
@@ -235,7 +235,8 @@ A database and collection are created on first write:
 
 ## Troubleshooting
 
-- \`has no installation candidate\` / \`No match for argument\` — PGDG was not added first, or that target is extension-only. Check the [Package Finder](/packages)
+- \`Unable to locate package documentdb-18\` (apt) / \`No match for argument: documentdb-18\` (dnf) — the DocumentDB repository was not added, or that target is extension-only. Check the [Package Finder](/packages)
+- \`documentdb-18 : Depends: postgresql-18 but it is not installable\` — PGDG was not added first
 - \`nothing provides libqhull_r.so.7\` — the \`crb\` line did not run
 - \`MongoServerError: Invalid key\` — empty or wrong password; a bare \`-p\` prompts, so a non-interactive shell sends nothing
 - Anything else — \`sudo documentdb-setup --status\` reports the listener, service states and resolved paths
@@ -269,9 +270,11 @@ dpkg -l | grep documentdb           # or: rpm -qa | grep documentdb
 | --- | --- |
 | Gateway port | \`10260\` |
 | PostgreSQL port | \`9700 + <major>\` (9718 for PG 18), loopback only |
-| Gateway log | \`/var/lib/documentdb-gateway/gateway.log\` |
-| PostgreSQL log | \`/var/lib/documentdb-local/<major>/data/pglog.log\` |
+| Gateway log | systemd: \`journalctl -u documentdb-gateway-local@18.service\` · otherwise \`/var/lib/documentdb-gateway/gateway.log\` |
+| PostgreSQL log | systemd: \`journalctl -u documentdb-postgresql@18.service\` · otherwise \`/var/lib/documentdb-local/<major>/data/pglog.log\` |
 | Setup state / gateway env | \`/etc/documentdb/local/<major>/setup.conf\`, \`.../gateway.env\` |
+
+On a systemd host both services log to the journal; the log **files** above exist only when \`documentdb-setup\` falls back to its non-systemd \`nohup\` mode. \`documentdb-setup --status\` prints whichever applies to your host.
 
 Units are templated per PostgreSQL major:
 
@@ -325,26 +328,42 @@ Confirm the stack is down first with \`ss -lnt | grep 10260\`. A gateway still r
 
 ## Known issues in 0.116
 
-These are defects in this release, not expected behaviour. On a systemd host none of them apply.
+These are defects in this release, not expected behaviour. Most need a host without systemd to hit; the two marked **any host** do not.
 
-| Area | Issue |
-| --- | --- |
-| Status | \`documentdb-setup --status\` can report "active" for any process holding port 10260 |
-| Restart | Re-running \`documentdb-setup\` to restart can hang; redirecting output to a file avoids it |
-| Stop | \`documentdb-setup --restore --pg-version N\` reports success without stopping the gateway — use an unscoped \`--restore\`, which stops every major on the host |
-| Minimal RHEL | Install \`procps-ng\` first, or \`--restore\` reports success while the gateway keeps serving and a later run fails with \`Port 10260 is already in use\` |
-| Reset | \`documentdb-local-reset --confirm-destroy\` can report success while leaving a PostgreSQL process running |
-| Upgrade | \`documentdb-setup\` does not run \`ALTER EXTENSION documentdb_core UPDATE\`; run it yourself |
+| Area | Issue | Affects |
+| --- | --- | --- |
+| Status | \`documentdb-setup --status\` can report "active" for any process holding port 10260 | **any host** |
+| Upgrade | \`documentdb-setup\` does not run \`ALTER EXTENSION documentdb_core UPDATE\`; run it yourself | **any host** |
+| Restart | Re-running \`documentdb-setup\` to restart can hang; redirecting output to a file avoids it | no systemd |
+| Stop | \`documentdb-setup --restore --pg-version N\` reports success without stopping the gateway — use an unscoped \`--restore\`, which stops every major on the host | no systemd |
+| Minimal RHEL | Install \`procps-ng\` first, or \`--restore\` reports success while the gateway keeps serving and a later run fails with \`Port 10260 is already in use\` | no systemd |
+| Reset | \`documentdb-local-reset --confirm-destroy\` can report success while leaving a PostgreSQL process running | no systemd |
 
-**Prefer a systemd host for anything you care about.**
+**Prefer a systemd host for anything you care about**, where the service lifecycle is managed by systemd rather than by the setup script.
+
+## Multiple PostgreSQL majors
+
+Install the matching \`documentdb-N\` for every major you configure. \`documentdb-setup\` refuses a major whose extension package is missing:
+
+\`\`\`text
+ERROR: The DocumentDB extension package is not installed for PostgreSQL 17
+(/usr/share/postgresql/17/extension/documentdb.control is missing).
+\`\`\`
+
+Each major also needs its own gateway port — the second one fails on \`Gateway port 10260 is already in use\` unless you pass \`--gateway-port\`:
+
+\`\`\`bash
+sudo documentdb-setup --pg-version 17 --gateway-port 10261 --admin-user admin
+\`\`\`
 
 ## Troubleshooting
 
 Failure modes beyond the four in the [quick start](/docs/getting-started/packages#troubleshooting):
 
 - \`Bad GPG signature\` on \`pgdg-common\` — wrong architecture in the PGDG repository URL
-- \`apt install\` hangs in a container — \`export DEBIAN_FRONTEND=noninteractive\` first, and drop the leading \`sudo\` when running as \`root\`. Keep \`sudo -u <user>\`, which switches user; \`su <user> -c\` fails because \`postgres\` has \`/usr/sbin/nologin\`, so use \`su -s /bin/bash <user> -c '...'\`
-- Debian 11 has no PostgreSQL 18 (no upstream Bullseye PostGIS); use 16 or 17
+- \`apt install\` hangs in a container — \`export DEBIAN_FRONTEND=noninteractive\` first, and drop the leading \`sudo\` when running as \`root\` (minimal images often have no \`sudo\`). Keep \`sudo -u <user>\`, which switches user; \`su documentdb-local -c\` fails because that account has \`/usr/sbin/nologin\`, so use \`su -s /bin/bash documentdb-local -c '...'\`
+- Debian 11 has PostgreSQL 18 from PGDG but no \`postgresql-18-postgis-3\` for Bullseye, so the dependency set cannot be satisfied; use 16 or 17
+- \`ss: command not found\` on a minimal RHEL host — install \`iproute\`; the DocumentDB packages do not pull it in
 - Debian 13 also gets this extension from \`apt.postgresql.org\`, whose version sorts higher; pin with \`apt install postgresql-18-documentdb=<VERSION>\` for this repository's build
 - \`db.version()\` and \`buildInfo\` in \`mongosh\` report the emulated MongoDB wire version, not DocumentDB's — use \`documentdb-gateway --version\`
 
@@ -365,7 +384,7 @@ For a connected host, use the [Linux Packages Quick Start](/docs/getting-started
 
 ## Stage the bundle (connected machine)
 
-With the same repositories configured as for an online install — run the [Install](/docs/getting-started/packages#install) command up to and including \`apt update\` / the \`dnf config-manager\` line, but not the final \`install\`:
+Configure the repositories exactly as for an online install: run the whole [Install](/docs/getting-started/packages#install) block for your distribution **except the final \`sudo apt install -y documentdb-18\` / \`sudo dnf install -y documentdb-18\` line** — delete that line and the \`&& \\\` that precedes it. On RHEL the DocumentDB repository is written by the \`tee /etc/yum.repos.d/documentdb.repo\` line near the end, so stopping earlier leaves \`dnf download\` with nothing to find. Then:
 
 \`\`\`bash
 # Debian / Ubuntu
@@ -389,7 +408,7 @@ createrepo_c bundle
 > [!NOTE]
 > **Use the full-closure flags, not \`--download-only\`.** \`apt-get install --download-only\` and a bare \`dnf download --resolve\` skip whatever is already installed on the staging machine; the bundle looks complete and the target dies with \`Depends: adduser but it is not installable\`.
 
-Expect ~200 packages / 200 MB (DEB) or ~270 / 170 MB (RPM), mostly PostGIS and GDAL. The \`unsandboxed as root\` and \`dpkg-scanpackages ... override file\` warnings are harmless.
+Expect ~200 packages / 200 MB (DEB) or ~270 / 170 MB (RPM), mostly PostGIS and GDAL. That is more than an online install downloads, because the closure includes packages already present on the staging machine. The \`unsandboxed as root\` and \`dpkg-scanpackages ... override file\` warnings are harmless.
 
 ## Install from the bundle (air-gapped target)
 
@@ -417,6 +436,8 @@ sudo dnf install -y --disablerepo='*' --enablerepo=documentdb-offline documentdb
 \`[trusted=yes]\` / \`gpgcheck=0\` accept the unsigned local directory. Upstream signatures were verified at staging time; \`sha256sum\` the transfer if it crosses an untrusted boundary.
 
 Then continue with [Set up and connect](/docs/getting-started/packages#set-up-and-connect) — \`documentdb-setup\` needs no network.
+
+\`mongosh\` is **not** part of the bundle and the target cannot reach the MongoDB repository, so stage it in the same pass if you want to verify from the air-gapped host — add \`mongodb-mongosh\` to the package list after configuring the MongoDB repository shown in the quick start. Otherwise verify with \`sudo documentdb-setup --status\` and connect from a machine that does have \`mongosh\`.
 
 ## Smaller offline cases
 
