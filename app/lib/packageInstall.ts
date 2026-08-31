@@ -1,55 +1,34 @@
-export type AptDistro = "ubuntu22" | "ubuntu24" | "deb11" | "deb12" | "deb13";
-export type RpmDistro = "rhel8" | "rhel9";
+export type AptDistro = "ubuntu24";
+export type RpmDistro = "rhel9";
 export type AptArch = "amd64" | "arm64" | "auto";
 export type RpmArch = "x86_64" | "aarch64" | "auto";
-export type AptPgVersion = "16" | "17" | "18";
-export type RpmPgVersion = "16" | "17" | "18";
+export type AptPgVersion = "17" | "18";
+export type RpmPgVersion = "17" | "18";
 
 export const aptTargetLabels: Record<AptDistro, string> = {
-  ubuntu22: "Ubuntu 22.04 (Jammy)",
   ubuntu24: "Ubuntu 24.04 (Noble)",
-  deb11: "Debian 11 (Bullseye)",
-  deb12: "Debian 12 (Bookworm)",
-  deb13: "Debian 13 (Trixie)",
 };
 
 export const rpmTargetLabels: Record<RpmDistro, string> = {
-  rhel8: "RHEL-compatible 8 (tested on Rocky Linux 8)",
   rhel9: "RHEL-compatible 9 (tested on Rocky Linux 9)",
 };
 
 export const aptTargetPgVersions: Record<AptDistro, AptPgVersion[]> = {
-  ubuntu22: ["16", "17", "18"],
-  ubuntu24: ["16", "17", "18"],
-  deb11: ["16", "17"],
-  deb12: ["16", "17", "18"],
-  deb13: ["16", "17", "18"],
+  ubuntu24: ["17", "18"],
 };
 
 const aptPgdgSuites: Record<AptDistro, string> = {
-  ubuntu22: "jammy",
   ubuntu24: "noble",
-  deb11: "bullseye",
-  deb12: "bookworm",
-  deb13: "trixie",
 };
 
 const rpmMajorVersions: Record<RpmDistro, "8" | "9"> = {
-  rhel8: "8",
   rhel9: "9",
 };
 
-// Distributions where the repository serves the full v0.116-0 package set
-// (`documentdb` meta, `documentdb-N`, `documentdb-common`, `documentdb-gateway`,
-// `documentdb-postgresql-tools`) rather than the extension package alone.
-// v0.116-0 ships Tier-1 only, so everywhere else still resolves the older
-// extension-only release and must keep the `postgresql-N-documentdb` command.
+// The website mirrors the official release's Tier-1 package matrix exactly.
 export const aptFullStackDistros: readonly AptDistro[] = ["ubuntu24"];
 export const rpmFullStackDistros: readonly RpmDistro[] = ["rhel9"];
 
-// The stand-alone packages exist only for the majors the full stack was built
-// for. PostgreSQL 16 resolves the older extension-only build even on a
-// full-stack distribution, so it must not be offered the stand-alone command.
 const fullStackPgVersions = ["17", "18"];
 
 export function aptServesFullStack(

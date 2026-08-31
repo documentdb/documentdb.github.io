@@ -4,7 +4,7 @@ import { getMetadata } from "../services/metadataService";
 export const metadata = getMetadata({
   title: "Download DocumentDB - Docker, APT, and RPM Packages",
   description:
-    "Run DocumentDB locally with Docker or install the PostgreSQL extension from GPG-signed APT and RPM packages for Ubuntu, Debian, and RHEL-compatible systems.",
+    "Run DocumentDB with Docker or install the full stack from GPG-signed repositories for Ubuntu 24.04 and RHEL-compatible 9. Build other targets from source.",
   path: "/packages/",
   extraKeywords: ["download", "install", "Docker", "APT", "RPM", "Debian", "Ubuntu", "RHEL"],
 });

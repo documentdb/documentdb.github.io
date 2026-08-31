@@ -4,7 +4,6 @@ set -e
 REPO="documentdb/documentdb"
 OUT_DIR="out"
 DOCUMENTDB_VERSION="${DOCUMENTDB_VERSION:-latest}"
-MULTI_VERSION="${MULTI_VERSION:-true}"
 SUITE="${SUITE:-stable}"
 COMPONENTS="${COMPONENTS:-main}"
 ORIGIN="${ORIGIN:-DocumentDB}"
@@ -76,24 +75,11 @@ echo "Downloading packages from $REPO releases"
 # ---------------------------------------------------------------------------
 # Release selection
 #
-# The primary release supplies the site's release-info.json and is the version
-# users are told about. But a release only ships the distributions that were
-# in its own build matrix: v0.116-0, for example, ships Tier-1 (ubuntu24 +
-# rhel9) only, while v0.114-0 shipped seven distributions. Rebuilding the
-# repository from the primary release alone would therefore DELETE the
-# deb11/deb12/deb13/ubuntu22 components and the whole rhel8 repository from
-# documentdb.io, and every host already pointed at one of them would start
-# failing `apt update` with "Component 'ubuntu22' is not defined". That is a
-# client-visible outage, not a cosmetic regression.
-#
-# So the repository is built additively: the primary release fills every
-# distribution it ships, then progressively older releases are consulted ONLY
-# to fill distributions still missing. A distribution is claimed by the newest
-# release that ships it and is never overwritten by an older one. Once a
-# release ships every distribution again, the older ones stop contributing
-# by themselves - no cleanup required.
+# The selected release is the package repository's single source of truth.
+# Older releases must not fill gaps: those combinations are on-demand builds,
+# not assets of the current official release, and mixing them into the pool
+# makes stale versions look supported.
 # ---------------------------------------------------------------------------
-MAX_RELEASES="${MAX_RELEASES:-8}"
 
 RELEASES_JSON=$(mktemp)
 if ! curl -fqs "https://api.github.com/repos/${REPO}/releases?per_page=100" > "$RELEASES_JSON"; then
@@ -101,9 +87,8 @@ if ! curl -fqs "https://api.github.com/repos/${REPO}/releases?per_page=100" > "$
   exit 1
 fi
 
-# Ordered list of tags to consider, newest first. Drafts and prereleases are
-# skipped: they are not what a repository-backed `apt install` should serve.
-TAG_LIST=$(DOCUMENTDB_VERSION="$DOCUMENTDB_VERSION" python3 - "$RELEASES_JSON" <<'PY'
+# Select exactly one published release. Drafts and prereleases are skipped.
+SELECTED_TAG=$(DOCUMENTDB_VERSION="$DOCUMENTDB_VERSION" python3 - "$RELEASES_JSON" <<'PY'
 import json, os, sys
 
 releases = json.load(open(sys.argv[1]))
@@ -113,26 +98,17 @@ if not published:
 
 requested = os.environ.get("DOCUMENTDB_VERSION", "latest")
 if requested != "latest":
-    # The API returns releases newest-first.
-    index = next((i for i, r in enumerate(published)
-                  if r["tag_name"] == requested), None)
-    if index is None:
+    selected = next((r for r in published if r["tag_name"] == requested), None)
+    if selected is None:
         sys.exit(f"Error: Version {requested} not found in releases")
-    # A pin means "serve this version". Only the pinned release and OLDER ones
-    # may contribute: pulling gap-fillers from NEWER releases would defeat the
-    # pin, and worse, it would mix releases that depend on each other. Pinning
-    # to a release that predates the multi-package layout would otherwise add a
-    # newer `documentdb` meta package whose `documentdb-N (>= X)` dependency the
-    # pinned extension cannot satisfy - an unsatisfiable repository.
-    ordered = published[index:]
 else:
-    ordered = published
+    selected = published[0]
 
-print("\n".join(r["tag_name"] for r in ordered))
+print(selected["tag_name"])
 PY
 )
 
-PRIMARY_TAG=$(printf '%s\n' "$TAG_LIST" | head -n 1)
+PRIMARY_TAG="$SELECTED_TAG"
 echo "Primary release: $PRIMARY_TAG"
 
 # Packages already placed, keyed by "pool|name|arch". A newer release always
@@ -223,9 +199,7 @@ rpm_pool_for() {
 
 mkdir -p out/packages
 
-for tag in $TAG_LIST; do
-  MAX_RELEASES=$((MAX_RELEASES - 1))
-  [ "$MAX_RELEASES" -lt 0 ] && break
+for tag in "$PRIMARY_TAG"; do
 
   if ! release=$(curl -fqs "https://api.github.com/repos/${REPO}/releases/tags/$tag"); then
     echo "::warning::Could not fetch release $tag, skipping"

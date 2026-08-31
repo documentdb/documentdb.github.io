@@ -161,7 +161,10 @@ const linuxPackagesGuideContent = `# Linux Packages Quick Start
 
 Install DocumentDB from the published package repository and get a MongoDB-compatible endpoint on your own host.
 
-**Ubuntu 24.04 and RHEL-compatible 9, on PostgreSQL 17 or 18**, get the full stack — extension, gateway, setup wizard and systemd units. Every other target gets the PostgreSQL extension without the endpoint: use the [Docker Quick Start](/docs/getting-started/docker) for an endpoint in one command, or the [Package Finder](/packages) for any other distribution, architecture or PostgreSQL major.
+The current official release publishes the full stack — extension, gateway, setup wizard and systemd units — for **Ubuntu 24.04 and RHEL-compatible 9, on PostgreSQL 17 or 18**. Starting with v0.116, this is a deliberately smaller prebuilt matrix than earlier releases. The website repository mirrors only the current release assets and does not carry older packages forward to make other targets appear current.
+
+> [!NOTE]
+> Need another distribution or PostgreSQL major? We welcome community builds. Check out the matching release tag and use the version-parameterized [packaging scripts](https://github.com/documentdb/documentdb/blob/main/packaging/README.md). For example, \`./packaging/build_packages.sh --os deb12 --pg 16\` builds the extension package for Debian 12 and PostgreSQL 16; the guide also covers gateway and stand-alone packages. These builds are on demand and are not official release assets hosted by documentdb.io.
 
 You do not need PostgreSQL already installed — the setup wizard creates and manages its own instance. The install does add the PGDG repository and pull PostgreSQL, PostGIS and around 160 packages (about 140 MB), so pick a host you are willing to have PGDG on.
 
@@ -231,17 +234,17 @@ A database and collection are created on first write:
 - Build an application: [Node.js Quick Start](/docs/getting-started/nodejs-setup) or [Python Quick Start](/docs/getting-started/python-setup)
 - Secure it, manage services, run SQL, upgrade, uninstall, and hosts without systemd: [Operating a package install](/docs/linux-packages)
 - Install without internet access: [Offline / air-gapped install](/docs/linux-packages/offline)
-- Another distribution, architecture or PostgreSQL major: [Package Finder](/packages)
+- Choose between the published distributions, architectures and PostgreSQL majors: [Package Finder](/packages)
 
 ## Troubleshooting
 
-- \`Unable to locate package documentdb-18\` (apt) / \`No match for argument: documentdb-18\` (dnf) — the DocumentDB repository was not added, or that target is extension-only. Check the [Package Finder](/packages)
+- \`Unable to locate package documentdb-18\` (apt) / \`No match for argument: documentdb-18\` (dnf) — the DocumentDB repository was not added, or the host is not in the current release matrix. Check the [Package Finder](/packages)
 - \`documentdb-18 : Depends: postgresql-18 but it is not installable\` — PGDG was not added first
 - \`nothing provides libqhull_r.so.7\` — the \`crb\` line did not run
 - \`MongoServerError: Invalid key\` — empty or wrong password; a bare \`-p\` prompts, so a non-interactive shell sends nothing
 - Anything else — \`sudo documentdb-setup --status\` reports the listener, service states and resolved paths
 
-More failure modes, including other distributions and hosts without systemd: [Operating a package install](/docs/linux-packages#troubleshooting).
+More failure modes, including hosts without systemd: [Operating a package install](/docs/linux-packages#troubleshooting).
 `;
 
 const linuxPackagesOperationsContent = `# Operating a package install
@@ -480,7 +483,7 @@ docker run -dt --name documentdb \\
   --password <YOUR_PASSWORD>
 \`\`\`
 
-If you prefer a host installation instead of Docker, use [Linux Packages Quick Start](/docs/getting-started/packages) for the PostgreSQL extension package and run the gateway from source.
+If you prefer a host installation instead of Docker, use the [Linux Packages Quick Start](/docs/getting-started/packages) on a distribution in the current release matrix.
 
 ## Add a local connection in VS Code
 
@@ -685,7 +688,7 @@ docker run -dt --name documentdb \\
   --password <YOUR_PASSWORD>
 \`\`\`
 
-If you prefer a host installation instead of Docker, use [Linux Packages Quick Start](/docs/getting-started/packages) for the PostgreSQL extension package and run the gateway from source.
+If you prefer a host installation instead of Docker, use the [Linux Packages Quick Start](/docs/getting-started/packages) on a distribution in the current release matrix.
 
 > DocumentDB Local uses a self-signed certificate by default, so the quickest local
 > PyMongo connection uses \`tlsAllowInvalidCertificates=true\`.
@@ -825,7 +828,7 @@ docker run -dt --name documentdb \\
   --password <YOUR_PASSWORD>
 \`\`\`
 
-If you prefer a host installation instead of Docker, use [Linux Packages Quick Start](/docs/getting-started/packages) for the PostgreSQL extension package and run the gateway from source.
+If you prefer a host installation instead of Docker, use the [Linux Packages Quick Start](/docs/getting-started/packages) on a distribution in the current release matrix.
 
 > Replace \`<YOUR_USERNAME>\` and \`<YOUR_PASSWORD>\` with your own credentials.
 >

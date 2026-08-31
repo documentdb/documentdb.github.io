@@ -104,10 +104,8 @@ jobs:
           KEY_ID: ${{ steps.import_gpg.outputs.keyid }}
           KEY_NAME: ${{ steps.import_gpg.outputs.name }}
           KEY_EMAIL: ${{ steps.import_gpg.outputs.email }}
-          # Configure which DocumentDB release to mirror. Both can be
-          # overridden by repository variables.
+          # Configure which DocumentDB release to mirror.
           DOCUMENTDB_VERSION: ${{ vars.DOCUMENTDB_VERSION || 'latest' }}
-          MULTI_VERSION: ${{ vars.MULTI_VERSION || 'true' }}
         run: |
           set -euo pipefail
           if [ "$SIGN" = 'true' ]; then
@@ -124,9 +122,7 @@ jobs:
             echo "No GPG key configured - packages will not be signed."
             echo "To enable signing, add GPG_PRIVATE_KEY to the repository secrets."
           fi
-
           echo "DOCUMENTDB_VERSION=$DOCUMENTDB_VERSION" >> "$GITHUB_ENV"
-          echo "MULTI_VERSION=$MULTI_VERSION" >> "$GITHUB_ENV"
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
@@ -189,6 +185,7 @@ jobs:
           SIGN: ${{ steps.features.outputs.sign }}
         run: |
           set -euo pipefail
+          python3 .github/scripts/verify_package_inventory.py
           python3 - <<'PY'
           import json
           import os
