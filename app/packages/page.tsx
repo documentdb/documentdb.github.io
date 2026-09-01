@@ -88,7 +88,7 @@ export default function PackagesPage() {
   // Default to the paved road (Ubuntu 24.04 + PostgreSQL 18). The package
   // finder exposes only combinations built and tested in the mirrored release.
   const [aptTarget, setAptTarget] = useState<AptDistro>("ubuntu24");
-  const [rpmTarget, setRpmTarget] = useState<RpmDistro>("rhel9");
+  const [rpmTarget, setRpmTarget] = useState<RpmDistro>("rocky9");
   const [aptArch, setAptArch] = useState<AptArch>("amd64");
   const [rpmArch, setRpmArch] = useState<RpmArch>("x86_64");
   const [aptPgVersion, setAptPgVersion] = useState<AptPgVersion>("18");
@@ -104,10 +104,6 @@ export default function PackagesPage() {
   const latestReleaseAptVersion = release.aptVersion;
   const latestReleaseRpmVersion = release.rpmVersion;
   const packagingGuideUrl = `https://github.com/documentdb/documentdb/blob/${release.tagName}/packaging/README.md`;
-  // The repository serves the mirrored release, so the pinning examples use the
-  // same versions rather than a separately maintained pair that fell behind.
-  const repoAptVersionExample = release.aptVersion;
-  const repoRpmVersionExample = release.rpmVersion;
   const currentReleaseExamples = [
     `ubuntu24.04-documentdb_${release.metaVersion}_all.deb`,
     `ubuntu24.04-postgresql-18-documentdb_${latestReleaseAptVersion}_amd64.deb`,
@@ -140,11 +136,12 @@ export default function PackagesPage() {
           </h1>
           <p className="mx-auto max-w-3xl text-lg text-gray-300">
             Choose Docker for the fastest local setup, or Linux packages for a persistent
-            install. On Ubuntu 24.04 and RHEL-compatible 9 the packages install the full
-            DocumentDB stack — the PostgreSQL extension, the wire-protocol gateway, the
-            administrator tools and systemd units. Starting with v0.116, the hosted package
-            matrix is intentionally smaller and mirrors only combinations attached to the
-            current official release.
+            install. On Ubuntu 24.04 and EL9 (Rocky Linux, AlmaLinux, CentOS Stream, or
+            registered Red Hat Enterprise Linux), the packages install the full DocumentDB
+            stack — the PostgreSQL extension, the wire-protocol gateway, the administrator
+            tools and systemd units. Starting with v0.116, the hosted package matrix is
+            intentionally smaller and mirrors only combinations attached to the current
+            official release.
           </p>
           <div className="mt-4 flex flex-wrap justify-center gap-3 text-sm">
             <span className="rounded-full border border-green-500/30 bg-green-500/20 px-3 py-1 text-green-300">
@@ -185,7 +182,7 @@ export default function PackagesPage() {
             >
               <p className="text-lg font-semibold text-white">Linux Packages</p>
               <p className="text-sm text-gray-300">
-                Best for: persistent Ubuntu 24.04 or RHEL-compatible 9 VM and server environments.
+                Best for: persistent Ubuntu 24.04 or EL9 VM and server environments.
               </p>
             </button>
           </div>
@@ -219,11 +216,12 @@ export default function PackagesPage() {
                 </p>
                 <p className="mt-2 text-sm leading-6 text-amber-100/80">
                   documentdb.io now publishes only the combinations built and tested for the
-                  current release: Ubuntu 24.04 and RHEL-compatible 9, PostgreSQL 17 or 18, on
-                  both supported architectures. Packages from earlier releases are not carried
-                  forward to make unsupported targets appear current. This also withdraws the
-                  older PostgreSQL 16 extension packages previously served for Ubuntu 24.04 and
-                  RHEL-compatible 9.
+                  current release: Ubuntu 24.04 and EL9, PostgreSQL 17 or 18, on both supported
+                  architectures. EL9 covers Rocky Linux, AlmaLinux, CentOS Stream, and registered
+                  Red Hat Enterprise Linux with different prerequisite commands. Packages from
+                  earlier releases are not carried forward to make unsupported targets appear
+                  current. This also withdraws the older PostgreSQL 16 extension packages
+                  previously served for Ubuntu 24.04 and EL9.
                 </p>
                 <p className="mt-2 text-sm leading-6 text-amber-100/80">
                   Need another distribution or PostgreSQL major? We welcome community builds.
@@ -252,7 +250,7 @@ export default function PackagesPage() {
                       className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm text-gray-100"
                     >
                       <option value="apt">APT (Ubuntu 24.04)</option>
-                      <option value="rpm">RPM (RHEL-compatible 9)</option>
+                      <option value="rpm">RPM (EL9)</option>
                     </select>
                   </label>
 
@@ -366,26 +364,39 @@ export default function PackagesPage() {
               {isFullStack ? (
                 <>
                   <p className="mt-4 text-sm text-gray-400">
-                    Then run the setup wizard. It creates the PostgreSQL instance, installs the
-                    extensions, bootstraps the admin user and starts the gateway — the install
-                    above on its own does not leave a reachable endpoint. It prompts for the
-                    admin password; pass{" "}
-                    <code className="text-gray-300">--admin-password-stdin --yes</code> for an
-                    unattended install.
+                    Then run the setup wizard. The generated command pins the PostgreSQL major
+                    you selected and creates a new private instance, so another installed major
+                    or an existing system cluster cannot be selected by accident. It installs
+                    the extensions, bootstraps the admin user and starts the gateway — the
+                    package install above on its own does not leave a reachable endpoint. It
+                    prompts for the admin password. For automation, use the complete{" "}
+                    <Link
+                      className="text-blue-400 hover:text-blue-300"
+                      href="/docs/linux-packages#unattended-setup"
+                    >
+                      unattended setup
+                    </Link>{" "}
+                    instructions.
                   </p>
-                  <CommandSnippet command={buildSetupCommand()} label="Setup" />
+                  <CommandSnippet
+                    command={buildSetupCommand(
+                      packageFamily === "apt" ? aptPgVersion : rpmPgVersion,
+                    )}
+                    label="Setup"
+                  />
                   <p className="mt-3 text-sm text-gray-400">
                     The gateway then listens on port{" "}
                     <code className="text-gray-300">10260</code>. It binds all interfaces by
-                    default, so firewall the port and supply a real certificate before exposing
-                    it to a network. See the{" "}
-                    <a
+                    default, so firewall the port before exposing it to a network. For existing
+                    PostgreSQL clusters, real certificates, upgrades, reset, and other day-2
+                    tasks, use the{" "}
+                    <Link
                       className="text-blue-400 hover:text-blue-300"
-                      href="https://github.com/documentdb/documentdb.github.io/blob/main/PACKAGE-INSTALL.md"
+                      href="/docs/linux-packages"
                     >
-                      package installation guide
-                    </a>{" "}
-                    for verification, day-2 and upgrade steps.
+                      operations guide
+                    </Link>
+                    .
                   </p>
                 </>
               ) : null}
@@ -474,7 +485,10 @@ export default function PackagesPage() {
                   </tr>
                   <tr>
                     <td className="px-3 py-3 font-semibold text-red-300">RPM</td>
-                    <td className="px-3 py-3">RHEL-compatible 9 · <code className="text-gray-200">rpm/rhel9</code></td>
+                    <td className="px-3 py-3">
+                      Rocky/Alma/CentOS Stream 9 or registered RHEL 9 ·{" "}
+                      <code className="text-gray-200">rpm/rhel9</code>
+                    </td>
                     <td className="px-3 py-3">x86_64, aarch64</td>
                     <td className="px-3 py-3">17, 18</td>
                     <td className="px-3 py-3">
@@ -556,17 +570,10 @@ export default function PackagesPage() {
                 selected target actually installs.
               </p>
               <p className="text-sm text-amber-300">
-                The two package families carry <strong>different version strings</strong>, so the
-                right <code className="text-gray-300">&lt;VERSION&gt;</code> depends on which you
-                pin. The extension is{" "}
-                <code className="text-gray-300">{repoAptVersionExample}</code> (APT) /{" "}
-                <code className="text-gray-300">{repoRpmVersionExample}</code> (RPM), while{" "}
-                <code className="text-gray-300">documentdb</code>,{" "}
-                <code className="text-gray-300">documentdb-&lt;pg&gt;</code> and the gateway are{" "}
-                <code className="text-gray-300">{release.metaVersion}</code> (APT) /{" "}
-                <code className="text-gray-300">{release.metaRpmVersion}</code> (RPM). Pinning{" "}
-                <code className="text-gray-300">documentdb-18={repoAptVersionExample}</code>{" "}
-                fails — always take the string the list command prints.
+                APT and RPM use different version syntax, and individual subpackages can carry
+                different release suffixes. Always copy the exact version returned below for{" "}
+                <code className="text-gray-300">{selectedPackageNames}</code>; do not infer it
+                from the extension or another package.
               </p>
               <div>
                 <p className="mb-1 text-xs font-semibold text-gray-400">APT — list then pin</p>
@@ -666,9 +673,12 @@ export default function PackagesPage() {
             </h2>
             <p className="text-sm leading-6 text-gray-400">
               Docker starts a gateway-backed local endpoint on port 10260. On Ubuntu 24.04 and
-              RHEL-compatible 9 the packages give you the same thing: install, then run{" "}
-              <code className="text-gray-300">sudo documentdb-setup --admin-user admin</code>,
-              which creates the database and starts the gateway.
+              EL9 the packages give you the same thing: install, then run{" "}
+              <code className="text-gray-300">
+                {buildSetupCommand(packageFamily === "apt" ? aptPgVersion : rpmPgVersion)}
+              </code>
+              {", "}which creates a private database instance for the selected PostgreSQL major and
+              starts the gateway.
             </p>
           </div>
 

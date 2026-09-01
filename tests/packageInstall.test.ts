@@ -5,6 +5,7 @@ import {
   aptTargetPgVersions,
   buildAptInstallCommand,
   buildRpmInstallCommand,
+  buildSetupCommand,
   rpmServesFullStack,
   rpmTargetLabels,
 } from '../app/lib/packageInstall';
@@ -28,7 +29,13 @@ const expectedPgdgSuites: Record<AptDistro, string> = {
 };
 
 const expectedRhelMajors: Record<RpmDistro, string> = {
+  rocky9: '9',
   rhel9: '9',
+};
+
+const expectedRpmRepositoryPaths: Record<RpmDistro, string> = {
+  rocky9: 'rhel9',
+  rhel9: 'rhel9',
 };
 
 const aptDistros = Object.keys(aptTargetLabels) as AptDistro[];
@@ -124,10 +131,9 @@ describe('buildRpmInstallCommand', () => {
     expect(command).toContain(`EL-${major}-x86_64`);
   });
 
-  it.each(rpmArches)('uses arch %s in the PGDG and CodeReady repository names', (arch) => {
-    const command = buildRpmInstallCommand('rhel9', arch, '17');
+  it.each(rpmArches)('uses arch %s in the PGDG repository name', (arch) => {
+    const command = buildRpmInstallCommand('rocky9', arch, '17');
     expect(command).toContain(`EL-9-${arch}/pgdg-redhat-repo-latest.noarch.rpm`);
-    expect(command).toContain(`codeready-builder-for-rhel-9-${arch}-rpms`);
   });
 
   it('resolves the architecture on the host when arch is "auto"', () => {
@@ -138,9 +144,11 @@ describe('buildRpmInstallCommand', () => {
     expect(command).not.toContain('EL-9-aarch64');
   });
 
-  it.each(rpmDistros)('points the DocumentDB repository at rpm/%s', (distro) => {
+  it.each(rpmDistros)('points %s at the shared EL9 DocumentDB repository', (distro) => {
     const command = buildRpmInstallCommand(distro, 'x86_64', '17');
-    expect(command).toContain(`baseurl=https://documentdb.io/rpm/${distro}`);
+    expect(command).toContain(
+      `baseurl=https://documentdb.io/rpm/${expectedRpmRepositoryPaths[distro]}`,
+    );
   });
 
   it.each(rpmMatrix)('installs the right package for $distro/$arch/pg$pg', ({ distro, arch, pg }) => {
@@ -152,6 +160,8 @@ describe('buildRpmInstallCommand', () => {
   });
 
   it('serves the full stack for every published target', () => {
+    expect(rpmServesFullStack('rocky9', '18')).toBe(true);
+    expect(rpmServesFullStack('rocky9', '17')).toBe(true);
     expect(rpmServesFullStack('rhel9', '18')).toBe(true);
     expect(rpmServesFullStack('rhel9', '17')).toBe(true);
     expect(aptServesFullStack('ubuntu24', '18')).toBe(true);
@@ -161,9 +171,35 @@ describe('buildRpmInstallCommand', () => {
     );
   });
 
+  it('uses CRB for Rocky, AlmaLinux, and CentOS Stream', () => {
+    const command = buildRpmInstallCommand('rocky9', 'x86_64', '18');
+    expect(command).toContain('sudo dnf config-manager --set-enabled crb');
+    expect(command).not.toContain('subscription-manager repos --enable');
+    expect(command).not.toContain('codeready-builder-for-rhel');
+  });
+
+  it('uses subscription-manager for registered RHEL', () => {
+    const command = buildRpmInstallCommand('rhel9', 'aarch64', '18');
+    expect(command).toContain(
+      'sudo subscription-manager repos --enable codeready-builder-for-rhel-9-aarch64-rpms',
+    );
+    expect(command).not.toContain('dnf config-manager --set-enabled crb');
+  });
+
   it('enables gpgcheck against the DocumentDB signing key', () => {
-    const command = buildRpmInstallCommand('rhel9', 'x86_64', '17');
+    const command = buildRpmInstallCommand('rocky9', 'x86_64', '17');
     expect(command).toContain("'gpgcheck=1'");
     expect(command).toContain("'gpgkey=https://documentdb.io/documentdb-archive-keyring.gpg'");
   });
+});
+
+describe('buildSetupCommand', () => {
+  it.each(['17', '18'] as const)(
+    'pins PostgreSQL %s and creates a fresh private instance',
+    (pgVersion) => {
+      expect(buildSetupCommand(pgVersion)).toBe(
+        `sudo documentdb-setup --pg-version ${pgVersion} --use-new-postgres-instance --admin-user admin`,
+      );
+    },
+  );
 });

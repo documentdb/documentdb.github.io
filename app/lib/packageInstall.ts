@@ -1,5 +1,5 @@
 export type AptDistro = "ubuntu24";
-export type RpmDistro = "rhel9";
+export type RpmDistro = "rocky9" | "rhel9";
 export type AptArch = "amd64" | "arm64" | "auto";
 export type RpmArch = "x86_64" | "aarch64" | "auto";
 export type AptPgVersion = "17" | "18";
@@ -10,7 +10,8 @@ export const aptTargetLabels: Record<AptDistro, string> = {
 };
 
 export const rpmTargetLabels: Record<RpmDistro, string> = {
-  rhel9: "RHEL-compatible 9 (tested on Rocky Linux 9)",
+  rocky9: "Rocky Linux / AlmaLinux / CentOS Stream 9",
+  rhel9: "Red Hat Enterprise Linux 9 (registered)",
 };
 
 export const aptTargetPgVersions: Record<AptDistro, AptPgVersion[]> = {
@@ -22,12 +23,18 @@ const aptPgdgSuites: Record<AptDistro, string> = {
 };
 
 const rpmMajorVersions: Record<RpmDistro, "8" | "9"> = {
+  rocky9: "9",
   rhel9: "9",
+};
+
+const rpmRepositoryPaths: Record<RpmDistro, "rhel9"> = {
+  rocky9: "rhel9",
+  rhel9: "rhel9",
 };
 
 // The website mirrors the official release's Tier-1 package matrix exactly.
 export const aptFullStackDistros: readonly AptDistro[] = ["ubuntu24"];
-export const rpmFullStackDistros: readonly RpmDistro[] = ["rhel9"];
+export const rpmFullStackDistros: readonly RpmDistro[] = ["rocky9", "rhel9"];
 
 const fullStackPgVersions = ["17", "18"];
 
@@ -84,25 +91,29 @@ export function buildRpmInstallCommand(
   rpmPgVersion: RpmPgVersion,
 ): string {
   const rhelMajorVersion = rpmMajorVersions[rpmTarget];
+  const repositoryPath = rpmRepositoryPaths[rpmTarget];
   // See buildAptInstallCommand: "auto" resolves on the host so one published
   // example works on x86_64 and aarch64 alike.
   const arch = rpmArch === "auto" ? "$(uname -m)" : rpmArch;
   const installTarget = rpmServesFullStack(rpmTarget, rpmPgVersion)
     ? `documentdb-${rpmPgVersion}`
     : `postgresql${rpmPgVersion}-documentdb`;
+  const distributionPrerequisites =
+    rpmTarget === "rhel9"
+      ? `sudo subscription-manager repos --enable codeready-builder-for-rhel-${rhelMajorVersion}-${arch}-rpms && \\
+sudo dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-${rhelMajorVersion}.noarch.rpm`
+      : `sudo dnf install -y dnf-plugins-core && \\
+sudo dnf config-manager --set-enabled crb && \\
+sudo dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-${rhelMajorVersion}.noarch.rpm`;
 
-  return `sudo dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-${rhelMajorVersion}.noarch.rpm && \\
+  return `${distributionPrerequisites} && \\
 sudo dnf install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-${rhelMajorVersion}-${arch}/pgdg-redhat-repo-latest.noarch.rpm && \\
 sudo dnf -qy module disable postgresql && \\
-sudo dnf install -y dnf-plugins-core && \\
-(sudo dnf config-manager --set-enabled crb || \\
- sudo dnf config-manager --set-enabled powertools || \\
- sudo dnf config-manager --set-enabled codeready-builder-for-rhel-${rhelMajorVersion}-${arch}-rpms) && \\
 sudo rpm --import https://documentdb.io/documentdb-archive-keyring.gpg && \\
 printf '%s\\n' \\
   '[documentdb]' \\
   'name=DocumentDB Repository' \\
-  'baseurl=https://documentdb.io/rpm/${rpmTarget}' \\
+  'baseurl=https://documentdb.io/rpm/${repositoryPath}' \\
   'enabled=1' \\
   'gpgcheck=1' \\
   'gpgkey=https://documentdb.io/documentdb-archive-keyring.gpg' | sudo tee /etc/yum.repos.d/documentdb.repo >/dev/null && \\
@@ -112,6 +123,6 @@ sudo dnf install -y ${installTarget}`;
 // Shown after a full-stack install: the packages ship a wizard that creates the
 // PostgreSQL instance, installs the extensions and starts the gateway, so the
 // install command alone does not leave a reachable endpoint.
-export function buildSetupCommand(): string {
-  return `sudo documentdb-setup --admin-user admin`;
+export function buildSetupCommand(pgVersion: AptPgVersion | RpmPgVersion): string {
+  return `sudo documentdb-setup --pg-version ${pgVersion} --use-new-postgres-instance --admin-user admin`;
 }
