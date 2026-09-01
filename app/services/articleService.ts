@@ -161,7 +161,7 @@ If something does not work as expected:
 - [Package Finder](/packages)
 `;
 
-const linuxPackagesGuideContent = `# Linux Packages Quick Start
+export const linuxPackagesGuideContent = `# Linux Packages Quick Start
 
 Install DocumentDB from the published package repository and get a MongoDB-compatible endpoint on your own host.
 
@@ -241,14 +241,7 @@ ${buildSetupCommand('18')}
 
 It creates a new private PostgreSQL 18 instance, installs the extensions, starts the gateway, and enables it at boot. It **prompts for the admin password**. The explicit major and fresh-instance flags keep another installed PostgreSQL major or an existing system cluster from being selected accidentally.
 
-In a non-interactive shell, the command exits unless you provide a password source:
-
-\`\`\`bash
-printf '%s' "$ADMIN_PW" | sudo documentdb-setup --pg-version 18 \\
-  --use-new-postgres-instance --admin-user admin --admin-password-stdin --yes
-\`\`\`
-
-To adopt an existing PostgreSQL instance instead, follow [Operating a package install](/docs/linux-packages); brownfield setup intentionally has different lifecycle and restart requirements.
+For automation, use the complete [unattended setup](/docs/linux-packages#unattended-setup) command. To adopt an existing PostgreSQL instance instead, follow [Adopt an existing PostgreSQL instance](/docs/linux-packages#adopt-an-existing-postgre-sql-instance); brownfield setup intentionally has different lifecycle and restart requirements.
 
 Now open a shell against the endpoint:
 
@@ -287,7 +280,7 @@ A database and collection are created on first write:
 More failure modes, including hosts without systemd: [Operating a package install](/docs/linux-packages#troubleshooting).
 `;
 
-const linuxPackagesOperationsContent = `# Operating a package install
+export const linuxPackagesOperationsContent = `# Operating a package install
 
 Day-2 operations for a DocumentDB installed from Linux packages: securing the endpoint, managing services, running SQL, upgrading, and removal. Install first with the [Linux Packages Quick Start](/docs/getting-started/packages).
 
@@ -343,9 +336,35 @@ sudo systemctl restart documentdb-local@18.target
 sudo systemctl stop    documentdb-local@18.target
 \`\`\`
 
-## Running SQL against the managed instance
+## Adopt an existing PostgreSQL instance
 
-\`documentdb-setup\` runs a private instance as the \`documentdb-local\` user on a socket, so a bare \`psql\` will not find it:
+Use brownfield mode only when PostgreSQL already exists and its service and data remain
+operator-owned. Back up the instance first. The wizard does not create, delete, start, or stop
+that PostgreSQL instance, but it does add managed configuration blocks, create the gateway role,
+install the DocumentDB extensions, and register the gateway.
+
+Identify the instance as \`<major>/<name>\`. On Ubuntu, run \`pg_lsclusters\`; a typical instance
+is \`18/main\`. The standard PGDG layout on EL9 has one instance per major and also uses
+\`18/main\`; add \`--pg-port\` when it listens on a non-default port.
+
+\`\`\`bash
+sudo documentdb-setup --target-postgres-instance 18/main --admin-user admin
+\`\`\`
+
+If \`shared_preload_libraries\` changed, the first run prints a restart handoff instead of
+finishing setup. Restart the operator-managed PostgreSQL service, then re-run the exact setup
+command it prints. Typical service names are \`postgresql@18-main.service\` on Ubuntu and
+\`postgresql-18.service\` on EL9. The wizard intentionally does not restart an adopted
+PostgreSQL instance for you.
+
+The wizard's default \`default_toast_compression\` setting applies to newly written values in
+every database on an adopted instance. If other workloads must retain PostgreSQL's own default,
+prefix both setup runs with \`sudo DOCUMENTDB_TOAST_COMPRESSION=default\`.
+
+## Running SQL against a package-managed private instance
+
+A greenfield PostgreSQL instance runs as the \`documentdb-local\` user on a socket, so a bare
+\`psql\` will not find it:
 
 \`\`\`bash
 sudo -u documentdb-local psql -h /run/documentdb-local/18/postgresql -p 9718 -d postgres
@@ -354,6 +373,8 @@ sudo -u documentdb-local psql -h /run/documentdb-local/18/postgresql -p 9718 -d 
 \`\`\`sql
 SELECT extname, extversion FROM pg_extension WHERE extname LIKE 'documentdb%';
 \`\`\`
+
+For an adopted instance, use the operator's existing PostgreSQL connection instead.
 
 ## Upgrading
 
@@ -418,9 +439,41 @@ sudo dnf remove documentdb-18 postgresql18-documentdb && sudo dnf autoremove
 
 ### Brownfield: detach from an existing PostgreSQL instance
 
+Before restoring, run \`sudo documentdb-setup --status\` and note the gateway port for the major
+you are removing.
+
+On a systemd host, a scoped restore stops and disables that major's gateway:
+
 \`\`\`bash
 sudo documentdb-setup --restore --pg-version 18
+\`\`\`
 
+On a host without systemd, v0.116 cannot safely attribute a nohup gateway process to one
+PostgreSQL major. If only one DocumentDB major is configured, use an unscoped restore so the
+orphan gateway sweep runs:
+
+\`\`\`bash
+sudo documentdb-setup --restore --yes
+\`\`\`
+
+If more than one DocumentDB major is configured without systemd, schedule a maintenance window
+and use the same unscoped restore. It detaches every configured major and stops the nohup
+gateways; re-run setup for the majors you are keeping afterward. A scoped restore alone is not
+sufficient on a no-systemd host.
+
+Restart the adopted PostgreSQL service after restore to apply removal of the managed settings.
+On an unscoped multi-major restore, restart each operator-managed PostgreSQL service involved.
+
+Verify that the target gateway port is no longer listening before removing packages. Substitute
+the port you noted above; the command should produce no output:
+
+\`\`\`bash
+ss -lnt | grep ':10260'
+\`\`\`
+
+Then remove the selected major:
+
+\`\`\`bash
 sudo apt purge --autoremove documentdb-18 postgresql-18-documentdb
 sudo dnf remove documentdb-18 postgresql18-documentdb && sudo dnf autoremove
 \`\`\`
@@ -429,9 +482,8 @@ Do not run \`documentdb-local-reset\` for brownfield installations: the PostgreS
 its data belong to the operator. Do not run restore before a greenfield reset either; restore
 deletes the state that identifies custom data directories and protects adopted clusters.
 
-Confirm the stack is down with \`ss -lnt | grep 10260\`. On a multi-major host remove one major
-at a time and re-check the survivor: \`documentdb-common\` owns the shared tooling and only
-\`documentdb-N\` holds it.
+On a systemd multi-major host, remove one major at a time and re-check the survivor:
+\`documentdb-common\` owns the shared tooling and only \`documentdb-N\` holds it.
 
 ## Known issues in 0.116
 
@@ -442,7 +494,7 @@ These are defects in this release, not expected behaviour. Most need a host with
 | Status | \`documentdb-setup --status\` can report "active" for any process holding port 10260 | **any host** |
 | Upgrade | \`documentdb-setup\` does not run \`ALTER EXTENSION documentdb_core UPDATE\`; run it yourself | **any host** |
 | Restart | Re-running \`documentdb-setup\` to restart can hang; redirecting output to a file avoids it | no systemd |
-| Stop | \`documentdb-setup --restore --pg-version N\` reports success without stopping the gateway — use an unscoped \`--restore\`, which stops every major on the host | no systemd |
+| Stop | A scoped \`documentdb-setup --restore --pg-version N\` cannot stop a nohup gateway; follow the no-systemd brownfield removal steps above | no systemd |
 | Minimal RHEL | Install \`procps-ng\` first, or \`--restore\` reports success while the gateway keeps serving and a later run fails with \`Port 10260 is already in use\` | no systemd |
 
 **Prefer a systemd host for anything you care about**, where the service lifecycle is managed by systemd rather than by the setup script.
@@ -474,7 +526,17 @@ Failure modes beyond the four in the [quick start](/docs/getting-started/package
 
 ## Unattended setup
 
-\`documentdb-setup\` prompts for the admin password. For servers and CI, pass \`--admin-password-file <file>\` or \`--admin-password-stdin\` together with \`--yes\`.
+\`documentdb-setup\` prompts for the admin password. For servers and CI, provide exactly one
+password source and pass \`--yes\`. For a new private instance:
+
+\`\`\`bash
+printf '%s' "$ADMIN_PW" | sudo documentdb-setup --pg-version 18 \\
+  --use-new-postgres-instance --admin-user admin --admin-password-stdin --yes
+\`\`\`
+
+For brownfield adoption, replace \`--pg-version 18 --use-new-postgres-instance\` with
+\`--target-postgres-instance 18/main\`. You can use
+\`--admin-password-file /path/to/protected/file\` instead of stdin.
 `;
 
 const linuxPackagesOfflineContent = `# Offline / air-gapped install

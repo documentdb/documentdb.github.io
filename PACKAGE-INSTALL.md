@@ -139,7 +139,7 @@ sudo documentdb-setup --pg-version 18 --use-new-postgres-instance --admin-user a
 
 The explicit major and fresh-instance flags prevent another installed PostgreSQL major or an
 existing system cluster from being selected accidentally. To adopt an existing PostgreSQL
-instance instead, use the brownfield workflow in the advanced operations documentation.
+instance instead, use [Adopt an existing PostgreSQL instance](#adopt-an-existing-postgresql-instance).
 
 `mongosh` is not shipped by these packages. Install it from the
 [official instructions](https://www.mongodb.com/docs/mongodb-shell/install/), then:
@@ -227,8 +227,34 @@ On hosts without systemd (containers, some dev images) the wizard starts the gat
 instead; the `systemctl` commands above fail with *"System has not been booted with systemd"*.
 Use `documentdb-setup --status` to inspect it and re-run `documentdb-setup` to restart it.
 
-**Running SQL against the managed instance.** The private PostgreSQL instance is owned by the
-`documentdb-local` system user and listens on a socket, so a bare `psql` will not find it:
+### Adopt an existing PostgreSQL instance
+
+Use brownfield mode only when PostgreSQL already exists and its service and data remain
+operator-owned. Back up the instance first. The wizard does not create, delete, start, or stop
+that PostgreSQL instance, but it does add managed configuration blocks, create the gateway role,
+install the DocumentDB extensions, and register the gateway.
+
+Identify the instance as `<major>/<name>`. On Ubuntu, run `pg_lsclusters`; a typical instance is
+`18/main`. The standard PGDG layout on EL9 has one instance per major and also uses `18/main`;
+add `--pg-port` when it listens on a non-default port.
+
+```bash
+sudo documentdb-setup --target-postgres-instance 18/main --admin-user admin
+```
+
+If `shared_preload_libraries` changed, the first run prints a restart handoff instead of
+finishing setup. Restart the operator-managed PostgreSQL service, then re-run the exact setup
+command it prints. Typical service names are `postgresql@18-main.service` on Ubuntu and
+`postgresql-18.service` on EL9. The wizard intentionally does not restart an adopted PostgreSQL
+instance for you.
+
+The wizard's default `default_toast_compression` setting applies to newly written values in
+every database on an adopted instance. If other workloads must retain PostgreSQL's own default,
+prefix both setup runs with `sudo DOCUMENTDB_TOAST_COMPRESSION=default`.
+
+**Running SQL against a package-managed private instance.** A greenfield PostgreSQL instance is
+owned by the `documentdb-local` system user and listens on a socket, so a bare `psql` will not
+find it:
 
 ```bash
 sudo -u documentdb-local psql -h /run/documentdb-local/18/postgresql -p 9718 -d postgres
@@ -236,6 +262,7 @@ sudo -u documentdb-local psql -h /run/documentdb-local/18/postgresql -p 9718 -d 
 
 Use that connection for the `ALTER EXTENSION` statements under Upgrading, and to read versions
 with `SELECT extname, extversion FROM pg_extension WHERE extname LIKE 'documentdb%';`.
+For an adopted instance, use the operator's existing PostgreSQL connection instead.
 
 **Greenfield: destroy the package-managed instance:**
 
@@ -252,9 +279,41 @@ sudo dnf remove documentdb-18 postgresql18-documentdb && sudo dnf autoremove
 
 **Brownfield: detach without deleting the existing PostgreSQL instance:**
 
+Before restoring, run `sudo documentdb-setup --status` and note the gateway port for the major
+you are removing.
+
+On a systemd host, a scoped restore stops and disables that major's gateway:
+
 ```bash
 sudo documentdb-setup --restore --pg-version 18
+```
 
+On a host without systemd, v0.116 cannot safely attribute a nohup gateway process to one
+PostgreSQL major. If only one DocumentDB major is configured, use an unscoped restore so the
+orphan gateway sweep runs:
+
+```bash
+sudo documentdb-setup --restore --yes
+```
+
+If more than one DocumentDB major is configured without systemd, schedule a maintenance window
+and use the same unscoped restore. It detaches every configured major and stops the nohup
+gateways; re-run setup for the majors you are keeping afterward. A scoped restore alone is not
+sufficient on a no-systemd host.
+
+Restart the adopted PostgreSQL service after restore to apply removal of the managed settings.
+On an unscoped multi-major restore, restart each operator-managed PostgreSQL service involved.
+
+Verify that the target gateway port is no longer listening before removing packages. Substitute
+the port you noted above; the command should produce no output:
+
+```bash
+ss -lnt | grep ':10260'
+```
+
+Then remove the selected major:
+
+```bash
 sudo apt purge --autoremove documentdb-18 postgresql-18-documentdb
 sudo dnf remove documentdb-18 postgresql18-documentdb && sudo dnf autoremove
 ```

@@ -104,10 +104,6 @@ export default function PackagesPage() {
   const latestReleaseAptVersion = release.aptVersion;
   const latestReleaseRpmVersion = release.rpmVersion;
   const packagingGuideUrl = `https://github.com/documentdb/documentdb/blob/${release.tagName}/packaging/README.md`;
-  // The repository serves the mirrored release, so the pinning examples use the
-  // same versions rather than a separately maintained pair that fell behind.
-  const repoAptVersionExample = release.aptVersion;
-  const repoRpmVersionExample = release.rpmVersion;
   const currentReleaseExamples = [
     `ubuntu24.04-documentdb_${release.metaVersion}_all.deb`,
     `ubuntu24.04-postgresql-18-documentdb_${latestReleaseAptVersion}_amd64.deb`,
@@ -373,9 +369,14 @@ export default function PackagesPage() {
                     or an existing system cluster cannot be selected by accident. It installs
                     the extensions, bootstraps the admin user and starts the gateway — the
                     package install above on its own does not leave a reachable endpoint. It
-                    prompts for the admin password; pass{" "}
-                    <code className="text-gray-300">--admin-password-stdin --yes</code> for an
-                    unattended install.
+                    prompts for the admin password. For automation, use the complete{" "}
+                    <Link
+                      className="text-blue-400 hover:text-blue-300"
+                      href="/docs/linux-packages#unattended-setup"
+                    >
+                      unattended setup
+                    </Link>{" "}
+                    instructions.
                   </p>
                   <CommandSnippet
                     command={buildSetupCommand(
@@ -569,17 +570,10 @@ export default function PackagesPage() {
                 selected target actually installs.
               </p>
               <p className="text-sm text-amber-300">
-                The two package families carry <strong>different version strings</strong>, so the
-                right <code className="text-gray-300">&lt;VERSION&gt;</code> depends on which you
-                pin. The extension is{" "}
-                <code className="text-gray-300">{repoAptVersionExample}</code> (APT) /{" "}
-                <code className="text-gray-300">{repoRpmVersionExample}</code> (RPM), while{" "}
-                <code className="text-gray-300">documentdb</code>,{" "}
-                <code className="text-gray-300">documentdb-&lt;pg&gt;</code> and the gateway are{" "}
-                <code className="text-gray-300">{release.metaVersion}</code> (APT) /{" "}
-                <code className="text-gray-300">{release.metaRpmVersion}</code> (RPM). Pinning{" "}
-                <code className="text-gray-300">documentdb-18={repoAptVersionExample}</code>{" "}
-                fails — always take the string the list command prints.
+                APT and RPM use different version syntax, and individual subpackages can carry
+                different release suffixes. Always copy the exact version returned below for{" "}
+                <code className="text-gray-300">{selectedPackageNames}</code>; do not infer it
+                from the extension or another package.
               </p>
               <div>
                 <p className="mb-1 text-xs font-semibold text-gray-400">APT — list then pin</p>
