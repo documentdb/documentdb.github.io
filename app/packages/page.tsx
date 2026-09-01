@@ -85,11 +85,8 @@ export default function PackagesPage() {
   const release = useReleaseInfo();
   const [method, setMethod] = useState<InstallMethod>("docker");
   const [packageFamily, setPackageFamily] = useState<PackageFamily>("apt");
-  // Default to the paved road (Ubuntu 24.04 + PostgreSQL 18). It is the target
-  // the release is built and end-to-end tested against, and the only one whose
-  // repository component serves the full package set - defaulting to an
-  // extension-only target showed first-time visitors the older, smaller
-  // experience.
+  // Default to the paved road (Ubuntu 24.04 + PostgreSQL 18). The package
+  // finder exposes only combinations built and tested in the mirrored release.
   const [aptTarget, setAptTarget] = useState<AptDistro>("ubuntu24");
   const [rpmTarget, setRpmTarget] = useState<RpmDistro>("rhel9");
   const [aptArch, setAptArch] = useState<AptArch>("amd64");
@@ -106,6 +103,7 @@ export default function PackagesPage() {
 
   const latestReleaseAptVersion = release.aptVersion;
   const latestReleaseRpmVersion = release.rpmVersion;
+  const packagingGuideUrl = `https://github.com/documentdb/documentdb/blob/${release.tagName}/packaging/README.md`;
   // The repository serves the mirrored release, so the pinning examples use the
   // same versions rather than a separately maintained pair that fell behind.
   const repoAptVersionExample = release.aptVersion;
@@ -144,12 +142,13 @@ export default function PackagesPage() {
             Choose Docker for the fastest local setup, or Linux packages for a persistent
             install. On Ubuntu 24.04 and RHEL-compatible 9 the packages install the full
             DocumentDB stack — the PostgreSQL extension, the wire-protocol gateway, the
-            administrator tools and systemd units. Other distributions currently receive the
-            extension package alone.
+            administrator tools and systemd units. Starting with v0.116, the hosted package
+            matrix is intentionally smaller and mirrors only combinations attached to the
+            current official release.
           </p>
           <div className="mt-4 flex flex-wrap justify-center gap-3 text-sm">
             <span className="rounded-full border border-green-500/30 bg-green-500/20 px-3 py-1 text-green-300">
-              GPG Signed Packages
+              GPG-signed Repositories
             </span>
             <span className="rounded-full border border-blue-500/30 bg-blue-500/20 px-3 py-1 text-blue-300">
               Docker + Linux Packages
@@ -186,7 +185,7 @@ export default function PackagesPage() {
             >
               <p className="text-lg font-semibold text-white">Linux Packages</p>
               <p className="text-sm text-gray-300">
-                Best for: persistent Linux VM or server environments. Debian/Ubuntu and RHEL family.
+                Best for: persistent Ubuntu 24.04 or RHEL-compatible 9 VM and server environments.
               </p>
             </button>
           </div>
@@ -214,6 +213,34 @@ export default function PackagesPage() {
             </>
           ) : (
             <>
+              <div className="mb-5 rounded-lg border border-amber-400/30 bg-amber-500/10 p-4">
+                <p className="text-sm font-semibold text-amber-200">
+                  The prebuilt package matrix was reduced in v0.116
+                </p>
+                <p className="mt-2 text-sm leading-6 text-amber-100/80">
+                  documentdb.io now publishes only the combinations built and tested for the
+                  current release: Ubuntu 24.04 and RHEL-compatible 9, PostgreSQL 17 or 18, on
+                  both supported architectures. Packages from earlier releases are not carried
+                  forward to make unsupported targets appear current. This also withdraws the
+                  older PostgreSQL 16 extension packages previously served for Ubuntu 24.04 and
+                  RHEL-compatible 9.
+                </p>
+                <p className="mt-2 text-sm leading-6 text-amber-100/80">
+                  Need another distribution or PostgreSQL major? We welcome community builds.
+                  Check out the matching source tag and use our version-parameterized{" "}
+                  <a
+                    href={packagingGuideUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold text-amber-100 underline hover:text-white"
+                  >
+                    packaging scripts
+                  </a>
+                  . The extension, gateway, and remaining stand-alone packages use separate
+                  scripts. PostgreSQL 15 is extension-only. These builds are on demand and are
+                  not official release assets hosted by documentdb.io.
+                </p>
+              </div>
               <div className="mb-5 rounded-lg border border-neutral-700 bg-neutral-900/60 p-4">
                 <p className="mb-3 text-sm font-semibold text-white">Package Finder</p>
                 <div className="grid gap-3 md:grid-cols-2">
@@ -224,8 +251,8 @@ export default function PackagesPage() {
                       onChange={(event) => setPackageFamily(event.target.value as PackageFamily)}
                       className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm text-gray-100"
                     >
-                      <option value="apt">APT (Debian / Ubuntu)</option>
-                      <option value="rpm">RPM (RHEL family)</option>
+                      <option value="apt">APT (Ubuntu 24.04)</option>
+                      <option value="rpm">RPM (RHEL-compatible 9)</option>
                     </select>
                   </label>
 
@@ -310,7 +337,6 @@ export default function PackagesPage() {
                         onChange={(event) => setRpmPgVersion(event.target.value as RpmPgVersion)}
                         className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm text-gray-100"
                       >
-                        <option value="16">16</option>
                         <option value="17">17</option>
                         <option value="18">18</option>
                       </select>
@@ -331,12 +357,11 @@ export default function PackagesPage() {
                 The generated command adds the PostgreSQL upstream repositories that provide
                 PostgreSQL, <code className="text-gray-300">pg_cron</code>,{" "}
                 <code className="text-gray-300">pgvector</code>, PostGIS, and{" "}
-                <code className="text-gray-300">rum</code> for PostgreSQL 16/17.
+                <code className="text-gray-300">rum</code> for PostgreSQL 17.
               </p>
               <p className="mt-2 text-sm text-gray-400">
-                {isFullStack
-                  ? "It installs the full DocumentDB stack for this target: the extension, the gateway runtime, the administrator tools and the systemd units."
-                  : "It installs the PostgreSQL extension package. This target is not yet covered by the v0.116-0 package layout, so the repository serves the extension alone — no gateway package, setup helper, or systemd service."}
+                It installs the full DocumentDB stack for this target: the extension, the gateway
+                runtime, the administrator tools and the systemd units.
               </p>
               {isFullStack ? (
                 <>
@@ -366,7 +391,7 @@ export default function PackagesPage() {
               ) : null}
               {packageFamily === "apt" ? (
                 <p className="mt-2 text-sm text-gray-400">
-                  Running in a clean Debian/Ubuntu container as <code className="text-gray-300">root</code>?
+                  Running in a clean Ubuntu container as <code className="text-gray-300">root</code>?
                   Run <code className="text-gray-300">export DEBIAN_FRONTEND=noninteractive</code> in the shell first
                   (and omit <code className="text-gray-300">sudo</code> from the command above).
                   Without it, <code className="text-gray-300">tzdata</code> prompts for input partway through
@@ -382,9 +407,10 @@ export default function PackagesPage() {
                 {isFullStack ? (
                   <>
                     <p className="mb-3 text-sm text-gray-400">
-                      DocumentDB ships as five packages. Installing{" "}
+                      A per-major DocumentDB install resolves five package names. Installing{" "}
                       <code className="text-gray-300">{selectedPackageNames}</code> pulls in
-                      everything below.
+                      everything below; the optional <code className="text-gray-300">documentdb</code>{" "}
+                      meta package selects PostgreSQL 18.
                     </p>
                     <dl className="space-y-2 text-sm">
                       {packageRoles.map((entry) => (
@@ -406,12 +432,6 @@ export default function PackagesPage() {
                   </p>
                 )}
               </div>
-              {packageFamily === "apt" ? (
-                <p className="mt-2 text-sm text-amber-300">
-                  Debian 13 is now supported in the APT repository-backed install flow. Debian
-                  11 currently supports only PostgreSQL 16 and 17.
-                </p>
-              ) : null}
               <div className="mt-4">
                 <Link
                   href="/docs/getting-started/packages"
@@ -427,7 +447,7 @@ export default function PackagesPage() {
         <section className="space-y-4">
           <details className="rounded-lg border border-neutral-700 bg-neutral-800/60 p-5">
             <summary className="cursor-pointer text-lg font-semibold text-white">
-              Full package catalog (all supported combinations)
+              Current release package catalog
             </summary>
             <div className="mt-4 overflow-x-auto">
               <table className="w-full min-w-[720px] border-collapse text-left text-sm">
@@ -444,75 +464,43 @@ export default function PackagesPage() {
                 <tbody className="text-gray-300">
                   <tr className="border-b border-neutral-800">
                     <td className="px-3 py-3 font-semibold text-blue-300">APT</td>
-                    <td className="px-3 py-3">Ubuntu 24.04 (full stack) · <code className="text-gray-200">ubuntu24</code></td>
+                    <td className="px-3 py-3">Ubuntu 24.04 · <code className="text-gray-200">ubuntu24</code></td>
                     <td className="px-3 py-3">amd64, arm64</td>
                     <td className="px-3 py-3">17, 18</td>
                     <td className="px-3 py-3">
                       <code className="text-gray-200">documentdb-&lt;pg&gt;</code>
                     </td>
-                    <td className="px-3 py-3">0.116</td>
-                  </tr>
-                  <tr className="border-b border-neutral-800">
-                    <td className="px-3 py-3 font-semibold text-blue-300">APT</td>
-                    <td className="px-3 py-3">Ubuntu 24.04 (extension only) · <code className="text-gray-200">ubuntu24</code></td>
-                    <td className="px-3 py-3">amd64, arm64</td>
-                    <td className="px-3 py-3">16</td>
-                    <td className="px-3 py-3">
-                      <code className="text-gray-200">postgresql-16-documentdb</code>
-                    </td>
-                    <td className="px-3 py-3">0.114</td>
-                  </tr>
-                  <tr className="border-b border-neutral-800">
-                    <td className="px-3 py-3 font-semibold text-blue-300">APT</td>
-                    <td className="px-3 py-3">Ubuntu 22.04 · <code className="text-gray-200">ubuntu22</code><br />Debian 11/12/13 · <code className="text-gray-200">deb11</code> / <code className="text-gray-200">deb12</code> / <code className="text-gray-200">deb13</code><br />(extension only)</td>
-                    <td className="px-3 py-3">amd64, arm64</td>
-                    <td className="px-3 py-3">16, 17, 18 (Debian 11: 16, 17)</td>
-                    <td className="px-3 py-3">
-                      <code className="text-gray-200">postgresql-&lt;pg&gt;-documentdb</code>
-                    </td>
-                    <td className="px-3 py-3">0.114</td>
-                  </tr>
-                  <tr className="border-b border-neutral-800">
-                    <td className="px-3 py-3 font-semibold text-red-300">RPM</td>
-                    <td className="px-3 py-3">RHEL-compatible 9 (full stack) · <code className="text-gray-200">rpm/rhel9</code></td>
-                    <td className="px-3 py-3">x86_64, aarch64</td>
-                    <td className="px-3 py-3">17, 18</td>
-                    <td className="px-3 py-3">
-                      <code className="text-gray-200">documentdb-&lt;pg&gt;</code>
-                    </td>
-                    <td className="px-3 py-3">0.116</td>
-                  </tr>
-                  <tr className="border-b border-neutral-800">
-                    <td className="px-3 py-3 font-semibold text-red-300">RPM</td>
-                    <td className="px-3 py-3">RHEL-compatible 9 (extension only) · <code className="text-gray-200">rpm/rhel9</code></td>
-                    <td className="px-3 py-3">x86_64, aarch64</td>
-                    <td className="px-3 py-3">16</td>
-                    <td className="px-3 py-3">
-                      <code className="text-gray-200">postgresql16-documentdb</code>
-                    </td>
-                    <td className="px-3 py-3">0.114</td>
+                    <td className="px-3 py-3">{release.metaVersion}</td>
                   </tr>
                   <tr>
                     <td className="px-3 py-3 font-semibold text-red-300">RPM</td>
-                    <td className="px-3 py-3">
-                       RHEL-compatible 8 (extension only, tested on Rocky Linux) · <code className="text-gray-200">rpm/rhel8</code>
-                    </td>
+                    <td className="px-3 py-3">RHEL-compatible 9 · <code className="text-gray-200">rpm/rhel9</code></td>
                     <td className="px-3 py-3">x86_64, aarch64</td>
-                    <td className="px-3 py-3">16, 17, 18</td>
+                    <td className="px-3 py-3">17, 18</td>
                     <td className="px-3 py-3">
-                      <code className="text-gray-200">postgresql&lt;pg&gt;-documentdb</code>
+                      <code className="text-gray-200">documentdb-&lt;pg&gt;</code>
                     </td>
-                    <td className="px-3 py-3">0.114</td>
+                    <td className="px-3 py-3">{release.metaRpmVersion}</td>
                   </tr>
                 </tbody>
               </table>
               <p className="mt-3 text-xs text-amber-300">
-                <strong>PostgreSQL 16 is extension-only on every distribution</strong>, including
-                Ubuntu 24.04 and RHEL 9. There is no <code>documentdb-16</code> — requesting it
-                fails with <em>&quot;has no installation candidate&quot;</em> (APT) or{" "}
-                <em>&quot;No match for argument&quot;</em> (DNF). On PostgreSQL 16 you get the
-                extension alone, at 0.114: no gateway, no <code>documentdb-setup</code>, no
-                systemd units. The packaged stack requires PostgreSQL 17 or 18.
+                Compared with earlier releases, v0.116 reduces the hosted package matrix. The
+                repository contains only package combinations attached to{" "}
+                <a href={release.releaseUrl} className="text-blue-300 hover:text-blue-200">
+                  {release.tagName}
+                </a>
+                . Other combinations remain build-on-demand targets in the source repository;
+                see the{" "}
+                <a
+                  href={packagingGuideUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-300 hover:text-blue-200"
+                >
+                  packaging guide
+                </a>{" "}
+                to build the package you need from the matching tag.
               </p>
               <p className="mt-3 text-xs text-gray-400">
                 Use Package Finder above to generate the exact command for your selected
@@ -520,11 +508,39 @@ export default function PackagesPage() {
                 <Link href="/docs/getting-started/packages" className="text-blue-400 hover:text-blue-300">
                   Linux Packages Quick Start
                 </Link>{" "}
-                for every repository component and install command written out in full.
+                for the supported repository components and install commands written out in full.
               </p>
-              <p className="mt-2 text-xs text-gray-500">
-                Debian 13 packages are available in the <code>deb13</code> APT component and
-                remain downloadable as direct <code>.deb</code> assets from GitHub Releases.
+            </div>
+          </details>
+
+          <details className="rounded-lg border border-amber-400/30 bg-amber-500/10 p-5">
+            <summary className="cursor-pointer text-lg font-semibold text-amber-100">
+              Migrating from repository targets retired in v0.116
+            </summary>
+            <div className="mt-4 space-y-3 text-sm leading-6 text-amber-100/80">
+              <p>
+                documentdb.io no longer publishes packages for Ubuntu 22.04, Debian 11/12/13,
+                RHEL-compatible 8, or PostgreSQL 16. Existing installations keep running, but
+                they receive no package updates and cannot reinstall those packages from the
+                documentdb.io repository.
+              </p>
+              <p>
+                Empty signed metadata remains at the retired repository URLs so{" "}
+                <code className="text-amber-100">apt update</code> and{" "}
+                <code className="text-amber-100">dnf makecache</code> do not break unrelated
+                package operations. Remove the DocumentDB source if that host will not move to
+                the current matrix:
+              </p>
+              <div className="rounded-md border border-amber-300/20 bg-black p-3 text-xs text-green-400 sm:text-sm">
+                <div>sudo rm -f /etc/apt/sources.list.d/documentdb.list &amp;&amp; sudo apt update</div>
+                <div className="mt-1">
+                  sudo rm -f /etc/yum.repos.d/documentdb.repo &amp;&amp; sudo dnf clean all
+                </div>
+              </div>
+              <p>
+                To remain on an older target, use the matching GitHub release assets or build
+                from that release tag. Those paths are not part of the current hosted support
+                matrix.
               </p>
             </div>
           </details>
@@ -609,8 +625,7 @@ export default function PackagesPage() {
                 <div className="mt-1">{currentReleaseExamples[2]}</div>
               </div>
               <p className="text-xs text-gray-500">
-                Swap the distribution, PostgreSQL version, architecture, and version string to match
-                the exact asset you need.
+                Choose an asset whose PostgreSQL version and architecture match your host.
               </p>
               <a
                 href={allReleasesUrl}
@@ -653,9 +668,7 @@ export default function PackagesPage() {
               Docker starts a gateway-backed local endpoint on port 10260. On Ubuntu 24.04 and
               RHEL-compatible 9 the packages give you the same thing: install, then run{" "}
               <code className="text-gray-300">sudo documentdb-setup --admin-user admin</code>,
-              which creates the database and starts the gateway. On the extension-only
-              distributions the Linux package guide covers the additional source-gateway steps
-              needed to expose a MongoDB-compatible endpoint.
+              which creates the database and starts the gateway.
             </p>
           </div>
 
