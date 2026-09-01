@@ -4,7 +4,11 @@ import { load as loadYaml } from 'js-yaml';
 import matter from 'gray-matter';
 import { Article } from '../types/Article';
 import { Link } from '../types/Link';
-import { buildAptInstallCommand, buildRpmInstallCommand } from '../lib/packageInstall';
+import {
+  buildAptInstallCommand,
+  buildRpmInstallCommand,
+  buildSetupCommand,
+} from '../lib/packageInstall';
 import { documentdbDiscordUrl } from './externalLinks';
 
 const articlesDirectory = path.join(process.cwd(), 'articles');
@@ -161,7 +165,7 @@ const linuxPackagesGuideContent = `# Linux Packages Quick Start
 
 Install DocumentDB from the published package repository and get a MongoDB-compatible endpoint on your own host.
 
-The current official release publishes the full stack — extension, gateway, setup wizard and systemd units — for **Ubuntu 24.04 and RHEL-compatible 9, on PostgreSQL 17 or 18**. Starting with v0.116, this is a deliberately smaller prebuilt matrix than earlier releases. The website repository mirrors only the current release assets and does not carry older packages forward to make other targets appear current.
+The current official release publishes the full stack — extension, gateway, setup wizard and systemd units — for **Ubuntu 24.04 and EL9, on PostgreSQL 17 or 18**. EL9 includes Rocky Linux, AlmaLinux, CentOS Stream, and registered Red Hat Enterprise Linux; the Package Finder supplies the prerequisite command for each family. Starting with v0.116, this is a deliberately smaller prebuilt matrix than earlier releases. The website repository mirrors only the current release assets and does not carry older packages forward to make other targets appear current.
 
 > [!NOTE]
 > Need another distribution or PostgreSQL major? We welcome community builds. Check out the matching release tag and use the version-parameterized [packaging scripts](https://github.com/documentdb/documentdb/blob/v0.116-0/packaging/README.md). \`build_packages.sh\` builds the extension, \`gateway/build_gateway_packages.sh\` builds the gateway, and \`build_extra_packages.sh\` builds the common, tools, stand-alone, and meta packages. PostgreSQL 15 is extension-only because the setup tools require PostgreSQL 16 or newer. These builds are on demand and are not official release assets hosted by documentdb.io.
@@ -194,13 +198,22 @@ You do not need PostgreSQL already installed — the setup wizard creates and ma
 ${buildAptInstallCommand('ubuntu24', 'auto', '18')}
 \`\`\`
 
-### RHEL-compatible 9, PostgreSQL 18 (RPM)
+### Rocky Linux, AlmaLinux, or CentOS Stream 9, PostgreSQL 18 (RPM)
+
+\`\`\`bash
+${buildRpmInstallCommand('rocky9', 'auto', '18')}
+\`\`\`
+
+### Registered Red Hat Enterprise Linux 9, PostgreSQL 18 (RPM)
+
+This command requires an active Red Hat subscription. RHEL exposes CodeReady Builder through
+\`subscription-manager\`, not through the \`crb\` repository ID used by Rocky-family systems.
 
 \`\`\`bash
 ${buildRpmInstallCommand('rhel9', 'auto', '18')}
 \`\`\`
 
-For PostgreSQL 17, install \`documentdb-17\`; there is no \`documentdb-16\`. Keep the \`crb\` line on RHEL — without it \`dnf\` fails on \`libqhull_r.so.7\`.
+For PostgreSQL 17, install \`documentdb-17\`; there is no \`documentdb-16\`. Both EL9 flows enable CodeReady Builder, which supplies \`libqhull_r.so.7\` for PostGIS dependencies.
 
 Then install \`mongosh\`, which you need to talk to the endpoint:
 
@@ -210,7 +223,7 @@ curl -fsSL https://pgp.mongodb.com/server-8.0.asc | sudo gpg --dearmor -o /usr/s
 echo "deb [signed-by=/usr/share/keyrings/mongodb.gpg] https://repo.mongodb.org/apt/ubuntu noble/mongodb-org/8.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb.list
 sudo apt update && sudo apt install -y mongodb-mongosh
 
-# RHEL-compatible 9
+# EL9
 printf '[mongodb-org-8.0]\\nname=MongoDB\\nbaseurl=https://repo.mongodb.org/yum/redhat/9/mongodb-org/8.0/$basearch/\\ngpgcheck=1\\nenabled=1\\ngpgkey=https://pgp.mongodb.com/server-8.0.asc\\n' | sudo tee /etc/yum.repos.d/mongodb.repo
 sudo dnf install -y mongodb-mongosh
 \`\`\`
@@ -223,10 +236,19 @@ sudo dnf install -y mongodb-mongosh
 Installing the packages puts files on disk; it does not create a database or start the endpoint. The setup wizard does that:
 
 \`\`\`bash
-sudo documentdb-setup --admin-user admin
+${buildSetupCommand('18')}
 \`\`\`
 
-It creates the PostgreSQL instance, installs the extensions, starts the gateway, and enables it at boot. It **prompts for the admin password**.
+It creates a new private PostgreSQL 18 instance, installs the extensions, starts the gateway, and enables it at boot. It **prompts for the admin password**. The explicit major and fresh-instance flags keep another installed PostgreSQL major or an existing system cluster from being selected accidentally.
+
+In a non-interactive shell, the command exits unless you provide a password source:
+
+\`\`\`bash
+printf '%s' "$ADMIN_PW" | sudo documentdb-setup --pg-version 18 \\
+  --use-new-postgres-instance --admin-user admin --admin-password-stdin --yes
+\`\`\`
+
+To adopt an existing PostgreSQL instance instead, follow [Operating a package install](/docs/linux-packages); brownfield setup intentionally has different lifecycle and restart requirements.
 
 Now open a shell against the endpoint:
 
@@ -258,7 +280,7 @@ A database and collection are created on first write:
 
 - \`Unable to locate package documentdb-18\` (apt) / \`No match for argument: documentdb-18\` (dnf) — the DocumentDB repository was not added, or the host is not in the current release matrix. Check the [Package Finder](/packages)
 - \`documentdb-18 : Depends: postgresql-18 but it is not installable\` — PGDG was not added first
-- \`nothing provides libqhull_r.so.7\` — the \`crb\` line did not run
+- \`nothing provides libqhull_r.so.7\` — CRB or CodeReady Builder was not enabled for the selected EL9 family
 - \`MongoServerError: Invalid key\` — empty or wrong password; a bare \`-p\` prompts, so a non-interactive shell sends nothing
 - Anything else — \`sudo documentdb-setup --status\` reports the listener, service states and resolved paths
 
@@ -276,8 +298,24 @@ The gateway binds **all interfaces** (\`0.0.0.0:10260\` and \`[::]:10260\`) by d
 Before using this anywhere but a private machine:
 
 - Restrict the listener with \`DOCUMENTDB_LISTEN_ADDR=127.0.0.1:10260\` in \`/etc/documentdb/local/<major>/gateway.env\` and restart the service, or firewall port \`10260\`. **Re-running \`documentdb-setup\` silently resets this to a wildcard bind**, so re-check with \`grep DOCUMENTDB_LISTEN_ADDR /etc/documentdb/local/<major>/gateway.env\` afterwards. A firewall rule is the more durable control.
-- Replace the auto-generated self-signed certificate. \`tlsAllowInvalidCertificates=true\` disables certificate validation — point \`DOCUMENTDB_TLS_CERT_FILE\` / \`DOCUMENTDB_TLS_KEY_FILE\` at a real certificate and drop that option.
 - Use a strong admin password and create per-application users rather than sharing \`admin\`.
+
+### Replace the self-signed certificate
+
+\`tlsAllowInvalidCertificates=true\` disables server authentication. To use a real certificate,
+set all three values in \`/etc/documentdb/local/<major>/gateway.env\`:
+
+\`\`\`ini
+DOCUMENTDB_TLS_AUTO_GENERATE=false
+DOCUMENTDB_TLS_CERT_FILE=/etc/documentdb/tls/server.crt
+DOCUMENTDB_TLS_KEY_FILE=/etc/documentdb/tls/server.key
+\`\`\`
+
+The gateway runs as \`documentdb-gateway\`. Every parent directory must be traversable by that
+account; keep the private key restricted but readable, for example
+\`root:documentdb-gateway\` with mode \`0640\`. Restart
+\`documentdb-gateway-local@<major>.service\`, verify it is active, and then remove
+\`tlsAllowInvalidCertificates=true\` from clients.
 
 ## Services and paths
 
@@ -319,7 +357,33 @@ SELECT extname, extversion FROM pg_extension WHERE extname LIKE 'documentdb%';
 
 ## Upgrading
 
-A package upgrade only replaces files. Afterwards, update the extensions in every database that has DocumentDB installed:
+> [!WARNING]
+> v0.116 does not support an in-place upgrade from the extension-only package layout in
+> v0.114 or earlier. Use a clean host, or remove the earlier packages and perform the current
+> [fresh installation](/docs/getting-started/packages). Upgrading only
+> \`postgresql-N-documentdb\` does not install the gateway, tools, common payload, or
+> \`documentdb-N\`.
+
+For a later point release that uses the same multi-package layout, move the entire stack
+together. On a package-managed private PostgreSQL 18 instance:
+
+\`\`\`bash
+sudo systemctl stop documentdb-gateway-local@18.service
+
+# Debian / Ubuntu
+sudo apt update
+sudo apt install --only-upgrade documentdb-18 postgresql-18-documentdb \\
+  documentdb-common documentdb-gateway documentdb-postgresql-tools
+
+# EL9: use this instead of the apt commands above
+sudo dnf upgrade documentdb-18 postgresql18-documentdb \\
+  documentdb-common documentdb-gateway documentdb-postgresql-tools
+
+# PostgreSQL has the old shared library loaded until it restarts.
+sudo systemctl restart documentdb-postgresql@18.service
+\`\`\`
+
+Then update the extensions in **every database** that has DocumentDB installed:
 
 \`\`\`sql
 ALTER EXTENSION documentdb_core UPDATE;
@@ -327,16 +391,23 @@ ALTER EXTENSION documentdb UPDATE;
 ALTER EXTENSION documentdb_extended_rum UPDATE;  -- only if installed
 \`\`\`
 
-PostgreSQL applies intermediate upgrade scripts automatically. In-place upgrades are not yet a fully tested path, so take a backup first.
+Finally restart the gateway:
+
+\`\`\`bash
+sudo systemctl start documentdb-gateway-local@18.service
+\`\`\`
+
+PostgreSQL applies intermediate upgrade scripts automatically. Take a backup first. For an
+adopted PostgreSQL instance, restart its operator-managed PostgreSQL service instead of
+\`documentdb-postgresql@18.service\`.
 
 ## Remove or reset
 
-\`\`\`bash
-# Stop the stack first. On systemd hosts:
-sudo systemctl stop documentdb-local@18.target
-# Without systemd, use an UNSCOPED restore (no --pg-version):
-sudo documentdb-setup --restore
+### Greenfield: destroy the package-managed instance
 
+\`\`\`bash
+# Reset reads setup.conf before removing it, stops the services, and destroys
+# the package-managed data directory. Do not run --restore first.
 sudo documentdb-local-reset --pg-version 18 --confirm-destroy    # DESTROYS the data directory
 
 # Name the package you installed AND the extension: autoremove does not reap
@@ -345,7 +416,22 @@ sudo apt purge --autoremove documentdb-18 postgresql-18-documentdb
 sudo dnf remove documentdb-18 postgresql18-documentdb && sudo dnf autoremove
 \`\`\`
 
-Confirm the stack is down first with \`ss -lnt | grep 10260\`. A gateway still running when its packages go keeps serving from a deleted binary. On a multi-major host remove one major at a time and re-check the survivor: \`documentdb-common\` owns the shared tooling and only \`documentdb-N\` holds it.
+### Brownfield: detach from an existing PostgreSQL instance
+
+\`\`\`bash
+sudo documentdb-setup --restore --pg-version 18
+
+sudo apt purge --autoremove documentdb-18 postgresql-18-documentdb
+sudo dnf remove documentdb-18 postgresql18-documentdb && sudo dnf autoremove
+\`\`\`
+
+Do not run \`documentdb-local-reset\` for brownfield installations: the PostgreSQL instance and
+its data belong to the operator. Do not run restore before a greenfield reset either; restore
+deletes the state that identifies custom data directories and protects adopted clusters.
+
+Confirm the stack is down with \`ss -lnt | grep 10260\`. On a multi-major host remove one major
+at a time and re-check the survivor: \`documentdb-common\` owns the shared tooling and only
+\`documentdb-N\` holds it.
 
 ## Known issues in 0.116
 
@@ -358,7 +444,6 @@ These are defects in this release, not expected behaviour. Most need a host with
 | Restart | Re-running \`documentdb-setup\` to restart can hang; redirecting output to a file avoids it | no systemd |
 | Stop | \`documentdb-setup --restore --pg-version N\` reports success without stopping the gateway — use an unscoped \`--restore\`, which stops every major on the host | no systemd |
 | Minimal RHEL | Install \`procps-ng\` first, or \`--restore\` reports success while the gateway keeps serving and a later run fails with \`Port 10260 is already in use\` | no systemd |
-| Reset | \`documentdb-local-reset --confirm-destroy\` can report success while leaving a PostgreSQL process running | no systemd |
 
 **Prefer a systemd host for anything you care about**, where the service lifecycle is managed by systemd rather than by the setup script.
 
@@ -374,7 +459,8 @@ ERROR: The DocumentDB extension package is not installed for PostgreSQL 17
 Each major also needs its own gateway port — the second one fails on \`Gateway port 10260 is already in use\` unless you pass \`--gateway-port\`:
 
 \`\`\`bash
-sudo documentdb-setup --pg-version 17 --gateway-port 10261 --admin-user admin
+sudo documentdb-setup --pg-version 17 --use-new-postgres-instance \\
+  --gateway-port 10261 --admin-user admin
 \`\`\`
 
 ## Troubleshooting
@@ -383,12 +469,8 @@ Failure modes beyond the four in the [quick start](/docs/getting-started/package
 
 - \`Bad GPG signature\` on \`pgdg-common\` — wrong architecture in the PGDG repository URL
 - \`apt install\` hangs in a container — \`export DEBIAN_FRONTEND=noninteractive\` first, and drop the leading \`sudo\` when running as \`root\` (minimal images often have no \`sudo\`). Keep \`sudo -u <user>\`, which switches user; \`su documentdb-local -c\` fails because that account has \`/usr/sbin/nologin\`, so use \`su -s /bin/bash documentdb-local -c '...'\`
-- \`ss: command not found\` on a minimal RHEL host — install \`iproute\`; the DocumentDB packages do not pull it in
+- \`ss: command not found\` on a minimal EL9 host — install \`iproute\`; the DocumentDB packages do not pull it in
 - \`db.version()\` and \`buildInfo\` in \`mongosh\` report the emulated MongoDB wire version, not DocumentDB's — use \`documentdb-gateway --version\`
-
-## Multiple PostgreSQL majors
-
-Install the matching \`documentdb-N\` for every major you configure. \`documentdb-setup --pg-version N\` will happily configure a major whose package is absent, and nothing then owns the result — a later \`autoremove\` can reap \`documentdb-common\` out from under it.
 
 ## Unattended setup
 
