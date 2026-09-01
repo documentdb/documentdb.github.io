@@ -17,6 +17,8 @@ DEB_PREFIXES = {
     "ubuntu24.04-": "ubuntu24",
 }
 RPM_POOLS = ("rhel8", "rhel9")
+APT_METADATA_COMPONENTS = {"main", "deb11", "deb12", "deb13", "ubuntu22", "ubuntu24"}
+RPM_METADATA_POOLS = {"main", "rhel8", "rhel9"}
 
 
 def rpm_pool(name: str) -> str | None:
@@ -101,12 +103,36 @@ if expected_deb:
         fail(f"Missing {release_file}")
     match = re.search(r"^Components:\s*(.+)$", release_file.read_text(), re.MULTILINE)
     components = set(match.group(1).split()) if match else set()
-    if components != set(expected_deb):
+    if components != APT_METADATA_COMPONENTS:
         fail(
-            "APT Release components do not match the selected release.\n"
-            f"Expected: {sorted(expected_deb)}\n"
+            "APT Release components do not include the compatibility metadata set.\n"
+            f"Expected: {sorted(APT_METADATA_COMPONENTS)}\n"
             f"Actual: {sorted(components)}"
         )
+
+    for component in APT_METADATA_COMPONENTS:
+        expected_packages = expected_deb.get(component, set())
+        if component == "main":
+            expected_packages = expected_deb.get("ubuntu22", set())
+
+        for arch in ("amd64", "arm64"):
+            packages = ROOT / "deb" / "dists" / "stable" / component / f"binary-{arch}" / "Packages"
+            packages_gz = packages.with_name("Packages.gz")
+            if not packages.exists() or not packages_gz.exists():
+                fail(f"Missing APT metadata for {component}/{arch}")
+
+            listed = set(re.findall(r"^Filename:\s+.*/([^/\s]+\.deb)$", packages.read_text(), re.MULTILINE))
+            expected_for_arch = {
+                name
+                for name in expected_packages
+                if name.endswith(f"_{arch}.deb") or name.endswith("_all.deb")
+            }
+            if listed != expected_for_arch:
+                fail(
+                    f"APT metadata {component}/{arch} does not match the selected release.\n"
+                    f"Expected: {sorted(expected_for_arch)}\n"
+                    f"Actual: {sorted(listed)}"
+                )
 
 rpm_assets = {name for name in package_assets if name.endswith(".rpm")}
 explicit_rpm_pools = {pool for name in rpm_assets if (pool := rpm_pool(name))}
@@ -123,22 +149,20 @@ for name in rpm_assets:
         fail(f"Unrecognized RPM release asset: {name}")
 
 rpm_root = ROOT / "rpm"
-expected_rpm_dirs = set(expected_rpm)
-if "rhel8" in expected_rpm:
-    expected_rpm_dirs.add("main")
 actual_rpm_pools = {
     path.name
     for path in rpm_root.iterdir()
     if path.is_dir()
 } if rpm_root.exists() else set()
-if actual_rpm_pools != expected_rpm_dirs:
+if actual_rpm_pools != RPM_METADATA_POOLS:
     fail(
-        "RPM pools do not match the selected release.\n"
-        f"Expected: {sorted(expected_rpm_dirs)}\n"
+        "RPM repositories do not include the compatibility metadata set.\n"
+        f"Expected: {sorted(RPM_METADATA_POOLS)}\n"
         f"Actual: {sorted(actual_rpm_pools)}"
     )
 
-for pool, expected in expected_rpm.items():
+for pool in RPM_POOLS:
+    expected = expected_rpm.get(pool, set())
     actual = {path.name for path in (rpm_root / pool).glob("*.rpm")}
     if actual != expected:
         fail(
@@ -146,11 +170,14 @@ for pool, expected in expected_rpm.items():
             f"Missing: {sorted(expected - actual)}\n"
             f"Unexpected: {sorted(actual - expected)}"
         )
+    if not (rpm_root / pool / "repodata" / "repomd.xml").exists():
+        fail(f"Missing RPM metadata for {pool}")
 
-if "main" in expected_rpm_dirs:
-    actual_main = {path.name for path in (rpm_root / "main").glob("*.rpm")}
-    if actual_main != expected_rpm["rhel8"]:
-        fail("Legacy RPM main pool does not match the selected release's RHEL 8 pool.")
+actual_main = {path.name for path in (rpm_root / "main").glob("*.rpm")}
+if actual_main != expected_rpm.get("rhel8", set()):
+    fail("Legacy RPM main pool does not match the selected release's RHEL 8 pool.")
+if not (rpm_root / "main" / "repodata" / "repomd.xml").exists():
+    fail("Missing RPM metadata for main")
 
 print(
     f"Package pools exactly match {release.get('tag_name', 'the selected release')}: "

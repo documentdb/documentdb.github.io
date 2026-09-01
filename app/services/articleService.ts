@@ -164,7 +164,25 @@ Install DocumentDB from the published package repository and get a MongoDB-compa
 The current official release publishes the full stack — extension, gateway, setup wizard and systemd units — for **Ubuntu 24.04 and RHEL-compatible 9, on PostgreSQL 17 or 18**. Starting with v0.116, this is a deliberately smaller prebuilt matrix than earlier releases. The website repository mirrors only the current release assets and does not carry older packages forward to make other targets appear current.
 
 > [!NOTE]
-> Need another distribution or PostgreSQL major? We welcome community builds. Check out the matching release tag and use the version-parameterized [packaging scripts](https://github.com/documentdb/documentdb/blob/main/packaging/README.md). For example, \`./packaging/build_packages.sh --os deb12 --pg 16\` builds the extension package for Debian 12 and PostgreSQL 16; the guide also covers gateway and stand-alone packages. These builds are on demand and are not official release assets hosted by documentdb.io.
+> Need another distribution or PostgreSQL major? We welcome community builds. Check out the matching release tag and use the version-parameterized [packaging scripts](https://github.com/documentdb/documentdb/blob/v0.116-0/packaging/README.md). \`build_packages.sh\` builds the extension, \`gateway/build_gateway_packages.sh\` builds the gateway, and \`build_extra_packages.sh\` builds the common, tools, stand-alone, and meta packages. PostgreSQL 15 is extension-only because the setup tools require PostgreSQL 16 or newer. These builds are on demand and are not official release assets hosted by documentdb.io.
+
+## If you used an earlier repository target
+
+documentdb.io no longer publishes packages for Ubuntu 22.04, Debian 11/12/13, RHEL-compatible 8, or PostgreSQL 16. Existing installations keep running, but receive no package updates and cannot reinstall those packages from documentdb.io.
+
+Empty signed metadata remains at the retired repository URLs so \`apt update\` and \`dnf makecache\` continue to work. Remove the source on a host that will not move to the current matrix:
+
+\`\`\`bash
+# Debian / Ubuntu
+sudo rm -f /etc/apt/sources.list.d/documentdb.list
+sudo apt update
+
+# RHEL-compatible
+sudo rm -f /etc/yum.repos.d/documentdb.repo
+sudo dnf clean all
+\`\`\`
+
+To remain on an older target, use its GitHub release assets or build from the matching source tag. Neither path is part of the current hosted support matrix.
 
 You do not need PostgreSQL already installed — the setup wizard creates and manages its own instance. The install does add the PGDG repository and pull PostgreSQL, PostGIS and around 160 packages (about 140 MB), so pick a host you are willing to have PGDG on.
 
@@ -365,9 +383,7 @@ Failure modes beyond the four in the [quick start](/docs/getting-started/package
 
 - \`Bad GPG signature\` on \`pgdg-common\` — wrong architecture in the PGDG repository URL
 - \`apt install\` hangs in a container — \`export DEBIAN_FRONTEND=noninteractive\` first, and drop the leading \`sudo\` when running as \`root\` (minimal images often have no \`sudo\`). Keep \`sudo -u <user>\`, which switches user; \`su documentdb-local -c\` fails because that account has \`/usr/sbin/nologin\`, so use \`su -s /bin/bash documentdb-local -c '...'\`
-- Debian 11 has PostgreSQL 18 from PGDG but no \`postgresql-18-postgis-3\` for Bullseye, so the dependency set cannot be satisfied; use 16 or 17
 - \`ss: command not found\` on a minimal RHEL host — install \`iproute\`; the DocumentDB packages do not pull it in
-- Debian 13 also gets this extension from \`apt.postgresql.org\`, whose version sorts higher; pin with \`apt install postgresql-18-documentdb=<VERSION>\` for this repository's build
 - \`db.version()\` and \`buildInfo\` in \`mongosh\` report the emulated MongoDB wire version, not DocumentDB's — use \`documentdb-gateway --version\`
 
 ## Multiple PostgreSQL majors
@@ -1133,6 +1149,10 @@ function normalizeArticle(section: string, file: string, frontmatter: Record<str
     normalizedContent = updateGettingStartedIndexContent(normalizedContent);
   }
 
+  if (section === 'getting-started' && file === 'prebuilt-packages') {
+    normalizedContent = updatePrebuiltPackagesContent(normalizedContent);
+  }
+
   if (section === 'getting-started' && file === 'azure-setup') {
     normalizedContent = normalizedContent.replace(/Micrtosoft/g, 'Microsoft');
   }
@@ -1208,6 +1228,15 @@ function updateGettingStartedIndexContent(content: string): string {
   );
 
   return updatedContent;
+}
+
+function updatePrebuiltPackagesContent(content: string): string {
+  const legacyClaim =
+    'Everything else — PostgreSQL 15/16, Debian 11/12/13, Ubuntu 22.04, RHEL-compatible 8 — is not built by first-party CI for this release. The [package repository](https://documentdb.io/packages) serves those targets the extension package from an earlier release, or build from the tag with the scripts in [`packaging/`](https://github.com/documentdb/documentdb/blob/main/packaging/README.md). PostgreSQL 15 is extension-only: `documentdb-setup` needs 16 or newer.';
+  const currentPolicy =
+    'Everything else — PostgreSQL 15/16, Debian 11/12/13, Ubuntu 22.04, RHEL-compatible 8 — is not built by first-party CI or hosted by documentdb.io for this release. Starting with v0.116, packages from earlier releases are not carried forward. Build from the matching tag with the [`packaging/` scripts](https://github.com/documentdb/documentdb/blob/v0.116-0/packaging/README.md); PostgreSQL 15 remains extension-only because `documentdb-setup` requires 16 or newer.';
+
+  return content.replace(legacyClaim, currentPolicy);
 }
 
 function updateDocumentDbLocalContent(content: string): string {

@@ -242,12 +242,11 @@ jobs:
                               f"Signing was enabled but {artifact} was not produced"
                           )
 
-              # RPM metadata signing is best-effort inside the download script,
-              # so surface it as a warning instead of failing the deployment.
               for repomd in sorted(Path("out/rpm").glob("*/repodata/repomd.xml")):
                   if not Path(f"{repomd}.asc").exists():
-                      print(f"::warning::{repomd} was not signed")
+                      raise SystemExit(f"Signing is enabled but {repomd}.asc was not produced")
           PY
+          bash .github/scripts/verify_package_signatures.sh
       # The metadata checks above prove the repository FILES exist. They do not
       # prove the repository is INSTALLABLE, and that gap has already shipped a
       # broken repository once: when v0.116-0 introduced the multi-package
@@ -268,6 +267,8 @@ jobs:
         run: node .github/scripts/check_release_drift.js
       - name: Smoke test the generated repository (dependency resolution)
         if: steps.features.outputs.packages == 'true'
+        env:
+          SIGN: ${{ steps.features.outputs.sign }}
         run: |
           set -euo pipefail
 
@@ -324,15 +325,24 @@ jobs:
           echo "::endgroup::"
 
           echo "::group::DNF resolution (rhel9 pool)"
-          docker run --rm --network host rockylinux/rockylinux:9 bash -c '
+          docker run --rm --network host -e SIGN="$SIGN" rockylinux/rockylinux:9 bash -c '
             set -e
             dnf install -y -q dnf-plugins-core >/dev/null 2>&1
             dnf install -y -q https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-x86_64/pgdg-redhat-repo-latest.noarch.rpm >/dev/null 2>&1
             dnf install -y -q epel-release >/dev/null 2>&1
             dnf config-manager --set-enabled crb
             dnf -qy module disable postgresql >/dev/null 2>&1
-            printf "%s\n" "[documentdb]" "name=DocumentDB" "baseurl=http://127.0.0.1:8099/rpm/rhel9" "enabled=1" "gpgcheck=0" \
-              > /etc/yum.repos.d/documentdb.repo
+            if [ "$SIGN" = true ]; then
+              printf "%s\n" "[documentdb]" "name=DocumentDB" \
+                "baseurl=http://127.0.0.1:8099/rpm/rhel9" "enabled=1" \
+                "gpgcheck=1" \
+                "gpgkey=http://127.0.0.1:8099/documentdb-archive-keyring.gpg" \
+                > /etc/yum.repos.d/documentdb.repo
+            else
+              printf "%s\n" "[documentdb]" "name=DocumentDB" \
+                "baseurl=http://127.0.0.1:8099/rpm/rhel9" "enabled=1" "gpgcheck=0" \
+                > /etc/yum.repos.d/documentdb.repo
+            fi
             # --assumeno always exits non-zero (the answer is "no"), so judge the
             # transaction it printed rather than the exit code.
             dnf install --assumeno documentdb > /tmp/sim.txt 2>&1 || true

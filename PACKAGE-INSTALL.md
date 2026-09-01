@@ -22,6 +22,32 @@ first-party-built release.
   Ubuntu 22.04; RHEL-compatible 8) are build-on-demand targets in the source repository.
   They are not part of the current official release and are not served by documentdb.io.
 
+### Targets retired from the hosted repository
+
+Starting with v0.116, documentdb.io no longer publishes packages for Ubuntu 22.04,
+Debian 11/12/13, RHEL-compatible 8, or PostgreSQL 16. This includes the older PG16
+extension packages previously present in the `ubuntu24` and `rpm/rhel9` repositories.
+
+Existing installations keep running, but receive no package updates and cannot reinstall
+those packages from documentdb.io. Empty signed metadata remains at the retired APT
+components and RPM repository URLs so package-manager refreshes do not break unrelated
+operations.
+
+Remove the repository configuration on a host that will not move to the current matrix:
+
+```bash
+# Debian / Ubuntu
+sudo rm -f /etc/apt/sources.list.d/documentdb.list
+sudo apt update
+
+# RHEL-compatible
+sudo rm -f /etc/yum.repos.d/documentdb.repo
+sudo dnf clean all
+```
+
+To remain on an older target, use the matching GitHub release assets or build from that
+release tag. Those paths are not part of the current hosted support matrix.
+
 ## Supported PostgreSQL Versions
 
 - Ubuntu 24.04: PostgreSQL 17 and 18
@@ -273,9 +299,17 @@ For example, after checking out the matching release tag, build an extension pac
 ./packaging/build_packages.sh --os deb12 --pg 16
 ```
 
-The upstream [packaging guide](https://github.com/documentdb/documentdb/blob/main/packaging/README.md)
-documents the accepted targets and the additional gateway and stand-alone package scripts.
-PostgreSQL 15 remains extension-only for package-managed installs.
+That command builds only `postgresql-N-documentdb`. A custom full-stack package set uses
+three entry points:
+
+- `packaging/build_packages.sh` — PostgreSQL extension
+- `packaging/gateway/build_gateway_packages.sh` — wire-protocol gateway
+- `packaging/build_extra_packages.sh` — tools, common payload, `documentdb-N`, and meta package
+
+The [v0.116 packaging guide](https://github.com/documentdb/documentdb/blob/v0.116-0/packaging/README.md)
+documents their required arguments, version formats, prerequisites, and accepted targets.
+PostgreSQL 15 remains extension-only for package-managed installs because the setup tools
+require PostgreSQL 16 or newer.
 
 
 ## Direct downloads

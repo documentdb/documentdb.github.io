@@ -85,11 +85,8 @@ export default function PackagesPage() {
   const release = useReleaseInfo();
   const [method, setMethod] = useState<InstallMethod>("docker");
   const [packageFamily, setPackageFamily] = useState<PackageFamily>("apt");
-  // Default to the paved road (Ubuntu 24.04 + PostgreSQL 18). It is the target
-  // the release is built and end-to-end tested against, and the only one whose
-  // repository component serves the full package set - defaulting to an
-  // The package finder only exposes combinations in the mirrored release.
-  // experience.
+  // Default to the paved road (Ubuntu 24.04 + PostgreSQL 18). The package
+  // finder exposes only combinations built and tested in the mirrored release.
   const [aptTarget, setAptTarget] = useState<AptDistro>("ubuntu24");
   const [rpmTarget, setRpmTarget] = useState<RpmDistro>("rhel9");
   const [aptArch, setAptArch] = useState<AptArch>("amd64");
@@ -224,7 +221,9 @@ export default function PackagesPage() {
                   documentdb.io now publishes only the combinations built and tested for the
                   current release: Ubuntu 24.04 and RHEL-compatible 9, PostgreSQL 17 or 18, on
                   both supported architectures. Packages from earlier releases are not carried
-                  forward to make unsupported targets appear current.
+                  forward to make unsupported targets appear current. This also withdraws the
+                  older PostgreSQL 16 extension packages previously served for Ubuntu 24.04 and
+                  RHEL-compatible 9.
                 </p>
                 <p className="mt-2 text-sm leading-6 text-amber-100/80">
                   Need another distribution or PostgreSQL major? We welcome community builds.
@@ -237,8 +236,9 @@ export default function PackagesPage() {
                   >
                     packaging scripts
                   </a>
-                  . Those builds are on demand and are not official release assets hosted by
-                  documentdb.io.
+                  . The extension, gateway, and remaining stand-alone packages use separate
+                  scripts. PostgreSQL 15 is extension-only. These builds are on demand and are
+                  not official release assets hosted by documentdb.io.
                 </p>
               </div>
               <div className="mb-5 rounded-lg border border-neutral-700 bg-neutral-900/60 p-4">
@@ -508,7 +508,39 @@ export default function PackagesPage() {
                 <Link href="/docs/getting-started/packages" className="text-blue-400 hover:text-blue-300">
                   Linux Packages Quick Start
                 </Link>{" "}
-                for every repository component and install command written out in full.
+                for the supported repository components and install commands written out in full.
+              </p>
+            </div>
+          </details>
+
+          <details className="rounded-lg border border-amber-400/30 bg-amber-500/10 p-5">
+            <summary className="cursor-pointer text-lg font-semibold text-amber-100">
+              Migrating from repository targets retired in v0.116
+            </summary>
+            <div className="mt-4 space-y-3 text-sm leading-6 text-amber-100/80">
+              <p>
+                documentdb.io no longer publishes packages for Ubuntu 22.04, Debian 11/12/13,
+                RHEL-compatible 8, or PostgreSQL 16. Existing installations keep running, but
+                they receive no package updates and cannot reinstall those packages from the
+                documentdb.io repository.
+              </p>
+              <p>
+                Empty signed metadata remains at the retired repository URLs so{" "}
+                <code className="text-amber-100">apt update</code> and{" "}
+                <code className="text-amber-100">dnf makecache</code> do not break unrelated
+                package operations. Remove the DocumentDB source if that host will not move to
+                the current matrix:
+              </p>
+              <div className="rounded-md border border-amber-300/20 bg-black p-3 text-xs text-green-400 sm:text-sm">
+                <div>sudo rm -f /etc/apt/sources.list.d/documentdb.list &amp;&amp; sudo apt update</div>
+                <div className="mt-1">
+                  sudo rm -f /etc/yum.repos.d/documentdb.repo &amp;&amp; sudo dnf clean all
+                </div>
+              </div>
+              <p>
+                To remain on an older target, use the matching GitHub release assets or build
+                from that release tag. Those paths are not part of the current hosted support
+                matrix.
               </p>
             </div>
           </details>
