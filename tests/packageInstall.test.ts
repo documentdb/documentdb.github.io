@@ -16,6 +16,10 @@ import type {
   RpmDistro,
   RpmPgVersion,
 } from '../app/lib/packageInstall';
+import {
+  FALLBACK_RELEASE,
+  parseReleaseInfo,
+} from '../app/lib/releaseInfo';
 
 /**
  * These commands are published on /packages for users to copy and paste, so a
@@ -70,6 +74,38 @@ describe('package metadata', () => {
   });
 });
 
+describe('release metadata', () => {
+  it('uses v0.117-0 for the first paint and feed fallback', () => {
+    expect(FALLBACK_RELEASE).toMatchObject({
+      tagName: 'v0.117-0',
+      aptVersion: '0.117-0',
+      rpmVersion: '0.117.0-1.el9',
+      metaVersion: '0.117.0',
+      metaRpmVersion: '0.117.0-1',
+      releaseUrl: 'https://github.com/documentdb/documentdb/releases/tag/v0.117-0',
+    });
+  });
+
+  it('derives v0.117 package versions from the published asset shapes', () => {
+    expect(parseReleaseInfo({
+      tag_name: 'v0.117-0',
+      html_url: 'https://github.com/documentdb/documentdb/releases/tag/v0.117-0',
+      assets: [
+        { name: 'ubuntu24.04-documentdb_0.117.0_all.deb' },
+        { name: 'ubuntu24.04-postgresql-18-documentdb_0.117-0_amd64.deb' },
+        { name: 'documentdb-0.117.0-1.noarch.rpm' },
+        { name: 'rhel9-postgresql18-documentdb-0.117.0-1.el9.x86_64.rpm' },
+      ],
+    })).toMatchObject({
+      tagName: 'v0.117-0',
+      aptVersion: '0.117-0',
+      rpmVersion: '0.117.0-1.el9',
+      metaVersion: '0.117.0',
+      metaRpmVersion: '0.117.0-1',
+    });
+  });
+});
+
 describe('buildAptInstallCommand', () => {
   it.each(aptMatrix)('produces a complete command for $distro/$arch/pg$pg', ({ distro, arch, pg }) => {
     const command = buildAptInstallCommand(distro, arch, pg);
@@ -104,7 +140,7 @@ describe('buildAptInstallCommand', () => {
 
   it.each(aptMatrix)('installs the right package for $distro/$arch/pg$pg', ({ distro, arch, pg }) => {
     const command = buildAptInstallCommand(distro, arch, pg);
-    // v0.116-0 ships the full package set for Tier-1 targets only. There the
+    // Since v0.116-0, Tier-1 targets ship the full package set. There the
     // per-major stand-alone pulls the whole stack; everywhere else the
     // repository still serves the extension alone, and offering `documentdb-N`
     // would be an install command that cannot resolve.

@@ -112,7 +112,7 @@ export default function PackagesPage() {
 
   const aptCommand = buildAptInstallCommand(aptTarget, aptArch, aptPgVersion);
   const rpmCommand = buildRpmInstallCommand(rpmTarget, rpmArch, rpmPgVersion);
-  // Tier-1 targets resolve the full v0.116-0 stack, so the selected package is
+  // Tier-1 targets resolve the current full stack, so the selected package is
   // the per-major stand-alone rather than the bare extension.
   const isFullStack =
     packageFamily === "apt"
@@ -384,6 +384,13 @@ export default function PackagesPage() {
                     )}
                     label="Setup"
                   />
+                  <p className="mt-3 text-sm text-gray-400">
+                    Sample data is opt-in. After installing{" "}
+                    <code className="text-gray-300">mongosh</code>, add{" "}
+                    <code className="text-gray-300">--load-sample-data</code> to seed the{" "}
+                    <code className="text-gray-300">StoreData</code> database with 41,505 stores
+                    and 2 ratings. The command above leaves the new instance empty.
+                  </p>
                   <p className="mt-3 text-sm text-gray-400">
                     The gateway then listens on port{" "}
                     <code className="text-gray-300">10260</code>. It binds all interfaces by

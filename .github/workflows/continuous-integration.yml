@@ -96,9 +96,9 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y createrepo-c dpkg-dev rpm python3
-      - name: Generate repository from v0.116-0
+      - name: Generate repository from v0.117-0
         env:
-          DOCUMENTDB_VERSION: v0.116-0
+          DOCUMENTDB_VERSION: v0.117-0
         run: .github/scripts/download_packages.sh
       - name: Verify release inventory and metadata
         run: python3 .github/scripts/verify_package_inventory.py

@@ -141,6 +141,10 @@ The explicit major and fresh-instance flags prevent another installed PostgreSQL
 existing system cluster from being selected accidentally. To adopt an existing PostgreSQL
 instance instead, use [Adopt an existing PostgreSQL instance](#adopt-an-existing-postgresql-instance).
 
+Sample data is opt-in. Add `--load-sample-data` to the setup command to seed the `StoreData`
+database with 41,505 documents in `stores` and 2 documents in `ratings`. This requires
+`mongosh`; the command above leaves the new instance empty.
+
 `mongosh` is not shipped by these packages. Install it from the
 [official instructions](https://www.mongodb.com/docs/mongodb-shell/install/), then:
 
@@ -200,7 +204,7 @@ Before using this anywhere but a private machine:
 
 ```bash
 sudo documentdb-setup --status      # gateway listener, service states, resolved paths
-documentdb-gateway --version        # DocumentDB version (0.116.0)
+documentdb-gateway --version        # DocumentDB version (0.117.0)
 dpkg -l | grep documentdb           # or: rpm -qa | grep documentdb
 ```
 
@@ -288,7 +292,7 @@ On a systemd host, a scoped restore stops and disables that major's gateway:
 sudo documentdb-setup --restore --pg-version 18
 ```
 
-On a host without systemd, v0.116 cannot safely attribute a nohup gateway process to one
+On a host without systemd, the current setup tooling cannot safely attribute a nohup gateway process to one
 PostgreSQL major. If only one DocumentDB major is configured, use an unscoped restore so the
 orphan gateway sweep runs:
 
@@ -344,8 +348,8 @@ The current release publishes PostgreSQL 17 and 18. Install `documentdb-17` or
 
 ## Upgrading an existing install
 
-> **Warning:** v0.116 does not support an in-place upgrade from the extension-only package
-> layout in v0.114 or earlier. Use a clean host, or remove the earlier packages and perform the
+> **Warning:** In-place package upgrades from earlier releases are not supported yet. Use a
+> clean host, or remove the earlier packages and perform the
 > current fresh installation. Upgrading only `postgresql-N-documentdb` does not install the
 > gateway, tools, common payload, or `documentdb-N`.
 
@@ -429,7 +433,7 @@ three entry points:
 - `packaging/gateway/build_gateway_packages.sh` — wire-protocol gateway
 - `packaging/build_extra_packages.sh` — tools, common payload, `documentdb-N`, and meta package
 
-The [v0.116 packaging guide](https://github.com/documentdb/documentdb/blob/v0.116-0/packaging/README.md)
+The [v0.117 packaging guide](https://github.com/documentdb/documentdb/blob/v0.117-0/packaging/README.md)
 documents their required arguments, version formats, prerequisites, and accepted targets.
 PostgreSQL 15 remains extension-only for package-managed installs because the setup tools
 require PostgreSQL 16 or newer.
@@ -444,9 +448,9 @@ they do not retain packages from older releases.
 Examples:
 
 ```text
-ubuntu24.04-documentdb_0.116.0_all.deb
-ubuntu24.04-postgresql-18-documentdb_0.116-0_amd64.deb
-rhel9-postgresql18-documentdb-0.116.0-1.el9.x86_64.rpm
+ubuntu24.04-documentdb_0.117.0_all.deb
+ubuntu24.04-postgresql-18-documentdb_0.117-0_amd64.deb
+rhel9-postgresql18-documentdb-0.117.0-1.el9.x86_64.rpm
 ```
 
 Because the packages depend on each other, installing a downloaded meta package on its own
