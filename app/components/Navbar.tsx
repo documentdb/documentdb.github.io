@@ -32,7 +32,7 @@ const navItems: NavItem[] = [
   },
   { label: "Docs", href: "/docs", kind: "link" },
   { label: "AI", href: "/ai", kind: "link" },
-  { label: "Download", href: "/packages", kind: "link" },
+  { label: "Install", href: "/packages?method=packages", kind: "link" },
   { label: "K8s Operator", href: "/kubernetes-operator", kind: "link" },
   { label: "Blogs", href: withBasePath("/blogs/"), kind: "anchor" },
   { label: "Samples", href: "/samples", kind: "link" },
@@ -117,7 +117,7 @@ export default function Navbar() {
             {navItems.map((item) =>
               renderNavItem(
                 item,
-                "flex items-center gap-2 text-gray-300 transition-colors duration-200 font-medium hover:text-blue-400",
+                "flex items-center gap-2 text-gray-300 transition-colors duration-200 font-medium hover:text-blue-400 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-400",
               ),
             )}
           </div>
@@ -148,7 +148,7 @@ export default function Navbar() {
               {navItems.map((item) =>
                 renderNavItem(
                   item,
-                  "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-gray-300 transition-colors duration-200 hover:bg-neutral-800 hover:text-white",
+                  "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-gray-300 transition-colors duration-200 hover:bg-neutral-800 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400",
                   closeMenu,
                 ),
               )}

@@ -28,7 +28,7 @@ const virtualSections: Record<string, { landingTitle: string; pages: { slug: str
 
 const dockerGuideContent = `# Docker Quick Start
 
-Run DocumentDB locally with Docker and verify the setup before moving to driver code.
+Run DocumentDB locally with Docker and verify the setup before moving to driver code. For installation choices, open [Docker installation](/packages?method=docker) or [Native Linux installation](/packages?method=packages).
 
 ## Prerequisites
 
@@ -88,6 +88,8 @@ You should see the container in an \`Up\` state with port \`10260\` published.
 
 Use \`mongosh\` to confirm authentication, TLS, and the gateway endpoint are working:
 
+The certificate bypass below is for **local development only**. Use a trusted certificate before connecting over a shared or public network.
+
 \`\`\`bash
 mongosh localhost:10260 \\
   -u '<YOUR_USERNAME>' \\
@@ -105,6 +107,14 @@ db.runCommand({ ping: 1 })
 use StoreData
 
 db.stores.find({}, { _id: 0, name: 1, city: 1, "sales.revenue": 1 }).limit(3)
+\`\`\`
+
+Write and read back your own document; this does not require sample data:
+
+\`\`\`javascript
+use quickstart
+db.orders.insertOne({ item: "widget", qty: 5 })
+db.orders.find({ item: "widget" })
 \`\`\`
 
 If you prefer certificate validation instead of \`--tlsAllowInvalidCertificates\`, follow the certificate steps in [DocumentDB Local](/docs/documentdb-local).
@@ -159,35 +169,22 @@ If something does not work as expected:
 - [DocumentDB Local](/docs/documentdb-local)
 - [Samples Gallery](/samples)
 - [Linux Packages Quick Start](/docs/getting-started/packages)
-- [Package Finder](/packages)
+- [Install DocumentDB](/packages?method=packages)
 `;
 
 export const linuxPackagesGuideContent = `# Linux Packages Quick Start
 
 Install DocumentDB from the published package repository and get a MongoDB-compatible endpoint on your own host.
 
-The current official release publishes the full stack — extension, gateway, setup wizard and systemd units — for **Ubuntu 24.04 and EL9, on PostgreSQL 17 or 18**. EL9 includes Rocky Linux, AlmaLinux, CentOS Stream, and registered Red Hat Enterprise Linux; the Package Finder supplies the prerequisite command for each family. Starting with v0.116, this is a deliberately smaller prebuilt matrix than earlier releases. The website repository mirrors only the current release assets and does not carry older packages forward to make other targets appear current.
+The current official release publishes the full stack — extension, gateway, setup wizard and systemd units — for **Ubuntu 24.04 and EL9, on PostgreSQL 17 or 18, amd64 or arm64**. EL9 includes Rocky Linux, AlmaLinux, CentOS Stream, and registered Red Hat Enterprise Linux; [Native Linux installation](/packages?method=packages) supplies the prerequisite command for each family. Starting with v0.116, this is a deliberately smaller prebuilt matrix than earlier releases. The website repository mirrors only the current release assets and does not carry older packages forward to make other targets appear current.
+
+**Recommended:** install the complete stack, then create a new private PostgreSQL 18 instance. The commands detect architecture on the Linux host where you run them. For containers or macOS/Windows evaluation, choose [Docker installation](/packages?method=docker).
+
+> [!IMPORTANT]
+> This pre-GA release supports **fresh installation only**, not in-place package upgrades from earlier releases. Use a clean host or a new, empty PostgreSQL instance. Removing packages preserves database files; reinstalling is not a data reset.
 
 > [!NOTE]
 > Need another distribution or PostgreSQL major? We welcome community builds. Check out the matching release tag and use the version-parameterized [packaging scripts](https://github.com/documentdb/documentdb/blob/v0.117-0/packaging/README.md). \`build_packages.sh\` builds the extension, \`gateway/build_gateway_packages.sh\` builds the gateway, and \`build_extra_packages.sh\` builds the common, tools, stand-alone, and meta packages. PostgreSQL 15 is extension-only because the setup tools require PostgreSQL 16 or newer. These builds are on demand and are not official release assets hosted by documentdb.io.
-
-## If you used an earlier repository target
-
-documentdb.io no longer publishes packages for Ubuntu 22.04, Debian 11/12/13, RHEL-compatible 8, or PostgreSQL 16. Existing installations keep running, but receive no package updates and cannot reinstall those packages from documentdb.io.
-
-Empty signed metadata remains at the retired repository URLs so \`apt update\` and \`dnf makecache\` continue to work. Remove the source on a host that will not move to the current matrix:
-
-\`\`\`bash
-# Debian / Ubuntu
-sudo rm -f /etc/apt/sources.list.d/documentdb.list
-sudo apt update
-
-# RHEL-compatible
-sudo rm -f /etc/yum.repos.d/documentdb.repo
-sudo dnf clean all
-\`\`\`
-
-To remain on an older target, use its GitHub release assets or build from the matching source tag. Neither path is part of the current hosted support matrix.
 
 You do not need PostgreSQL already installed — the setup wizard creates and manages its own instance. The install does add the PGDG repository and pull PostgreSQL, PostGIS and around 160 packages (about 140 MB), so pick a host you are willing to have PGDG on.
 
@@ -214,7 +211,7 @@ This command requires an active Red Hat subscription. RHEL exposes CodeReady Bui
 ${buildRpmInstallCommand('rhel9', 'auto', '18')}
 \`\`\`
 
-For PostgreSQL 17, install \`documentdb-17\`; there is no \`documentdb-16\`. Both EL9 flows enable CodeReady Builder, which supplies \`libqhull_r.so.7\` for PostGIS dependencies.
+For PostgreSQL 17, select it in [Native Linux installation](/packages?method=packages) to generate matching install and setup commands for \`documentdb-17\`; there is no \`documentdb-16\`. Both EL9 flows enable CodeReady Builder, which supplies \`libqhull_r.so.7\` for PostGIS dependencies.
 
 Then install \`mongosh\`, which you need to talk to the endpoint:
 
@@ -244,18 +241,19 @@ It creates a new private PostgreSQL 18 instance, installs the extensions, starts
 
 Sample data is opt-in. Add \`--load-sample-data\` to the setup command to seed the \`StoreData\` database with 41,505 documents in \`stores\` and 2 documents in \`ratings\`. This requires \`mongosh\`; the command above leaves the new instance empty.
 
-For automation, use the complete [unattended setup](/docs/linux-packages#unattended-setup) command. To adopt an existing PostgreSQL instance instead, follow [Adopt an existing PostgreSQL instance](/docs/linux-packages#adopt-an-existing-postgre-sql-instance); brownfield setup intentionally has different lifecycle and restart requirements.
+For automation, use the complete [unattended setup](/docs/linux-packages#unattended-setup) command. To use PostgreSQL you already manage on this host, follow [Adopt an existing PostgreSQL instance](/docs/linux-packages#adopt-an-existing-postgre-sql-instance); it changes configuration and may require an administrator-controlled restart. For SQL-only use without a gateway, see [Install the PostgreSQL extension only](/docs/linux-packages#install-the-postgre-sql-extension-only).
 
-Now open a shell against the endpoint:
+Now open a shell against the endpoint. The password prompt uses the admin password you chose during setup. The self-signed certificate bypass is for **local development only**; use a trusted certificate for network access.
 
 \`\`\`bash
-mongosh localhost:10260 -u admin -p '<PASSWORD>' --authenticationMechanism SCRAM-SHA-256 \\
+mongosh localhost:10260 -u admin -p --authenticationMechanism SCRAM-SHA-256 \\
         --tls --tlsAllowInvalidCertificates
 \`\`\`
 
 A database and collection are created on first write:
 
 \`\`\`javascript
+> use quickstart
 > db.orders.insertOne({ item: "widget", qty: 5 })
 { acknowledged: true, insertedId: ObjectId('...') }
 
@@ -270,17 +268,35 @@ A database and collection are created on first write:
 - Build an application: [Node.js Quick Start](/docs/getting-started/nodejs-setup) or [Python Quick Start](/docs/getting-started/python-setup)
 - Secure it, manage services, run SQL, upgrade, uninstall, and hosts without systemd: [Operating a package install](/docs/linux-packages)
 - Install without internet access: [Offline / air-gapped install](/docs/linux-packages/offline)
-- Choose between the published distributions, architectures and PostgreSQL majors: [Package Finder](/packages)
+- Choose between the published distributions, architectures and PostgreSQL majors: [Native Linux installation](/packages?method=packages)
 
 ## Troubleshooting
 
-- \`Unable to locate package documentdb-18\` (apt) / \`No match for argument: documentdb-18\` (dnf) — the DocumentDB repository was not added, or the host is not in the current release matrix. Check the [Package Finder](/packages)
+- \`Unable to locate package documentdb-18\` (apt) / \`No match for argument: documentdb-18\` (dnf) — the DocumentDB repository was not added, or the host is not in the current release matrix. Check [Native Linux installation](/packages?method=packages)
 - \`documentdb-18 : Depends: postgresql-18 but it is not installable\` — PGDG was not added first
 - \`nothing provides libqhull_r.so.7\` — CRB or CodeReady Builder was not enabled for the selected EL9 family
 - \`MongoServerError: Invalid key\` — empty or wrong password; a bare \`-p\` prompts, so a non-interactive shell sends nothing
 - Anything else — \`sudo documentdb-setup --status\` reports the listener, service states and resolved paths
 
 More failure modes, including hosts without systemd: [Operating a package install](/docs/linux-packages#troubleshooting).
+
+## If you used an earlier repository target
+
+documentdb.io no longer publishes packages for Ubuntu 22.04, Debian 11/12/13, RHEL-compatible 8, or PostgreSQL 16. Existing installations keep running, but receive no package updates and cannot reinstall those packages from documentdb.io.
+
+Empty signed metadata remains at the retired repository URLs so \`apt update\` and \`dnf makecache\` continue to work. Remove the source on a host that will not move to the current matrix:
+
+\`\`\`bash
+# Debian / Ubuntu
+sudo rm -f /etc/apt/sources.list.d/documentdb.list
+sudo apt update
+
+# RHEL-compatible
+sudo rm -f /etc/yum.repos.d/documentdb.repo
+sudo dnf clean all
+\`\`\`
+
+To remain on an older target, use its GitHub release assets or build from the matching source tag. Neither path is part of the current hosted support matrix.
 `;
 
 export const linuxPackagesOperationsContent = `# Operating a package install
@@ -341,8 +357,8 @@ sudo systemctl stop    documentdb-local@18.target
 
 ## Adopt an existing PostgreSQL instance
 
-Use brownfield mode only when PostgreSQL already exists and its service and data remain
-operator-owned. Back up the instance first. The wizard does not create, delete, start, or stop
+Use this mode only when PostgreSQL already exists **locally on the gateway host** and its service and data remain
+operator-owned; remote PostgreSQL adoption is not supported. You need administrator access to change PostgreSQL configuration and restart its service. Back up the instance first. The wizard does not create, delete, start, or stop
 that PostgreSQL instance, but it does add managed configuration blocks, create the gateway role,
 install the DocumentDB extensions, and register the gateway.
 
@@ -363,6 +379,18 @@ PostgreSQL instance for you.
 The wizard's default \`default_toast_compression\` setting applies to newly written values in
 every database on an adopted instance. If other workloads must retain PostgreSQL's own default,
 prefix both setup runs with \`sudo DOCUMENTDB_TOAST_COMPRESSION=default\`.
+
+## Install the PostgreSQL extension only
+
+Choose this advanced path for SQL-facing DocumentDB capabilities in PostgreSQL you manage.
+It does **not** create a MongoDB-compatible network endpoint, install the gateway, or run
+\`documentdb-setup\`. Shell, driver, and VS Code quick starts require the complete stack instead.
+
+Use the extension package for your PostgreSQL major: \`postgresql-N-documentdb\` on Ubuntu
+or \`postgresqlN-documentdb\` on EL9. You own PostgreSQL configuration, extension activation,
+and service restarts. Follow the matching release's [manual package instructions](https://github.com/documentdb/documentdb/blob/v0.117-0/packaging/README.md),
+or the [extension-only offline instructions](/docs/linux-packages/offline#smaller-offline-cases)
+when PostgreSQL and all extension dependencies are already installed.
 
 ## Running SQL against a package-managed private instance
 
@@ -614,15 +642,42 @@ If the target already has PostgreSQL, the PGDG extension dependencies (\`postgre
 - **Full stack from the release assets** — pass the five packages for the selected PostgreSQL major to a *single* \`apt install\` / \`dnf install\`: \`documentdb-N\`, the matching \`postgresql-N-documentdb\` / \`postgresqlN-documentdb\` extension, \`documentdb-common\`, \`documentdb-gateway\`, and \`documentdb-postgresql-tools\`. For PostgreSQL 18 only, the optional \`documentdb\` meta package may be included; it selects \`documentdb-18\`. Local files resolve dependencies only against enabled repositories, so a package whose dependencies are not included still fails.
 `;
 
+const clientInstancePrerequisiteContent = `## Have a running DocumentDB instance?
+
+If yes, keep it and continue with the client prerequisites below. Otherwise, choose one server installation:
+
+- [Native Linux](/packages?method=packages): install the complete stack, then create a private PostgreSQL instance with the setup wizard.
+- [Docker](/packages?method=docker): run a local container, including for macOS or Windows evaluation.
+
+The [Linux Packages Quick Start](/docs/getting-started/packages) and [Docker Quick Start](/docs/getting-started/docker) include the full server instructions. Do not start a second instance if one is already running.
+
+These examples connect to \`localhost:10260\`, so run the client on the same host as DocumentDB. Use username \`admin\` and the password chosen during native setup, or the credentials chosen for Docker. If you changed the endpoint, use its configured host and port.
+
+Self-signed certificate bypasses below are for **local development only**. For network access, use a trusted certificate. Native setup binds the gateway on **all interfaces** by default: firewall port \`10260\` before setup and follow [network and certificate guidance](/docs/linux-packages#before-exposing-it-to-a-network). Docker examples publish only on loopback.
+`;
+
+const driverCredentialsContent = `## Set your client credentials
+
+Set these in the terminal that will run your application. Replace the placeholders with your existing instance's credentials (\`admin\` and your setup password for the recommended native installation). The driver passes them as raw values, not embedded in a connection URI.
+
+\`\`\`bash
+export DOCUMENTDB_USERNAME='<YOUR_USERNAME>'
+export DOCUMENTDB_PASSWORD='<YOUR_PASSWORD>'
+\`\`\`
+`;
+
+const optionalSampleDataContent = `Sample data is **opt-in**, not required for your first insert and read. Native installations can add \`--load-sample-data\` during setup, which separately requires [mongosh](https://www.mongodb.com/docs/mongodb-shell/install/). Docker installations can start with \`--init-data true\`. Without these options, \`StoreData\` does not exist. Existing Docker volumes are not migrated automatically; do not delete data you need just to load a sample.`;
+
 const vscodeQuickStartGuideContent = `# Visual Studio Code Quick Start
 
-Use DocumentDB for VS Code to connect to a local DocumentDB instance, browse sample data, and create your first database without leaving the editor.
+Use DocumentDB for VS Code to connect to DocumentDB and insert and read your first document without leaving the editor.
+
+${clientInstancePrerequisiteContent}
 
 ## Prerequisites
 
 - [Visual Studio Code](https://code.visualstudio.com/)
 - The [DocumentDB for VS Code extension](https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-documentdb)
-- A local DocumentDB instance from [Docker Quick Start](/docs/getting-started/docker) or a host setup with a running DocumentDB gateway
 - Optional: [mongosh](https://www.mongodb.com/docs/mongodb-shell/install/) for independent connection checks
 
 ## Install the extension
@@ -635,9 +690,9 @@ code --install-extension ms-azuretools.vscode-documentdb
 
 If VS Code prompts you to reload after installation, do that before creating a connection.
 
-## Start DocumentDB first
+## Optional: start a Docker instance
 
-For the fastest local setup, start DocumentDB Local with Docker:
+Skip this if you installed native packages or already have a running instance. If you chose Docker and have [Docker](https://www.docker.com/) installed:
 
 \`\`\`bash
 docker run -dt --name documentdb \\
@@ -647,7 +702,7 @@ docker run -dt --name documentdb \\
   --password '<YOUR_PASSWORD>'
 \`\`\`
 
-If you prefer a host installation instead of Docker, use the [Linux Packages Quick Start](/docs/getting-started/packages) on a distribution in the current release matrix.
+Replace the placeholders with your own credentials. Wait for the readiness banner in \`docker logs documentdb\` before connecting; see [Docker Quick Start](/docs/getting-started/docker#verify-the-container).
 
 ## Add a local connection in VS Code
 
@@ -655,7 +710,7 @@ If you prefer a host installation instead of Docker, use the [Linux Packages Qui
 2. In the local connection area, select **DocumentDB Local** and start the **New Local Connection** flow.
 3. Enter port \`10260\`, your username, and your password.
 4. At the TLS/SSL prompt:
-   - Choose **Disable TLS/SSL (Not recommended)** if you are using the default self-signed local setup and have not configured trust for the certificate yet.
+   - For **local development only**, choose **Disable TLS/SSL (Not recommended)** if you are using the default self-signed local setup and have not configured trust for the certificate yet.
    - Keep **Enable TLS/SSL (Default)** if you already configured a trusted local certificate.
 5. Finish the wizard and confirm the new connection appears in the connections tree.
 
@@ -663,10 +718,8 @@ If you prefer a host installation instead of Docker, use the [Linux Packages Qui
 
 Once connected:
 
-1. Expand the connection and open \`StoreData\`. This exists only if you started the container with \`--init-data true\`; without it DocumentDB Local starts empty.
-2. Open the \`stores\` or \`ratings\` collection.
-3. Switch between the **Table**, **Tree**, and **JSON** views to confirm the extension is reading data correctly.
-4. Create your own database and collection from the context menu, then add a test document like:
+1. Expand the connection and create a \`quickstart\` database and an \`orders\` collection from the context menu.
+2. Add a test document:
 
 \`\`\`json
 {
@@ -676,7 +729,15 @@ Once connected:
 }
 \`\`\`
 
+3. Refresh the \`orders\` collection and find the document with \`"source": "vscode"\`. Read it back in the **Table**, **Tree**, or **JSON** view to confirm that both writing and reading work.
+
 If you prefer to validate outside the extension first, use [Mongo Shell Quick Start](/docs/getting-started/mongo-shell-quickstart).
+
+### Optional: browse sample data
+
+${optionalSampleDataContent}
+
+If you loaded it, open \`StoreData\`, then the \`stores\` or \`ratings\` collection.
 
 ## Import, export, and querying
 
@@ -694,7 +755,7 @@ If the extension does not connect on the first try:
 - Verify the extension is installed and reload VS Code if the DocumentDB view does not appear
 - Confirm your local DocumentDB instance is actually running before you connect
 - If you used Docker, check \`docker ps\` and \`docker logs documentdb\`
-- If you used a host-built gateway, confirm the gateway process is running and listening on the port you entered
+- If you used native packages, check \`sudo documentdb-setup --status\`; for a manually built gateway, confirm its process is listening on the port you entered
 - If the local connection wizard fails on security, retry and choose the TLS/SSL option that matches your certificate setup
 - Use \`mongosh\` to confirm the endpoint works independently of VS Code
 
@@ -721,14 +782,19 @@ const nodejsGuideContent = `# Node.js Quick Start
 
 Connect to DocumentDB from Node.js using the official MongoDB driver.
 
+${clientInstancePrerequisiteContent}
+
 ## Prerequisites
 
 - Node.js 20.19 or later (required by the current \`mongodb\` driver)
 - npm
-- [Docker](https://www.docker.com/)
 - Basic familiarity with JavaScript
 
-## Start DocumentDB Local
+${driverCredentialsContent}
+
+## Optional: start a Docker instance
+
+Skip this if you installed native packages or already have a running instance. If you chose Docker and have [Docker](https://www.docker.com/) installed, replace the placeholders below with your chosen credentials. This self-contained command also sets the environment variables read by your application:
 
 \`\`\`bash
 export DOCUMENTDB_USERNAME='<YOUR_USERNAME>'
@@ -741,12 +807,7 @@ docker run -dt --name documentdb \\
   --password "\${DOCUMENTDB_PASSWORD:?Set DOCUMENTDB_PASSWORD}"
 \`\`\`
 
-> Replace the placeholder values before running the command. The Node.js process below
-> reads the same two environment variables, so the credentials are passed as raw values
-> rather than embedded in a URI.
->
-> DocumentDB Local uses a self-signed certificate by default, so the quickest local
-> Node.js connection uses \`tlsAllowInvalidCertificates=true\`.
+Wait for the readiness banner in \`docker logs documentdb\` before connecting; see [Docker Quick Start](/docs/getting-started/docker#verify-the-container).
 
 ## Create a project
 
@@ -759,7 +820,7 @@ npm install mongodb
 
 ## Connect and run your first queries
 
-Create an \`index.js\` file:
+Create an \`index.js\` file. The certificate bypass is for **local development only**, with the default self-signed certificate from native setup or Docker.
 
 \`\`\`javascript
 const { MongoClient } = require("mongodb");
@@ -827,9 +888,7 @@ node index.js
 
 ## Connect with a trusted local certificate instead
 
-If you want certificate validation instead of \`tlsAllowInvalidCertificates=true\`,
-copy the generated certificate from the container, then replace the \`options\` object
-above with the trusted-certificate version below.
+If you want certificate validation instead of \`tlsAllowInvalidCertificates=true\`, obtain the trusted certificate or CA file for your endpoint and replace the original \`options\` object with the version below. For native packages, follow [certificate configuration](/docs/linux-packages#before-exposing-it-to-a-network). For Docker, copy the local certificate with:
 
 \`\`\`bash
 docker cp documentdb:/home/documentdb/.local/state/documentdb-gateway/tls/cert.pem ~/documentdb-cert.pem
@@ -857,16 +916,19 @@ const pythonQuickStartContent = `# Python Quick Start
 
 Use PyMongo to connect to DocumentDB, verify authentication and TLS, and run your first document queries from Python.
 
+${clientInstancePrerequisiteContent}
+
 ## Prerequisites
 
 - Python 3.9 or later
 - pip
-- A local DocumentDB instance from [Docker Quick Start](/docs/getting-started/docker) or [Linux Packages Quick Start](/docs/getting-started/packages)
 - Optional: [mongosh](https://www.mongodb.com/docs/mongodb-shell/install/) for independent connection checks
 
-## Start DocumentDB first
+${driverCredentialsContent}
 
-For the fastest local setup, start DocumentDB Local with Docker:
+## Optional: start a Docker instance
+
+Skip this if you installed native packages or already have a running instance. If you chose Docker and have [Docker](https://www.docker.com/) installed, replace the placeholders below with your chosen credentials. This self-contained command also sets the environment variables read by your application:
 
 \`\`\`bash
 export DOCUMENTDB_USERNAME='<YOUR_USERNAME>'
@@ -879,14 +941,7 @@ docker run -dt --name documentdb \\
   --password "\${DOCUMENTDB_PASSWORD:?Set DOCUMENTDB_PASSWORD}"
 \`\`\`
 
-If you prefer a host installation instead of Docker, use the [Linux Packages Quick Start](/docs/getting-started/packages) on a distribution in the current release matrix.
-
-> Replace the placeholder values before running the command. The Python process below
-> reads the same two environment variables, so the credentials are passed as raw values
-> rather than embedded in a URI.
->
-> DocumentDB Local uses a self-signed certificate by default, so the quickest local
-> PyMongo connection uses \`tlsAllowInvalidCertificates=true\`.
+Wait for the readiness banner in \`docker logs documentdb\` before connecting; see [Docker Quick Start](/docs/getting-started/docker#verify-the-container).
 
 ## Create a virtual environment (optional)
 
@@ -907,7 +962,7 @@ python -m pip install pymongo
 
 ## Connect and run your first queries
 
-Create a \`quickstart.py\` file:
+Create a \`quickstart.py\` file. The certificate bypass is for **local development only**, with the default self-signed certificate from native setup or Docker.
 
 \`\`\`python
 import os
@@ -967,7 +1022,9 @@ You should see the recent movie documents printed after a successful \`ping\`.
 
 ## Explore the built-in sample data
 
-Sample data is **opt-in** — this needs a container started with \`--init-data true\`. Without it \`StoreData\` does not exist and the query returns nothing. Add this snippet after \`client.admin.command("ping")\`:
+${optionalSampleDataContent}
+
+If you loaded the sample, add this snippet after \`client.admin.command("ping")\`:
 
 \`\`\`python
 for store in client["StoreData"]["stores"].find(
@@ -979,7 +1036,7 @@ for store in client["StoreData"]["stores"].find(
 
 ## Use a trusted local certificate instead
 
-If you want certificate validation instead of \`tlsAllowInvalidCertificates=true\`, copy the generated certificate from the container, then replace the \`MongoClient\` call above with the trusted-certificate version below.
+If you want certificate validation instead of \`tlsAllowInvalidCertificates=true\`, obtain the trusted certificate or CA file for your endpoint and replace the original \`MongoClient\` call with the version below. For native packages, follow [certificate configuration](/docs/linux-packages#before-exposing-it-to-a-network). For Docker, copy the local certificate with:
 
 \`\`\`bash
 docker cp documentdb:/home/documentdb/.local/state/documentdb-gateway/tls/cert.pem ~/documentdb-cert.pem
@@ -1002,7 +1059,7 @@ If the Python quick start does not work on the first try:
 
 - Verify your local DocumentDB instance is running before you start Python
 - If you used Docker, check \`docker ps --filter "name=documentdb"\` and \`docker logs documentdb\`
-- If you used a host-built gateway, confirm the gateway process is running and listening on port \`10260\`
+- If you used native packages, check \`sudo documentdb-setup --status\`; for a manually built gateway, confirm its process is listening on port \`10260\`
 - If Python cannot import \`pymongo\`, verify the active interpreter with \`python -c "import sys; print(sys.executable)"\` and reinstall with \`python -m pip install pymongo\`
 - If you see TLS or certificate errors, either use the default local self-signed flow with \`tlsAllowInvalidCertificates=true\` or switch to a trusted local certificate with \`tlsCAFile\`
 - Use [Mongo Shell Quick Start](/docs/getting-started/mongo-shell-quickstart) to validate the endpoint independently of your application code
@@ -1021,15 +1078,16 @@ const mongoShellQuickStartContent = `# Mongo Shell Quick Start
 
 Use \`mongosh\` to verify a local DocumentDB instance, inspect sample data, and run your first document commands.
 
+${clientInstancePrerequisiteContent}
+
 ## Prerequisites
 
 - [mongosh](https://www.mongodb.com/docs/mongodb-shell/install/)
-- A local DocumentDB instance from [Docker Quick Start](/docs/getting-started/docker) or [Linux Packages Quick Start](/docs/getting-started/packages)
-- A local port available for DocumentDB (the examples use \`10260\`)
+- Your instance's endpoint and credentials (the examples use \`localhost:10260\`)
 
-## Start DocumentDB first
+## Optional: start a Docker instance
 
-For the fastest local setup, start DocumentDB Local with Docker:
+Skip this if you installed native packages or already have a running instance. If you chose Docker and have [Docker](https://www.docker.com/) installed:
 
 \`\`\`bash
 docker run -dt --name documentdb \\
@@ -1039,13 +1097,11 @@ docker run -dt --name documentdb \\
   --password '<YOUR_PASSWORD>'
 \`\`\`
 
-If you prefer a host installation instead of Docker, use the [Linux Packages Quick Start](/docs/getting-started/packages) on a distribution in the current release matrix.
-
-> Replace \`<YOUR_USERNAME>\` and \`<YOUR_PASSWORD>\` with your own credentials.
->
-> DocumentDB Local starts **empty** — pass \`--init-data true\` on the \`docker run\` above to seed the \`StoreData\` sample data used below. It also uses a self-signed certificate by default, so the fastest local \`mongosh\` connection adds \`--tlsAllowInvalidCertificates\`.
+Replace the placeholders with your own credentials. Wait for the readiness banner in \`docker logs documentdb\` before connecting; see [Docker Quick Start](/docs/getting-started/docker#verify-the-container).
 
 ## Connect and verify the connection
+
+Use your existing instance's credentials. The certificate bypass is for **local development only** with a self-signed certificate, whether you installed native packages or used Docker.
 
 \`\`\`bash
 mongosh localhost:10260 \\
@@ -1068,7 +1124,9 @@ Successful output confirms authentication, TLS, and the gateway endpoint are wor
 
 ## Explore the built-in sample data
 
-Sample data is **opt-in**: this section needs a container started with \`--init-data true\`. Without it \`StoreData\` does not exist and these queries return nothing.
+${optionalSampleDataContent}
+
+If you did not load the sample, skip directly to **Create your own collection** below.
 
 \`\`\`javascript
 use StoreData
@@ -1104,12 +1162,15 @@ db.movies.find(
 
 ## Use a trusted local certificate instead
 
-If you want certificate validation instead of \`--tlsAllowInvalidCertificates\`, copy
-the generated certificate from the container and pass it to \`mongosh\`.
+If you want certificate validation instead of \`--tlsAllowInvalidCertificates\`, obtain the trusted certificate or CA file for your endpoint. For native packages, follow [certificate configuration](/docs/linux-packages#before-exposing-it-to-a-network). For Docker, copy the local certificate with:
 
 \`\`\`bash
 docker cp documentdb:/home/documentdb/.local/state/documentdb-gateway/tls/cert.pem ~/documentdb-cert.pem
+\`\`\`
 
+Then pass your certificate file to \`mongosh\`:
+
+\`\`\`bash
 mongosh localhost:10260 \\
   -u '<YOUR_USERNAME>' \\
   -p '<YOUR_PASSWORD>' \\
@@ -1124,7 +1185,7 @@ If \`mongosh\` does not connect on the first try:
 
 - Verify the local DocumentDB instance is running before you connect
 - If you used Docker, check \`docker ps --filter "name=documentdb"\` and \`docker logs documentdb\`
-- If you used a host-built gateway, confirm the gateway process is running and listening on port \`10260\`
+- If you used native packages, check \`sudo documentdb-setup --status\`; for a manually built gateway, confirm its process is listening on port \`10260\`
 - If authentication fails, confirm the username and password you used when you started DocumentDB
 - If TLS validation fails, either keep \`--tlsAllowInvalidCertificates\` for the default local self-signed setup or switch to \`--tlsCAFile\` with a trusted certificate
 - If \`mongosh\` is not installed, follow the [mongosh install guide](https://www.mongodb.com/docs/mongodb-shell/install/)
@@ -1214,26 +1275,29 @@ Together, these components let you use DocumentDB through MongoDB-compatible too
 
 const gettingStartedIndexStartHereContent = `## Start here
 
-If you're new to DocumentDB, use this order:
+Choose your environment once, create a working instance, then connect with the client that fits your goal:
 
-1. [Docker Quick Start](/docs/getting-started/docker) - Fastest local install for evaluation and development
-2. [Mongo Shell Quick Start](/docs/getting-started/mongo-shell-quickstart) - Verify connectivity, authentication, and your first queries
-3. [Node.js Quick Start](/docs/getting-started/nodejs-setup) or [Python Quick Start](/docs/getting-started/python-setup) - Connect from an application driver
-4. [Linux Packages Quick Start](/docs/getting-started/packages) or the [Package Finder](/packages) - Use this when you need a persistent Linux installation instead of Docker
+1. **Choose Native Linux or Docker.** [Native Linux installation](/packages?method=packages) is recommended for a complete stack on supported Linux hosts, with a new private PostgreSQL 18 instance. [Docker installation](/packages?method=docker) is for containers, including macOS/Windows evaluation.
+2. **Create a working instance.** Follow the [Linux Packages Quick Start](/docs/getting-started/packages) or [Docker Quick Start](/docs/getting-started/docker). Native installation has two stages: install packages, then run the setup wizard. Neither copying a command nor installing files alone proves the endpoint is ready.
+3. **Insert and read your first document.** Use the [Mongo Shell Quick Start](/docs/getting-started/mongo-shell-quickstart), [Node.js Quick Start](/docs/getting-started/nodejs-setup), [Python Quick Start](/docs/getting-started/python-setup), or [Visual Studio Code Quick Start](/docs/getting-started/vscode-quickstart). Keep the same running instance; no second server installation is needed.
 
-If you prefer an editor-first workflow, start with the [Visual Studio Code Quick Start](/docs/getting-started/vscode-quickstart).
+Native packages are pre-GA and support **fresh installation only**, not in-place upgrades from earlier releases. Removing packages preserves database files; reinstalling does not reset data.
+
+For advanced control, [use an existing local PostgreSQL instance](/docs/linux-packages#adopt-an-existing-postgre-sql-instance) with administrator-managed configuration and restart, or [install the PostgreSQL extension only](/docs/linux-packages#install-the-postgre-sql-extension-only). Extension-only installation does not create a MongoDB-compatible endpoint.
 `;
 
 const gettingStartedIndexVerificationContent = `## Verify your setup
 
-Before moving on to application code, confirm that DocumentDB is reachable and you can run a simple query.
+Before moving on to application code, confirm that DocumentDB is reachable and can insert and read a document. For native packages, inspect \`sudo documentdb-setup --status\`; for Docker, check \`docker ps --filter "name=documentdb"\` and wait for the readiness banner in \`docker logs documentdb\`.
+
+Install [mongosh](https://www.mongodb.com/docs/mongodb-shell/install/) separately for this shell example. Run it on the same host as DocumentDB. Use \`admin\` for the recommended native setup, or your Docker username, and enter your password at the prompt.
+
+The certificate bypass is for **local development only**. Native setup binds the gateway on **all interfaces** by default: firewall port \`10260\` before setup and follow [network and certificate guidance](/docs/linux-packages#before-exposing-it-to-a-network).
 
 \`\`\`bash
-docker ps --filter "name=documentdb"
-
 mongosh localhost:10260 \\
   -u '<YOUR_USERNAME>' \\
-  -p '<YOUR_PASSWORD>' \\
+  -p \\
   --authenticationMechanism SCRAM-SHA-256 \\
   --tls \\
   --tlsAllowInvalidCertificates
@@ -1243,7 +1307,12 @@ Then run:
 
 \`\`\`javascript
 db.runCommand({ ping: 1 })
+use quickstart
+db.orders.insertOne({ item: "widget", qty: 5 })
+db.orders.find({ item: "widget" })
 \`\`\`
+
+The insert should report \`acknowledged: true\`, and the query should return your document. No sample-data loading is required.
 
 For a fuller walkthrough, use the [Mongo Shell Quick Start](/docs/getting-started/mongo-shell-quickstart). Driver-based examples are available in the [Node.js Quick Start](/docs/getting-started/nodejs-setup) and [Python Quick Start](/docs/getting-started/python-setup).
 `;
@@ -1252,11 +1321,11 @@ const gettingStartedIndexTroubleshootingContent = `## Troubleshooting and debugg
 
 If setup does not work on the first try:
 
-- Confirm the container is running and port \`10260\` is published with \`docker ps\`.
-- Inspect startup, authentication, and TLS errors with \`docker logs documentdb\`.
-- If you want certificate validation instead of \`tlsAllowInvalidCertificates=true\`, follow the certificate steps in [DocumentDB Local](/docs/documentdb-local).
-- For more verbose local diagnostics, re-create DocumentDB Local with \`-e DOCUMENTDB_LOG_LEVEL=debug\` (the \`--log-level\` flag is currently a no-op); the available runtime options are documented in [DocumentDB Local](/docs/documentdb-local).
-- If you are installing on a host instead of Docker, use [Linux Packages Quick Start](/docs/getting-started/packages) or the [Package Finder](/packages) to get the correct apt or rpm flow.
+- For native packages, check \`sudo documentdb-setup --status\` and [package troubleshooting](/docs/getting-started/packages#troubleshooting). The recommended PostgreSQL 18 install uses \`documentdb-local@18.target\`, not the meta-package alias.
+- For Docker, confirm the container is running and port \`10260\` is published with \`docker ps\`. Inspect startup, authentication, and TLS errors with \`docker logs documentdb\`.
+- If you want certificate validation instead of \`tlsAllowInvalidCertificates=true\`, follow the native [certificate steps](/docs/linux-packages#before-exposing-it-to-a-network) or [DocumentDB Local](/docs/documentdb-local) for Docker.
+- For more verbose Docker diagnostics, re-create DocumentDB Local with \`-e DOCUMENTDB_LOG_LEVEL=debug\` (the \`--log-level\` flag is currently a no-op); the available runtime options are documented in [DocumentDB Local](/docs/documentdb-local).
+- To change your installation choice, open [Native Linux installation](/packages?method=packages) or [Docker installation](/packages?method=docker).
 `;
 
 const gettingStartedIndexFeatureExplorationContent = `## Explore key features
@@ -1296,17 +1365,19 @@ const articleTitleOverrides: Record<string, string> = {
 
 const articleDescriptionOverrides: Record<string, string> = {
   'getting-started/index':
-    'Choose the fastest setup path for DocumentDB, verify your installation, and find troubleshooting and feature guides.',
+    'Choose native Linux packages or Docker, create a DocumentDB instance, and insert and read your first document with a shell, driver, or editor.',
+  'getting-started/packages':
+    'Install DocumentDB on Linux with Ubuntu APT or EL9 RPM/dnf packages, set up a private PostgreSQL instance, and run your first query.',
   'getting-started/azure-setup':
     'Deploy and manage DocumentDB on Microsoft Azure for a fully managed experience.',
   'getting-started/vscode-quickstart':
-    'Install the VS Code extension, connect to DocumentDB Local, and verify your first editor-based workflow.',
+    'Install the VS Code extension, connect to DocumentDB on native Linux or Docker, and insert and read your first document.',
   'getting-started/nodejs-setup':
-    'Start DocumentDB Local, connect with the MongoDB Node.js driver, and run your first queries.',
+    'Connect to DocumentDB on native Linux or Docker with the MongoDB Node.js driver and run your first queries.',
   'getting-started/python-setup':
-    'Start DocumentDB Local, connect with PyMongo, and run your first queries from Python.',
+    'Connect to DocumentDB on native Linux or Docker with PyMongo and run your first queries from Python.',
   'getting-started/mongo-shell-quickstart':
-    'Start DocumentDB Local, connect with mongosh, and run your first shell commands.',
+    'Connect to DocumentDB on native Linux or Docker with mongosh and insert and read your first document.',
 };
 
 function getArticleKey(section: string, file: string): string {
@@ -1374,12 +1445,12 @@ function splitPrebuiltNavigation(section: string, links: Link[]): Link[] {
     link.link.includes('vscode-extension-guide') || /visual studio code extension guide/i.test(link.title);
   const gettingStartedQuickLinks: Link[] = [
     {
-      title: articleTitleOverrides['getting-started/docker'],
-      link: '/docs/getting-started/docker',
-    },
-    {
       title: articleTitleOverrides['getting-started/packages'],
       link: '/docs/getting-started/packages',
+    },
+    {
+      title: articleTitleOverrides['getting-started/docker'],
+      link: '/docs/getting-started/docker',
     },
   ];
   const filteredLinks = links.filter((link) => !isPrebuiltPackages(link) && !isMergedVscodeGuide(link));
@@ -1646,7 +1717,7 @@ export function getArticleByPath(section: string, slug: string[] = []): {
       content: linuxPackagesGuideContent,
       frontmatter: {
         title: articleTitleOverrides[getArticleKey(section, file)],
-        description: 'Install the DocumentDB PostgreSQL extension with Linux packages and find package troubleshooting guidance.',
+        description: articleDescriptionOverrides[getArticleKey(section, file)],
       },
       navigation,
       section,

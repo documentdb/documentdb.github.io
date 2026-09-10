@@ -6,6 +6,7 @@
     <title>{% if page.title %}{{ page.title }} · {% endif %}DocumentDB</title>
     <meta name="description" content="{{ page.description | default: site.description | escape }}">
     <meta name="theme-color" content="#09090b">
+    <link rel="canonical" href="{{ page.url | absolute_url }}">
 
     {% assign social_title = page.title | default: site.title %}
     {% assign social_description = page.description | default: site.description %}
@@ -43,7 +44,7 @@
 
     {% assign home_href = site_root | append: '/' | replace: '//', '/' %}
     {% assign docs_href = site_root | append: '/docs' | replace: '//', '/' %}
-    {% assign packages_href = site_root | append: '/packages' | replace: '//', '/' %}
+    {% assign packages_href = site_root | append: '/packages/?method=packages' | replace: '//', '/' %}
     {% assign operator_href = site_root | append: '/kubernetes-operator' | replace: '//', '/' %}
     {% assign logo_href = site_root | append: '/images/DocumentDB Logo - background removed.png' | replace: '//', '/' %}
     {% assign blogs_href = site.baseurl | append: '/' | replace: '//', '/' %}
@@ -60,7 +61,7 @@
             <a href="https://github.com/documentdb/documentdb" target="_blank" rel="noopener noreferrer">GitHub</a>
             <a href="{{ site.discord_url }}" target="_blank" rel="noopener noreferrer">Discord</a>
             <a href="{{ docs_href }}">Docs</a>
-            <a href="{{ packages_href }}">Download</a>
+            <a href="{{ packages_href }}">Install</a>
             <a href="{{ operator_href }}">K8s Operator</a>
             <a href="{{ blogs_href }}" aria-current="page">Blogs</a>
           </nav>

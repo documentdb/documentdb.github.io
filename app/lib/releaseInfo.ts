@@ -34,10 +34,7 @@ export type ReleaseInfo = {
   assetNames: readonly string[];
 };
 
-// Used until the fetch resolves, and permanently if it fails. A stale-but-valid
-// page is much better than a blank one, so this is a real release rather than a
-// placeholder. Keep it in step with the newest release; the drift check in CI
-// fails the build when it falls behind release-info.json.
+// A reference release, not evidence of current repository availability.
 export const FALLBACK_RELEASE: ReleaseInfo = {
   tagName: "v0.117-0",
   aptVersion: "0.117-0",
@@ -77,24 +74,17 @@ function firstMatch(names: readonly string[], pattern: RegExp): string | null {
   return null;
 }
 
-/**
- * Derives the display versions from a release-info.json payload.
- *
- * Each field falls back independently: a release that stops shipping one
- * package shape must not blank out the versions that are still present.
- */
 export function parseReleaseInfo(payload: unknown): ReleaseInfo {
   if (!payload || typeof payload !== "object") {
-    return FALLBACK_RELEASE;
+    throw new Error("The repository returned invalid release metadata.");
   }
   const raw = payload as RawReleaseInfo;
   const names = assetNamesOf(raw);
-
-  const tagName = typeof raw.tag_name === "string" ? raw.tag_name : FALLBACK_RELEASE.tagName;
-  const releaseUrl =
-    typeof raw.html_url === "string"
-      ? raw.html_url
-      : `https://github.com/documentdb/documentdb/releases/tag/${tagName}`;
+  if (typeof raw.tag_name !== "string" || !/^v\d+\.\d+[.-]\d+(?:[.-][a-zA-Z0-9]+)*$/.test(raw.tag_name)) {
+    throw new Error("The repository returned an invalid release tag.");
+  }
+  const tagName = raw.tag_name;
+  const releaseUrl = `https://github.com/documentdb/documentdb/releases/tag/${tagName}`;
 
   // The extension keeps the control-file form (0.117-0) on DEB, while RPM
   // splits it into Version/Release and renders 0.117.0-1.el9. Everything else
@@ -102,22 +92,22 @@ export function parseReleaseInfo(payload: unknown): ReleaseInfo {
   // cannot claim a shape the release does not contain.
   const aptVersion =
     firstMatch(names, /^ubuntu[\d.]+-postgresql-\d+-documentdb_([^_]+)_/) ??
-    firstMatch(names, /^deb\d+-postgresql-\d+-documentdb_([^_]+)_/) ??
-    FALLBACK_RELEASE.aptVersion;
+    firstMatch(names, /^deb\d+-postgresql-\d+-documentdb_([^_]+)_/);
 
   const rpmVersion =
-    firstMatch(names, /^rhel\d+-postgresql\d+-documentdb-(.+)\.(?:x86_64|aarch64)\.rpm$/) ??
-    FALLBACK_RELEASE.rpmVersion;
+    firstMatch(names, /^rhel\d+-postgresql\d+-documentdb-(.+)\.(?:x86_64|aarch64)\.rpm$/);
 
   const metaVersion =
     firstMatch(names, /^ubuntu[\d.]+-documentdb_([^_]+)_all\.deb$/) ??
-    firstMatch(names, /^documentdb-(\d+\.\d+\.\d+)-\d+\.noarch\.rpm$/) ??
-    FALLBACK_RELEASE.metaVersion;
+    firstMatch(names, /^documentdb-(\d+\.\d+\.\d+)-\d+\.noarch\.rpm$/);
 
   // e.g. documentdb-0.117.0-1.noarch.rpm -> 0.117.0-1
   const metaRpmVersion =
-    firstMatch(names, /^documentdb-(\d+\.\d+\.\d+-\d+)\.noarch\.rpm$/) ??
-    FALLBACK_RELEASE.metaRpmVersion;
+    firstMatch(names, /^documentdb-(\d+\.\d+\.\d+-\d+)\.noarch\.rpm$/);
+
+  if (!aptVersion || !rpmVersion || !metaVersion || !metaRpmVersion) {
+    throw new Error("The repository release metadata does not contain the expected package versions.");
+  }
 
   return {
     tagName,
@@ -130,37 +120,56 @@ export function parseReleaseInfo(payload: unknown): ReleaseInfo {
   };
 }
 
-/**
- * Reads the mirrored release description published alongside the packages.
- *
- * Returns the fallback synchronously so the first paint is always correct-ish,
- * then swaps in the live values. The site is a static export, so this has to
- * happen in the browser; NEXT_PUBLIC_BASE_PATH is the one base-path value Next
- * keeps in the client bundle.
- */
-export function useReleaseInfo(): ReleaseInfo {
-  const [release, setRelease] = useState<ReleaseInfo>(FALLBACK_RELEASE);
+export type ReleaseState = {
+  release: ReleaseInfo;
+  status: "loading" | "live" | "fallback";
+  error: string | null;
+};
+
+export function useReleaseInfo(): ReleaseState {
+  const [state, setState] = useState<ReleaseState>({
+    release: FALLBACK_RELEASE,
+    status: "loading",
+    error: null,
+  });
 
   useEffect(() => {
     let cancelled = false;
     const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 15000);
 
-    fetch(`${basePath}/packages/release-info.json`)
-      .then((response) => (response.ok ? response.json() : Promise.reject(response.status)))
+    fetch(`${basePath}/packages/release-info.json`, { signal: controller.signal })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Release metadata is unavailable (HTTP ${response.status}).`);
+        }
+        return response.json();
+      })
       .then((payload) => {
         if (!cancelled) {
-          setRelease(parseReleaseInfo(payload));
+          setState({ release: parseReleaseInfo(payload), status: "live", error: null });
         }
       })
-      .catch(() => {
-        // Keep the fallback: an unreachable or malformed feed must not empty
-        // the install commands the page exists to show.
-      });
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          setState({
+            release: FALLBACK_RELEASE,
+            status: "fallback",
+            error: error instanceof Error && error.name !== "AbortError"
+              ? error.message
+              : "The release metadata request timed out.",
+          });
+        }
+      })
+      .finally(() => window.clearTimeout(timeout));
 
     return () => {
       cancelled = true;
+      window.clearTimeout(timeout);
+      controller.abort();
     };
   }, []);
 
-  return release;
+  return state;
 }

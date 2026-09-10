@@ -2,11 +2,11 @@ import { getMetadata } from "../services/metadataService";
 
 // The packages page is a client component, so its metadata lives here.
 export const metadata = getMetadata({
-  title: "Download DocumentDB - Docker, APT, and RPM Packages",
+  title: "Install DocumentDB - Native Linux Packages and Docker",
   description:
-    "Run DocumentDB with Docker or install the full stack from GPG-signed repositories for Ubuntu 24.04 and EL9, including Rocky-family systems and registered RHEL. Build other targets from source.",
+    "Install DocumentDB on Ubuntu 24.04 or RHEL/Rocky 9 with apt or dnf, then run guided PostgreSQL setup. Native packages are pre-GA and for fresh installs. Docker is also available.",
   path: "/packages/",
-  extraKeywords: ["download", "install", "Docker", "APT", "RPM", "Debian", "Ubuntu", "RHEL"],
+  extraKeywords: ["install", "Linux", "APT", "RPM", "dnf", "Ubuntu", "RHEL", "Rocky Linux", "Docker"],
 });
 
 export default function PackagesLayout({

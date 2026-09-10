@@ -1,9 +1,18 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { kebabCase } from 'change-case';
 import {
   getArticleByPath,
   linuxPackagesGuideContent,
   linuxPackagesOperationsContent,
 } from '../app/services/articleService';
+import {
+  buildAptInstallCommand,
+  buildRpmInstallCommand,
+  buildSetupCommand,
+} from '../app/lib/packageInstall';
 
 function getCodeBlocks(content: string, language: string): string[] {
   const pattern = new RegExp('```' + language + '\\n([\\s\\S]*?)\\n```', 'g');
@@ -11,6 +20,193 @@ function getCodeBlocks(content: string, language: string): string[] {
 }
 
 describe('Linux package articles', () => {
+  beforeEach(() => {
+    const fixturePaths = new Map(
+      ['index.md', 'navigation.yml'].map((file) => [
+        path.join(process.cwd(), 'articles', 'getting-started', file),
+        fileURLToPath(new URL(`./fixtures/getting-started/${file}`, import.meta.url)),
+      ]),
+    );
+    const existsSync = fs.existsSync;
+    const readFileSync = fs.readFileSync;
+
+    vi.spyOn(fs, 'existsSync').mockImplementation((file) =>
+      existsSync(fixturePaths.get(file.toString()) ?? file),
+    );
+    vi.spyOn(fs, 'readFileSync').mockImplementation((file, options) =>
+      readFileSync(fixturePaths.get(file.toString()) ?? file, options),
+    );
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('uses the shared native install and fresh-instance setup commands', () => {
+    const blocks = getCodeBlocks(linuxPackagesGuideContent, 'bash');
+
+    expect(blocks).toContain(buildAptInstallCommand('ubuntu24', 'auto', '18'));
+    expect(blocks).toContain(buildRpmInstallCommand('rocky9', 'auto', '18'));
+    expect(blocks).toContain(buildRpmInstallCommand('rhel9', 'auto', '18'));
+    expect(blocks).toContain(buildSetupCommand('18'));
+    expect(linuxPackagesGuideContent).toContain('amd64 or arm64');
+    expect(linuxPackagesGuideContent.indexOf('fresh installation only')).toBeLessThan(
+      linuxPackagesGuideContent.indexOf('```bash'),
+    );
+    expect(linuxPackagesGuideContent).toContain('not in-place package upgrades');
+    expect(linuxPackagesGuideContent).toContain(
+      'Removing packages preserves database files',
+    );
+    expect(linuxPackagesGuideContent).toContain('**all interfaces**');
+    expect(linuxPackagesGuideContent).toContain('Firewall port `10260`');
+    expect(linuxPackagesGuideContent).toContain('**local development only**');
+    expect(linuxPackagesGuideContent).toContain('> use quickstart');
+    expect(linuxPackagesGuideContent).toContain('db.orders.insertOne(');
+    expect(linuxPackagesGuideContent).toContain('db.orders.find(');
+    expect(linuxPackagesGuideContent).toContain(
+      'mongosh localhost:10260 -u admin -p --authenticationMechanism',
+    );
+    expect(getArticleByPath('getting-started', ['packages'])?.frontmatter.description)
+      .toContain('Ubuntu APT or EL9 RPM/dnf packages');
+  });
+
+  it('aligns the Getting Started article and renderer with goal-based installation choices', async () => {
+    const article = getArticleByPath('getting-started', []);
+    if (!article) {
+      throw new Error('Missing Getting Started landing article');
+    }
+
+    const startHere = article.content.split('## Start here')[1]?.split('## Verify your setup')[0];
+    expect(startHere).toContain('/packages?method=packages');
+    expect(startHere).toContain('/packages?method=docker');
+    expect(startHere?.indexOf('/packages?method=packages')).toBeLessThan(
+      startHere?.indexOf('/packages?method=docker') ?? -1,
+    );
+    expect(startHere).toContain('new private PostgreSQL 18 instance');
+    expect(startHere).toContain('install packages, then run the setup wizard');
+    expect(startHere).toContain('no second server installation is needed');
+    expect(article.content).toContain('db.orders.insertOne(');
+    expect(article.content).toContain('db.orders.find(');
+    expect(article.content).toContain('acknowledged: true');
+    expect(article.content).toContain('Install [mongosh]');
+    expect(article.content).toContain('## Architecture Components');
+    expect(article.content).toContain('## Common Use Cases');
+    expect(article.content).toContain('## Community and Support');
+    const packageIndex = article.navigation.findIndex((item) =>
+      item.link === '/docs/getting-started/packages',
+    );
+    const dockerIndex = article.navigation.findIndex((item) =>
+      item.link === '/docs/getting-started/docker',
+    );
+    expect(packageIndex).toBeGreaterThanOrEqual(0);
+    expect(dockerIndex).toBeGreaterThan(packageIndex);
+
+    const { readFile } = await import('node:fs/promises');
+    const { fileURLToPath } = await import('node:url');
+    const source = await readFile(
+      fileURLToPath(new URL('../app/docs/[section]/[[...slug]]/page.tsx', import.meta.url)),
+      'utf8',
+    );
+
+    expect(source).toContain('buildAptInstallCommand("ubuntu24", "auto", "18")');
+    expect(source).toContain('buildSetupCommand("18")');
+    expect(source).toContain('href="/packages?method=packages"');
+    expect(source).toContain('href="/packages?method=docker"');
+    expect(source.indexOf('href="/packages?method=packages"')).toBeLessThan(
+      source.indexOf('href="/packages?method=docker"'),
+    );
+    expect(source).toContain('-p 127.0.0.1:10260:10260');
+    expect(source).not.toContain('-p 10260:10260');
+    expect(source).toContain("--username '<YOUR_USERNAME>'");
+    expect(source).toContain("--password '<YOUR_PASSWORD>'");
+    expect(source).toContain('firewall port 10260 before setup');
+    expect(source).toContain('Pre-GA, fresh installation only');
+  });
+
+  it('offers both server methods before client-specific setup or optional Docker commands', () => {
+    for (const slug of [
+      'vscode-quickstart', 'nodejs-setup', 'python-setup', 'mongo-shell-quickstart',
+    ]) {
+      const article = getArticleByPath('getting-started', [slug]);
+      if (!article) {
+        throw new Error(`Missing client quick start ${slug}`);
+      }
+      const content = article.content;
+      const prerequisite = content.split('## Have a running DocumentDB instance?')[1]
+        ?.split('## Prerequisites')[0];
+
+      expect(prerequisite, slug).toContain('/packages?method=packages');
+      expect(prerequisite, slug).toContain('/packages?method=docker');
+      expect(prerequisite, slug).toContain('localhost:10260');
+      expect(prerequisite, slug).toContain('username `admin`');
+      expect(prerequisite, slug).toContain('**local development only**');
+      expect(prerequisite, slug).toContain('firewall port `10260`');
+      expect(content, slug).toContain('## Optional: start a Docker instance');
+      expect(content, slug).toContain('Skip this if you installed native packages');
+      expect(content, slug).toContain('Wait for the readiness banner');
+      expect(content, slug).not.toContain('For the fastest local setup');
+      expect(content.indexOf('/packages?method=packages'), slug).toBeLessThan(
+        content.indexOf('docker run'),
+      );
+    }
+  });
+
+  it('keeps first writes independent of optional sample data for both installation methods', () => {
+    for (const slug of [
+      'vscode-quickstart', 'python-setup', 'mongo-shell-quickstart',
+    ]) {
+      const content = getArticleByPath('getting-started', [slug])?.content;
+      expect(content, slug).toContain('not required for your first insert and read');
+      expect(content, slug).toContain('`--load-sample-data` during setup');
+      expect(content, slug).toContain('separately requires [mongosh]');
+      expect(content, slug).toContain('`--init-data true`');
+    }
+    const vscode = getArticleByPath('getting-started', ['vscode-quickstart'])?.content;
+    expect(vscode).toContain('create a `quickstart` database');
+    expect(vscode).toContain('Add a test document');
+    expect(vscode).toContain('Refresh the `orders` collection');
+    expect(vscode?.indexOf('Add a test document')).toBeLessThan(
+      vscode?.indexOf('### Optional: browse sample data') ?? -1,
+    );
+    const docker = getArticleByPath('getting-started', ['docker'])?.content;
+    expect(docker).toContain('db.orders.insertOne(');
+    expect(docker).toContain('db.orders.find(');
+  });
+
+  it('documents trusted certificates without requiring Docker for native clients', () => {
+    for (const slug of ['nodejs-setup', 'python-setup', 'mongo-shell-quickstart']) {
+      const content = getArticleByPath('getting-started', [slug])?.content;
+      expect(content, slug).toContain('For native packages, follow [certificate configuration]');
+      expect(content, slug).toContain('/docs/linux-packages#before-exposing-it-to-a-network');
+      expect(content, slug).toContain('For Docker, copy the local certificate with:');
+      expect(content, slug).toContain('tlsCAFile');
+    }
+  });
+
+  it('links to rendered section anchors in the advanced native guide', () => {
+    const anchors = Array.from(
+      linuxPackagesOperationsContent.matchAll(/^## (.+)$/gm),
+      (match) => kebabCase(match[1]),
+    );
+    for (const slug of [
+      [], ['packages'], ['nodejs-setup'], ['python-setup'], ['mongo-shell-quickstart'],
+      ['vscode-quickstart'],
+    ]) {
+      const article = getArticleByPath('getting-started', slug);
+      if (!article) {
+        throw new Error(`Missing Getting Started article ${slug.join('/')}`);
+      }
+      const links = Array.from(
+        article.content.matchAll(/\]\(\/docs\/linux-packages#([^)]+)\)/g),
+        (match) => match[1],
+      );
+      expect(links.length).toBeGreaterThan(0);
+      for (const anchor of links) {
+        expect(anchors).toContain(anchor);
+      }
+    }
+  });
+
   it('keeps advanced setup details out of the quick start', () => {
     expect(linuxPackagesGuideContent).toContain(
       '/docs/linux-packages#unattended-setup',
@@ -34,6 +230,33 @@ describe('Linux package articles', () => {
     );
     expect(linuxPackagesOperationsContent).toContain(
       'DOCUMENTDB_TOAST_COMPRESSION=default',
+    );
+    expect(linuxPackagesOperationsContent).toContain(
+      '**locally on the gateway host**',
+    );
+    expect(linuxPackagesOperationsContent).toContain(
+      'remote PostgreSQL adoption is not supported',
+    );
+    expect(linuxPackagesOperationsContent).toContain(
+      'administrator access to change PostgreSQL configuration and restart its service',
+    );
+  });
+
+  it('keeps extension-only guidance advanced and systemd names per major', () => {
+    expect(linuxPackagesGuideContent).toContain(
+      '/docs/linux-packages#install-the-postgre-sql-extension-only',
+    );
+    expect(linuxPackagesOperationsContent).toContain(
+      '## Install the PostgreSQL extension only',
+    );
+    expect(linuxPackagesOperationsContent).toContain(
+      'does **not** create a MongoDB-compatible network endpoint',
+    );
+    expect(linuxPackagesOperationsContent).toContain(
+      'sudo systemctl restart documentdb-local@18.target',
+    );
+    expect(linuxPackagesOperationsContent).not.toContain(
+      'sudo systemctl restart documentdb-local.target',
     );
   });
 
@@ -290,6 +513,17 @@ describe('Linux package articles', () => {
     const pythonDockerBlock = getCodeBlocks(pythonGuide.content, 'bash').find(
       (block) => block.includes('docker run'),
     );
+
+    for (const content of [nodeGuide.content, pythonGuide.content]) {
+      const block = getCodeBlocks(content, 'bash').find(
+        (value) => value.includes('export DOCUMENTDB_USERNAME='),
+      );
+      expect(block).toContain("export DOCUMENTDB_USERNAME='<YOUR_USERNAME>'");
+      expect(block).toContain("export DOCUMENTDB_PASSWORD='<YOUR_PASSWORD>'");
+      expect(content.indexOf('## Set your client credentials')).toBeLessThan(
+        content.indexOf('## Optional: start a Docker instance'),
+      );
+    }
 
     for (const block of [nodeDockerBlock, pythonDockerBlock]) {
       expect(block).toContain("export DOCUMENTDB_USERNAME='<YOUR_USERNAME>'");

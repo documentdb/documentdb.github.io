@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import CommandSnippet from "./components/CommandSnippet";
+import HomeQuickstart from "./components/HomeQuickstart";
 import { documentdbKubernetesOperatorQuickStartUrl } from "./services/externalLinks";
 import { getMetadata } from "./services/metadataService";
 import {
@@ -32,27 +32,6 @@ type Capability = {
   href?: string;
   linkLabel?: string;
 };
-
-const quickRunCommand = `docker run -dt --name documentdb \\
-  -p 10260:10260 \\
-  ghcr.io/documentdb/documentdb/documentdb-local:latest \\
-  --username <YOUR_USERNAME> \\
-  --password <YOUR_PASSWORD>`;
-
-const quickStartSteps = [
-  {
-    step: "01",
-    description: "Run DocumentDB Local with Docker.",
-  },
-  {
-    step: "02",
-    description: "Connect on port 10260 with your app, shell, or client.",
-  },
-  {
-    step: "03",
-    description: "Continue with the docs or Linux packages for the setup you need.",
-  },
-];
 
 const kubernetesOperatorEntryPoints = [
   {
@@ -87,7 +66,7 @@ const whyDocumentDB = [
   {
     title: "Open and portable",
     description:
-      "MIT licensed, runs locally with Docker, and fits your own infrastructure or cloud.",
+      "MIT licensed, runs directly on Linux or with Docker, and fits your own infrastructure or cloud.",
   },
 ];
 
@@ -132,7 +111,7 @@ const trustBadges = [
   "Built on PostgreSQL",
   "Native BSON",
   "MIT licensed",
-  "Runs locally with Docker",
+  "Native Linux or Docker",
 ];
 
 const credibilityPoints = [
@@ -327,28 +306,26 @@ export default function Home() {
               <p className="mb-4 max-w-3xl text-2xl font-semibold tracking-tight text-white sm:text-3xl">
                 A powerful, scalable, fully MongoDB compatible open-source database built for modern applications
               </p>
-              <p className="mb-7 max-w-xl text-base leading-7 text-gray-300 sm:text-lg">
+              <p className="mb-4 max-w-xl text-base leading-7 text-gray-300 sm:text-lg">
                 Open source and MIT licensed, with native BSON, advanced
                 indexing, and vector search on PostgreSQL.
               </p>
+              <p className="mb-7 max-w-xl text-base leading-7 text-gray-300">
+                Run directly on Linux without a source build or container.
+                Start with the complete stack and guided setup, or use Docker.
+              </p>
               <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                 <Link
-                  href="/docs/getting-started"
-                  className="inline-flex w-full items-center justify-center rounded-md bg-blue-500 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-400 sm:w-auto"
+                  href="/packages?method=packages"
+                  className="inline-flex w-full items-center justify-center rounded-md bg-blue-500 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-400 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-400 sm:w-auto"
                 >
-                  Get Started
-                </Link>
-                <Link
-                  href="/packages"
-                  className="inline-flex w-full items-center justify-center rounded-md border border-blue-400 bg-blue-500/10 px-6 py-3 text-sm font-semibold text-blue-200 transition-colors hover:bg-blue-500/20 sm:w-auto"
-                >
-                  Download
+                  Install DocumentDB
                 </Link>
                 <Link
                   href="/docs"
-                  className="inline-flex w-full items-center justify-center rounded-md border border-neutral-600 bg-neutral-800/40 px-6 py-3 text-sm font-semibold text-gray-200 transition-colors hover:border-neutral-500 hover:bg-neutral-800 sm:w-auto"
+                  className="inline-flex w-full items-center justify-center rounded-md border border-neutral-600 bg-neutral-800/40 px-6 py-3 text-sm font-semibold text-gray-200 transition-colors hover:border-neutral-500 hover:bg-neutral-800 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-400 sm:w-auto"
                 >
-                  View Docs
+                  Read the docs
                 </Link>
               </div>
               <div className="mt-7 flex flex-wrap gap-2.5">
@@ -363,53 +340,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div
-              id="run-with-docker"
-              className="min-w-0 scroll-mt-24 rounded-2xl border border-white/10 bg-neutral-900/90 p-5 shadow-[0_24px_80px_-40px_rgba(59,130,246,0.55)] sm:rounded-3xl sm:p-6"
-            >
-              <div className="mb-4">
-                <span className="inline-flex rounded-full border border-blue-400/30 bg-blue-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-blue-200">
-                  Quick start
-                </span>
-                <h2 className="mt-4 text-xl font-semibold text-white sm:text-2xl">
-                  Run locally with Docker
-                </h2>
-                <p className="mt-2 text-sm leading-6 text-gray-400">
-                  Start DocumentDB Local with Docker, then connect on port
-                  10260.
-                </p>
-              </div>
-              <CommandSnippet command={quickRunCommand} label="Docker" />
-              <ol className="mt-5 overflow-hidden rounded-2xl border border-neutral-800/80 bg-neutral-900/50">
-                {quickStartSteps.map((item) => (
-                  <li
-                    key={item.step}
-                    className="grid grid-cols-[auto_1fr] items-center gap-3 border-t border-neutral-800/80 px-4 py-3.5 first:border-t-0"
-                  >
-                    <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-blue-400/30 bg-blue-500/10 text-[11px] font-semibold text-blue-200">
-                      {item.step}
-                    </span>
-                    <p className="text-sm leading-6 text-gray-300">
-                      {item.description}
-                    </p>
-                  </li>
-                ))}
-              </ol>
-              <div className="mt-4 flex flex-col gap-2 text-sm sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
-                <Link
-                  href="/docs/getting-started/docker"
-                  className="font-semibold text-blue-300 transition-colors hover:text-blue-200"
-                >
-                  Docker quick start
-                </Link>
-                <Link
-                  href="/packages"
-                  className="font-semibold text-gray-300 transition-colors hover:text-white"
-                >
-                  Download packages
-                </Link>
-              </div>
-            </div>
+            <HomeQuickstart />
           </div>
         </div>
       </section>
@@ -468,6 +399,74 @@ export default function Home() {
                 </div>
               </article>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="border-b border-neutral-800 bg-neutral-900/60 py-14 sm:py-16 lg:py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-8 max-w-3xl">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.24em] text-blue-300">
+              Installation choices
+            </p>
+            <h2 className="mb-4 text-3xl font-bold text-white sm:text-4xl">
+              Start simple. Keep control.
+            </h2>
+            <p className="text-base leading-7 text-gray-400 sm:text-lg">
+              No source build required. Guided setup. Choose what you manage.
+            </p>
+            <a
+              href={withBasePath("/blogs/posts/native-linux-packages/")}
+              className="mt-3 inline-flex text-sm font-semibold text-blue-300 underline underline-offset-4 hover:text-blue-200 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-400"
+            >
+              Read about native Linux packages
+            </a>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            <article className="rounded-2xl border border-blue-400/30 bg-blue-500/5 p-5 sm:p-6">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-blue-300">Recommended</p>
+              <h3 className="mb-2 text-xl font-semibold text-white">Complete stack</h3>
+              <p className="text-sm leading-6 text-gray-400">
+                Install PostgreSQL, the DocumentDB extension, and the gateway
+                together. Guided setup creates a private instance with persistent
+                storage and systemd services.
+              </p>
+              <Link
+                href="/packages?method=packages"
+                className="mt-4 inline-flex text-sm font-semibold text-blue-300 hover:text-blue-200 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-400"
+              >
+                Install the complete stack
+              </Link>
+            </article>
+            <article className="rounded-2xl border border-neutral-800 bg-neutral-900/80 p-5 sm:p-6">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Advanced</p>
+              <h3 className="mb-2 text-xl font-semibold text-white">Your local PostgreSQL</h3>
+              <p className="text-sm leading-6 text-gray-400">
+                Use PostgreSQL you manage on the same host as the gateway,
+                not a remotely hosted database. Review configuration changes
+                and restart requirements before setup.
+              </p>
+              <Link
+                href="/docs/linux-packages"
+                className="mt-4 inline-flex text-sm font-semibold text-blue-300 hover:text-blue-200 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-400"
+              >
+                Read the local PostgreSQL guide
+              </Link>
+            </article>
+            <article className="rounded-2xl border border-neutral-800 bg-neutral-900/80 p-5 sm:p-6">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Advanced</p>
+              <h3 className="mb-2 text-xl font-semibold text-white">Extension only</h3>
+              <p className="text-sm leading-6 text-gray-400">
+                Add DocumentDB to your local PostgreSQL installation for SQL use.
+                The extension alone does not create a MongoDB-compatible network endpoint.
+              </p>
+              <Link
+                href="/docs/linux-packages"
+                className="mt-4 inline-flex text-sm font-semibold text-blue-300 hover:text-blue-200 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-400"
+              >
+                Read the extension-only guide
+              </Link>
+            </article>
           </div>
         </div>
       </section>
@@ -701,20 +700,26 @@ export default function Home() {
             Ready to try DocumentDB?
           </h2>
           <p className="mb-6 text-sm text-gray-400 sm:text-base">
-            Start locally with Docker, then explore the project on GitHub.
+            Install directly on Linux, or use Docker on Linux, macOS, and Windows.
           </p>
           <div className="flex flex-col justify-center gap-3 sm:flex-row">
             <Link
-              href="/docs/getting-started"
-              className="inline-flex w-full items-center justify-center rounded-md bg-white px-5 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-gray-100 sm:w-auto"
+              href="/packages?method=packages"
+              className="inline-flex w-full items-center justify-center rounded-md bg-white px-5 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-400 sm:w-auto"
             >
-              Get Started
+              Install DocumentDB
+            </Link>
+            <Link
+              href="/packages?method=docker"
+              className="inline-flex w-full items-center justify-center rounded-md border border-neutral-600 px-5 py-2.5 text-sm font-semibold text-gray-200 transition-colors hover:border-neutral-500 hover:bg-neutral-800 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-400 sm:w-auto"
+            >
+              Use Docker
             </Link>
             <a
               href="https://github.com/documentdb/documentdb"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex w-full items-center justify-center rounded-md border border-neutral-600 px-5 py-2.5 text-sm font-semibold text-gray-200 transition-colors hover:border-neutral-500 hover:bg-neutral-800 sm:w-auto"
+              className="inline-flex w-full items-center justify-center rounded-md px-5 py-2.5 text-sm font-semibold text-gray-300 transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-400 sm:w-auto"
             >
               GitHub
             </a>
