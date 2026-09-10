@@ -15,6 +15,16 @@ interface ContentSource {
     readonly source: string;
     readonly target: string;
   }>;
+  /**
+   * Additional frozen documentation versions to compile alongside the main
+   * branch. Each entry clones the repository at the given ref (tag or branch)
+   * and copies the same mappings into versioned/<label>/<target>, which the
+   * /docs/versions/<label>/ routes render as an archived snapshot.
+   */
+  readonly versions?: ReadonlyArray<{
+    readonly label: string;
+    readonly ref: string;
+  }>;
 }
 
 interface ContentConfig {
@@ -168,12 +178,16 @@ async function cloneContent(
   message?: string;
 }> {
   const TEMP_DIR = path.join(process.cwd(), '_tmp');
+  const VERSIONED_DIR = path.join(process.cwd(), 'versioned');
   const tracker = new FileTracker(onProgress);
 
   try {
     // Clean temp directory
     cleanDirectory(TEMP_DIR);
     ensureDirectory(TEMP_DIR);
+
+    // Clean versioned snapshots from a previous compile
+    cleanDirectory(VERSIONED_DIR);
 
     // Process each source repository
     for (const source of config.sources) {
@@ -232,6 +246,45 @@ async function cloneContent(
         if (tracker.getCopiedFiles().length === copiedBefore) {
           throw new Error(
             `No files matched for mapping "${mapping.source}" -> "${mapping.target}" from ${source.repository}; refusing to build with empty documentation content.`
+          );
+        }
+      }
+
+      // Compile frozen documentation versions (tags/branches) into versioned/<label>/
+      for (const version of source.versions ?? []) {
+        const versionCloneDir = path.join(TEMP_DIR, `${repoName}-${version.label}`);
+
+        const versionCloneResult = spawnSync(
+          'git',
+          ['clone', '--depth', '1', '--branch', version.ref, source.repository, versionCloneDir],
+          { stdio: 'pipe' }
+        );
+
+        if (versionCloneResult.error || versionCloneResult.status !== 0) {
+          const stderr = versionCloneResult.stderr?.toString().trim();
+          throw new Error(
+            `git clone failed for ${source.repository} at ref ${version.ref}: ${versionCloneResult.error?.message || stderr || `exit code ${versionCloneResult.status}`}`
+          );
+        }
+
+        for (const mapping of source.mappings) {
+          const sourceDir = path.join(versionCloneDir, mapping.source);
+          const targetDir = path.join(VERSIONED_DIR, version.label, mapping.target);
+
+          // Unlike the main branch, a missing folder in an old snapshot is
+          // expected (sections are added over time), so skip instead of throwing.
+          if (!fs.existsSync(sourceDir)) {
+            continue;
+          }
+
+          ensureDirectory(targetDir);
+          copyFilesRecursive(
+            sourceDir,
+            targetDir,
+            config.include,
+            config.exclude,
+            tracker,
+            `${source.repository}@${version.ref}`
           );
         }
       }

@@ -64,8 +64,27 @@ jobs:
             sign=false
           fi
 
+          # Upstream is the organization Pages site served at the root of the
+          # custom domain (documentdb.io), so it must NOT set a base path:
+          # prefixing every internal link and asset with the repository name
+          # makes GitHub Pages 301 back to the root on every request and leaves
+          # the prefixed URL in the address bar after client-side navigation.
+          # A fork is the opposite case - it is served as a project page under
+          # /<repo>/, where the prefix is required for assets to resolve at all.
+          # Deriving it here is what lets a fork deploy a working preview of a
+          # docs change without editing the workflow.
+          if [ "$IS_UPSTREAM" = 'true' ]; then
+            base_path=''
+            jekyll_base_path='/blogs'
+          else
+            base_path="${GITHUB_REPOSITORY##*/}"
+            jekyll_base_path="/${base_path}/blogs"
+          fi
+
           echo "packages=$packages" >> "$GITHUB_OUTPUT"
           echo "sign=$sign" >> "$GITHUB_OUTPUT"
+          echo "base_path=$base_path" >> "$GITHUB_OUTPUT"
+          echo "jekyll_base_path=$jekyll_base_path" >> "$GITHUB_OUTPUT"
 
           {
             echo "### Build configuration"
@@ -75,6 +94,7 @@ jobs:
             echo "| Static site | true | always built |"
             echo "| Package repositories | $packages | \`BUILD_PACKAGES\` variable |"
             echo "| Package signing | $sign | \`GPG_PRIVATE_KEY\` secret |"
+            echo "| Base path | ${base_path:-(none)} | upstream vs. fork |"
           } >> "$GITHUB_STEP_SUMMARY"
 
           if [ "$packages" = 'true' ] && [ "$sign" != 'true' ]; then
@@ -146,15 +166,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Build with Next.js
-        # This repository is the organization Pages site served at the root of
-        # the custom domain (documentdb.io), so the build must NOT set
-        # NEXT_BASE_PATH. Setting it to the repository name (the usual trick
-        # for project pages) prefixes every internal link and asset URL with
-        # /documentdb.github.io/, which GitHub Pages then 301-redirects back
-        # to the root on every request and leaves the prefixed URL visible in
-        # the address bar after client-side navigation.
+        # Both base paths are resolved in the "Resolve optional build features"
+        # step; upstream builds resolve NEXT_BASE_PATH to the empty string,
+        # which next.config.ts treats as "no base path".
         env:
-          JEKYLL_BASE_PATH: /blogs
+          NEXT_BASE_PATH: ${{ steps.features.outputs.base_path }}
+          JEKYLL_BASE_PATH: ${{ steps.features.outputs.jekyll_base_path }}
         run: npm run build
       - name: Verify exported documentation pages
         # A partially failed content compile must never reach production as a
@@ -162,7 +179,7 @@ jobs:
         # this is the independent belt-and-braces check on the final artifact.
         run: |
           set -euo pipefail
-          for page in out/index.html out/docs/index.html out/docs/getting-started/index.html out/docs/reference/index.html; do
+          for page in out/index.html out/docs/index.html out/docs/getting-started/index.html out/docs/reference/index.html out/docs/versions/index.html; do
             if [ ! -f "$page" ]; then
               echo "Missing expected page: $page"
               exit 1

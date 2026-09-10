@@ -105,6 +105,29 @@ export default function Docs() {
             );
           })}
         </div>
+
+        {/* Secondary meta links: releases and versions */}
+        {articleContent.landing.secondaryLinks && (
+          <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+            {articleContent.landing.secondaryLinks.map((item) => (
+              <Link
+                key={item.link}
+                href={item.link}
+                className="group flex w-full max-w-md items-center justify-between rounded-lg border border-neutral-700/50 bg-neutral-800/60 px-5 py-3 transition-colors hover:border-blue-500/50 sm:w-auto sm:min-w-72"
+              >
+                <span>
+                  <span className="block text-sm font-medium text-white group-hover:text-blue-300 transition-colors">
+                    {item.title}
+                  </span>
+                  {item.description && (
+                    <span className="block text-xs text-gray-500">{item.description}</span>
+                  )}
+                </span>
+                <span className="ml-4 text-gray-500 group-hover:text-blue-400 transition-colors">→</span>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

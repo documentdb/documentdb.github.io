@@ -58,6 +58,15 @@ async function cleanContent(
   try {
     const cleaned: CleanedDirectory[] = [];
 
+    // Clean compiled versioned snapshots
+    if (cleanDirectory(path.join(process.cwd(), 'versioned'))) {
+      const cleanedDir: CleanedDirectory = { path: 'versioned', repository: '(versioned snapshots)' };
+      cleaned.push(cleanedDir);
+      if (onProgress) {
+        onProgress(cleanedDir);
+      }
+    }
+
     // Process each source repository
     for (const source of config.sources) {
       // Process each mapping and clean target directories

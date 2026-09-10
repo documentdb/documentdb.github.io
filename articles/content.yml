@@ -16,3 +16,10 @@ landing:
       link: /docs/architecture
     - title: Samples & Demos
       link: /samples
+  secondaryLinks:
+    - title: Release Notes
+      description: What changed in each DocumentDB release
+      link: /docs/release-notes
+    - title: Documentation Versions
+      description: Current docs and archived snapshots of earlier releases
+      link: /docs/versions

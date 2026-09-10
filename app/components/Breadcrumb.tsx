@@ -9,6 +9,10 @@ export default function Breadcrumb({ type, category, name }: {
 }) {
     return (
         <nav className="mb-6 text-sm text-gray-400">
+            <Link href="/docs" className="hover:text-blue-400 transition-colors">
+                Docs
+            </Link>
+            <span className="mx-2">/</span>
             <Link href="/docs/reference" className="hover:text-blue-400 transition-colors">
                 Reference
             </Link>

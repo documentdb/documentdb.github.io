@@ -1,7 +1,7 @@
 {
   "sources": [
     {
-      "repository": "https://github.com/documentdb/docs",
+      "repository": "https://github.com/GuanzhouSong/docs",
       "branch": "main",
       "mappings": [
         {
@@ -27,6 +27,16 @@
         {
           "source": "kubernetes-operator",
           "target": "articles/kubernetes-operator"
+        },
+        {
+          "source": "release-notes",
+          "target": "articles/release-notes"
+        }
+      ],
+      "versions": [
+        {
+          "label": "v0.114-0",
+          "ref": "v0.114-0"
         }
       ]
     }

@@ -66,6 +66,42 @@
             },
             "additionalProperties": false
           }
+        },
+        "secondaryLinks": {
+          "type": "array",
+          "description": "Optional secondary meta links (e.g. release notes, documentation versions) rendered in a smaller row below the main section grid. Use for cross-cutting pages that are not documentation sections themselves.",
+          "minItems": 1,
+          "maxItems": 10,
+          "items": {
+            "type": "object",
+            "description": "A single secondary link entry with a display title, optional one-line description, and a target URL path",
+            "required": ["title", "link"],
+            "properties": {
+              "title": {
+                "type": "string",
+                "description": "The display text for the secondary link.",
+                "minLength": 1,
+                "maxLength": 100,
+                "examples": ["Release Notes", "Documentation Versions"]
+              },
+              "description": {
+                "type": "string",
+                "description": "Optional one-line subtitle shown under the title.",
+                "minLength": 1,
+                "maxLength": 200,
+                "examples": ["What changed in each DocumentDB release"]
+              },
+              "link": {
+                "type": "string",
+                "description": "The URL path (relative or absolute) that the link navigates to.",
+                "pattern": "^(/|https?://)",
+                "minLength": 1,
+                "maxLength": 500,
+                "examples": ["/docs/release-notes", "/docs/versions"]
+              }
+            },
+            "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false

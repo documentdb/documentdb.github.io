@@ -1,12 +1,18 @@
 import Link from "next/link";
 import { notFound } from 'next/navigation';
-import { capitalCase } from 'change-case';
-import { getAllArticlePaths, getArticleByPath } from "../../../services/articleService";
+import { getAllArticlePaths, getAllSections, getArticleByPath } from "../../../services/articleService";
 import { getMetadata } from "../../../services/metadataService";
 import ComingSoon from "../../../components/ComingSoon";
 import CommandSnippet from "../../../components/CommandSnippet";
 import Markdown from "../../../components/Markdown";
 import MovedNotice from "../../../components/MovedNotice";
+import DocsSidebar, { DocsSidebarMobile } from "../../../components/DocsSidebar";
+import DocsBreadcrumb from "../../../components/DocsBreadcrumb";
+import {
+    formatSectionTitle,
+    getVersionSwitcherEntries,
+    orderSections,
+} from "../../../services/versionService";
 
 const dockerQuickRunCommand = `docker run -dt --name documentdb \\
   -p 10260:10260 \\
@@ -125,36 +131,52 @@ export default async function ArticlePage({ params }: PageProps) {
     // with no heading element at all. Guarded in case a future coming-soon page
     // does start with one.
     const showComingSoonHeading = isComingSoon && !/^#\s/m.test(content);
-    const sectionTitle = capitalCase(section)
-        .replace(/documentdb/i, 'DocumentDB')
-        .replace(/api/i, 'API');
+    const sectionTitle = formatSectionTitle(section);
 
-    // Rendered once, shown in the desktop sidebar and the mobile disclosure
-    const navigationLinks = navigation.map((item) => {
-        // Better matching logic for active state
-        // For index files, match both /section and /section/index
-        // For other files, match the specific file name. Compare the final path
-        // segment exactly - a substring test marks every sibling whose slug
-        // starts with this one (packages also matching packages-operations).
+    // Pages of this section, rendered once and shared by the desktop sidebar
+    // and the mobile disclosure.
+    // For index files, match both /section and /section/index. For other files,
+    // compare the final path segment exactly - a substring test marks every
+    // sibling whose slug starts with this one (packages also matching
+    // packages-operations).
+    const navItems = navigation.map((item) => {
         const itemPath = item.link.replace('/docs/', '');
         const currentPath = file === 'index' ? section : `${section}/${file}`;
         const isActive = itemPath === currentPath ||
             (file === 'index' && itemPath === `${section}/index`) ||
             (file !== 'index' && item.link.split('/').pop() === file);
 
-        return (
-            <Link
-                key={item.link}
-                href={item.link}
-                className={`block w-full text-left px-4 py-3 rounded-lg text-sm transition-all duration-200 ${isActive
-                    ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
-                    : "text-gray-300 hover:text-white hover:bg-neutral-700/50"
-                    }`}
-            >
-                {item.title}
-            </Link>
-        );
+        return { title: item.title, href: item.link, active: isActive };
     });
+
+    // Sibling sections, so a reader can cross to another section without
+    // returning to the docs index first.
+    const sectionItems = [
+        ...orderSections(getAllSections()).map((s) => ({
+            title: formatSectionTitle(s),
+            href: `/docs/${s}`,
+            active: s === section,
+        })),
+        { title: 'API Reference', href: '/docs/reference', active: false },
+    ];
+
+    const sidebarProps = {
+        version: null,
+        backHref: '/docs',
+        backLabel: 'Back to Documentation',
+        sectionTitle,
+        nav: navItems,
+        sections: sectionItems,
+        switcherEntries: getVersionSwitcherEntries('current', section, file),
+    };
+
+    const breadcrumbs = file === 'index'
+        ? [{ title: 'Docs', href: '/docs' }, { title: sectionTitle }]
+        : [
+            { title: 'Docs', href: '/docs' },
+            { title: sectionTitle, href: `/docs/${section}` },
+            { title: pageTitle },
+        ];
 
     return (
         <div className="min-h-screen bg-neutral-900 relative overflow-hidden">
@@ -170,62 +192,15 @@ export default async function ArticlePage({ params }: PageProps) {
 
             <div className="relative flex min-h-screen">
                 {/* Left Sidebar (desktop only; mobile gets the disclosure below) */}
-                <div className="hidden w-80 bg-neutral-800/50 backdrop-blur-sm border-r border-neutral-700/50 md:flex flex-col">
-                    {/* Header */}
-                    <div className="p-6 border-b border-neutral-700/50">
-                        <Link
-                            href="/docs"
-                            className="text-blue-400 hover:text-blue-300 text-sm mb-4 flex items-center transition-colors"
-                        >
-                            <svg
-                                className="w-4 h-4 mr-2"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M15 19l-7-7 7-7"
-                                />
-                            </svg>
-                            Back to Documentation
-                        </Link>
-                        {/* Not a heading: the article's h1 comes from the markdown content */}
-                        <p className="text-2xl font-bold text-white">
-                            {sectionTitle}
-                        </p>
-                    </div>
-
-                    {/* Menu Items */}
-                    <div className="flex-1 p-4 overflow-y-auto">
-                        <nav className="space-y-1">
-                            {navigationLinks}
-                        </nav>
-                    </div>
-                </div>
+                <DocsSidebar {...sidebarProps} />
 
                 {/* Main Content */}
                 <div className="flex-1 p-4 sm:p-8 overflow-y-auto">
                     <div className="max-w-4xl">
                         {/* Mobile section navigation */}
-                        <details className="mb-6 rounded-lg border border-neutral-700/50 bg-neutral-800/50 md:hidden">
-                            <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-gray-200">
-                                {sectionTitle} navigation
-                            </summary>
-                            <div className="border-t border-neutral-700/50 p-3">
-                                <Link
-                                    href="/docs"
-                                    className="block px-4 py-2 text-sm text-blue-400 hover:text-blue-300 transition-colors"
-                                >
-                                    ← Back to Documentation
-                                </Link>
-                                <nav className="space-y-1">
-                                    {navigationLinks}
-                                </nav>
-                            </div>
-                        </details>
+                        <DocsSidebarMobile {...sidebarProps} />
+
+                        <DocsBreadcrumb crumbs={breadcrumbs} />
 
                         {/* Coming Soon Component for coming-soon layout */}
                         {showComingSoonHeading && (
