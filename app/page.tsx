@@ -1,7 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
-import CommandSnippet from "./components/CommandSnippet";
-import { documentdbKubernetesOperatorQuickStartUrl } from "./services/externalLinks";
+import QuickStartTabs from "./components/QuickStartTabs";
+import {
+  documentdbKubernetesOperatorQuickStartUrl,
+  documentdbVsCodeExtensionMarketplaceUrl,
+  documentdbVsCodeLocalQuickStartDeepLink,
+} from "./services/externalLinks";
+import { vscodeSetupSectionAnchor } from "./lib/docsAnchors";
 import { getMetadata } from "./services/metadataService";
 import {
   documentdbGitHubForks,
@@ -34,23 +39,42 @@ type Capability = {
 };
 
 const quickRunCommand = `docker run -dt --name documentdb \\
-  -p 10260:10260 \\
+  -p 127.0.0.1:10260:10260 \\
   ghcr.io/documentdb/documentdb/documentdb-local:latest \\
-  --username <YOUR_USERNAME> \\
-  --password <YOUR_PASSWORD>`;
+  --username '<YOUR_USERNAME>' \\
+  --password '<YOUR_PASSWORD>'`;
 
-const quickStartSteps = [
+const dockerQuickStartSteps = [
   {
     step: "01",
-    description: "Run DocumentDB Local with Docker.",
+    description:
+      "Replace the placeholders with your own username and password, then run the command. The image is around 300 MB, so the first run takes a few minutes.",
   },
   {
     step: "02",
-    description: "Connect on port 10260 with your app, shell, or client.",
+    description:
+      "Connect on 127.0.0.1:10260 with mongosh (TLS flags are in the guide), a MongoDB driver, or your app.",
   },
   {
     step: "03",
-    description: "Continue with the docs or Linux packages for the setup you need.",
+    description:
+      "Run your first query. The Docker guide has connection strings and a flag for sample data.",
+  },
+];
+
+// Two steps against Terminal's three: the guided path should look shorter at a glance.
+// Installing the extension is not a step, because VS Code offers to do it when the deep
+// link is opened; the caption under the button says so.
+const vscodeQuickStartSteps = [
+  {
+    step: "01",
+    description:
+      "Once VS Code loads the wizard, select Continue, review the defaults, then select Start DocumentDB Local.",
+  },
+  {
+    step: "02",
+    description:
+      "Select Open Connection to browse your data and run your first query. Sample data is loaded by default.",
   },
 ];
 
@@ -316,7 +340,7 @@ export default function Home() {
       <section className="relative overflow-hidden border-b border-neutral-800 bg-gradient-to-b from-neutral-800 via-neutral-900 to-black">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(59,130,246,0.2),_transparent_45%),radial-gradient(circle_at_bottom_left,_rgba(16,185,129,0.18),_transparent_45%)]" />
         <div className="relative mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-20 lg:px-8 lg:py-24">
-          <div className="grid items-center gap-8 lg:gap-10 xl:grid-cols-[1.15fr_0.85fr]">
+          <div className="grid items-start gap-8 lg:gap-10 xl:grid-cols-[1.15fr_0.85fr]">
             <div className="min-w-0">
               <p className="mb-3 text-xs font-semibold uppercase tracking-[0.24em] text-blue-300">
                 Open source document database
@@ -372,43 +396,22 @@ export default function Home() {
                   Quick start
                 </span>
                 <h2 className="mt-4 text-xl font-semibold text-white sm:text-2xl">
-                  Run locally with Docker
+                  Run DocumentDB locally
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-gray-400">
-                  Start DocumentDB Local with Docker, then connect on port
-                  10260.
+                  Run it from your terminal, or let the VS Code extension set it
+                  up for you. Both run the same DocumentDB Local image.
                 </p>
               </div>
-              <CommandSnippet command={quickRunCommand} label="Docker" />
-              <ol className="mt-5 overflow-hidden rounded-2xl border border-neutral-800/80 bg-neutral-900/50">
-                {quickStartSteps.map((item) => (
-                  <li
-                    key={item.step}
-                    className="grid grid-cols-[auto_1fr] items-center gap-3 border-t border-neutral-800/80 px-4 py-3.5 first:border-t-0"
-                  >
-                    <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-blue-400/30 bg-blue-500/10 text-[11px] font-semibold text-blue-200">
-                      {item.step}
-                    </span>
-                    <p className="text-sm leading-6 text-gray-300">
-                      {item.description}
-                    </p>
-                  </li>
-                ))}
-              </ol>
-              <div className="mt-4 flex flex-col gap-2 text-sm sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
-                <Link
-                  href="/docs/getting-started/docker"
-                  className="font-semibold text-blue-300 transition-colors hover:text-blue-200"
-                >
-                  Docker quick start
-                </Link>
-                <Link
-                  href="/packages"
-                  className="font-semibold text-gray-300 transition-colors hover:text-white"
-                >
-                  Download packages
-                </Link>
-              </div>
+              <QuickStartTabs
+                dockerCommand={quickRunCommand}
+                dockerSteps={dockerQuickStartSteps}
+                vscodeSteps={vscodeQuickStartSteps}
+                vscodeDeepLinkUrl={documentdbVsCodeLocalQuickStartDeepLink}
+                vscodeMarketplaceUrl={documentdbVsCodeExtensionMarketplaceUrl}
+                dockerDocsUrl="/docs/getting-started/docker"
+                vscodeDocsUrl={`/docs/getting-started/vscode-quickstart#${vscodeSetupSectionAnchor}`}
+              />
             </div>
           </div>
         </div>
