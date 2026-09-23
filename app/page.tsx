@@ -331,7 +331,7 @@ export default function Home() {
                   href="/packages"
                   className="inline-flex w-full items-center justify-center rounded-md border border-blue-400 bg-blue-500/10 px-6 py-3 text-sm font-semibold text-blue-200 transition-colors hover:bg-blue-500/20 sm:w-auto"
                 >
-                  Download
+                  Install &amp; Download
                 </Link>
                 <Link
                   href="/docs"

@@ -7,12 +7,13 @@ import ComingSoon from "../../../components/ComingSoon";
 import CommandSnippet from "../../../components/CommandSnippet";
 import Markdown from "../../../components/Markdown";
 import MovedNotice from "../../../components/MovedNotice";
+import { aptTargetLabels } from "../../../lib/packageInstall";
 
 const dockerQuickRunCommand = `docker run -dt --name documentdb \\
-  -p 10260:10260 \\
+  -p 127.0.0.1:10260:10260 \\
   ghcr.io/documentdb/documentdb/documentdb-local:latest \\
-  --username <YOUR_USERNAME> \\
-  --password <YOUR_PASSWORD>`;
+  --username '<YOUR_USERNAME>' \\
+  --password '<YOUR_PASSWORD>'`;
 
 const primerPrimaryLinkClass =
     "inline-flex w-full items-center justify-center rounded-md bg-blue-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-400 sm:w-auto";
@@ -241,11 +242,11 @@ export default async function ArticlePage({ params }: PageProps) {
                                     Recommended flow
                                 </p>
                                 <h2 className="mt-2 text-2xl font-semibold text-white">
-                                    Install and verify DocumentDB
+                                    Choose an environment, then run your first query
                                 </h2>
                                 <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-300">
-                                    Choose one install path first. After DocumentDB is running, verify the
-                                    connection with mongosh before moving to a driver quick start.
+                                    Install with Docker or Linux packages once. Create a working instance,
+                                    then insert and read a document using a shell, driver, or editor.
                                 </p>
                                 <div className="mt-5 rounded-xl border border-neutral-800 bg-neutral-950/40 p-4">
                                     <div className="mb-4 flex items-start gap-3">
@@ -257,22 +258,28 @@ export default async function ArticlePage({ params }: PageProps) {
                                                 Choose an install path
                                             </p>
                                             <p className="mt-1 text-sm text-gray-400">
-                                                Use Docker for the fastest local setup, or Linux packages for a
-                                                persistent host installation.
+                                                Start with Docker on Linux, macOS, or Windows. Use Linux packages
+                                                when you need a host installation.
                                             </p>
                                         </div>
                                     </div>
                                     <div className="grid gap-4 lg:grid-cols-2">
                                         <div className="rounded-xl border border-neutral-800 bg-neutral-900/70 p-4">
                                             <p className="text-sm font-semibold text-white">
-                                                Run locally with Docker
+                                                Docker: recommended for evaluation and development
                                             </p>
                                             <p className="mt-2 text-sm text-gray-400">
-                                                Best for evaluation, local development, and quick testing.
+                                                With Docker installed, run a local instance on Linux, macOS, or
+                                                Windows. Replace the credential placeholders before running.
+                                                The port stays on loopback.
                                             </p>
                                             <div className="mt-4">
-                                                <CommandSnippet command={dockerQuickRunCommand} label="Docker" />
+                                                <CommandSnippet command={dockerQuickRunCommand} label="Start Docker" />
                                             </div>
+                                            <p className="mt-4 text-sm text-gray-400">
+                                                Wait for the readiness banner in{" "}
+                                                <code>docker logs documentdb</code> before connecting.
+                                            </p>
                                             <div className="mt-4">
                                                 <Link
                                                     href="/docs/getting-started/docker"
@@ -284,24 +291,32 @@ export default async function ArticlePage({ params }: PageProps) {
                                         </div>
                                         <div className="rounded-xl border border-neutral-800 bg-neutral-900/70 p-4">
                                             <p className="text-sm font-semibold text-white">
-                                                Install from Linux packages
+                                                Linux packages
                                             </p>
                                             <p className="mt-2 text-sm text-gray-400">
-                                                Use the repository-backed package flow when you want a persistent
-                                                server install. Generate the exact apt or rpm command with the{" "}
-                                                <Link href="/packages" className={primerSecondaryLinkClass}>
-                                                    Package Finder
-                                                </Link>
-                                                .
+                                                For environments without Docker, or when you need control over
+                                                PostgreSQL, topology, services, and configuration. Install with
+                                                apt or dnf on {aptTargetLabels.ubuntu24} or EL9, then run the setup wizard.
+                                            </p>
+                                            <p className="mt-2 text-sm text-gray-400">
+                                                Pre-GA, fresh installation only; in-place upgrades from earlier
+                                                releases are not supported.
                                             </p>
                                             <div className="mt-4">
                                                 <Link
-                                                    href="/docs/getting-started/packages"
-                                                    className={primerPrimaryLinkClass}
+                                                    href="/packages?method=packages"
+                                                    className={primerSecondaryLinkClass}
                                                 >
-                                                    Linux Packages Quick Start
+                                                    Linux packages installation
                                                 </Link>
                                             </div>
+                                            <p className="mt-3 text-sm text-gray-400">
+                                                For the full walkthrough, see the{" "}
+                                                <Link href="/docs/getting-started/packages" className={primerSecondaryLinkClass}>
+                                                    Linux Packages Quick Start
+                                                </Link>
+                                                .
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
@@ -312,14 +327,13 @@ export default async function ArticlePage({ params }: PageProps) {
                                         </span>
                                         <div className="min-w-0">
                                             <p className="text-sm font-semibold text-white">
-                                                Recommended: verify with mongosh
+                                                Insert and read your first document
                                             </p>
                                             <p className="mt-1 text-sm text-gray-400">
-                                                This is the fastest shared validation path after either install
-                                                option because it confirms authentication, TLS, and a working
-                                                endpoint before you add editor or driver setup. If you already
-                                                know your target workflow, you can skip this and continue directly
-                                                with VS Code or a driver quick start.
+                                                Install mongosh separately for the shell walkthrough below, or
+                                                use your preferred language or editor. Each guide connects to
+                                                the instance you already created and verifies an insert and read.
+                                                Sample data is optional.
                                             </p>
                                             <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
                                                 <Link

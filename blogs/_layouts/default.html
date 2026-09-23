@@ -6,6 +6,7 @@
     <title>{% if page.title %}{{ page.title }} · {% endif %}DocumentDB</title>
     <meta name="description" content="{{ page.description | default: site.description | escape }}">
     <meta name="theme-color" content="#09090b">
+    <link rel="canonical" href="{{ page.url | absolute_url }}">
 
     {% assign social_title = page.title | default: site.title %}
     {% assign social_description = page.description | default: site.description %}
@@ -60,7 +61,7 @@
             <a href="https://github.com/documentdb/documentdb" target="_blank" rel="noopener noreferrer">GitHub</a>
             <a href="{{ site.discord_url }}" target="_blank" rel="noopener noreferrer">Discord</a>
             <a href="{{ docs_href }}">Docs</a>
-            <a href="{{ packages_href }}">Download</a>
+            <a href="{{ packages_href }}">Install &amp; Download</a>
             <a href="{{ operator_href }}">K8s Operator</a>
             <a href="{{ blogs_href }}" aria-current="page">Blogs</a>
           </nav>
