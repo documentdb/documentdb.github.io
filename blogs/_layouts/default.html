@@ -105,8 +105,9 @@
             menu.querySelector("summary").focus();
           }
         });
-        menu.addEventListener("focusout", function (event) {
-          if (!menu.contains(event.relatedTarget)) close();
+        // Safari blurs to nothing when a link is clicked, so only close once focus lands outside
+        document.addEventListener("focusin", function (event) {
+          if (menu.open && !menu.contains(event.target)) close();
         });
         menu.querySelector(".site-menu__links").addEventListener("click", function (event) {
           if (event.target.closest("a")) close();
