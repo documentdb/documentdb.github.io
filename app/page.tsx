@@ -3,7 +3,6 @@ import Link from "next/link";
 import QuickStartTabs from "./components/QuickStartTabs";
 import {
   documentdbKubernetesOperatorQuickStartUrl,
-  documentdbVsCodeExtensionMarketplaceUrl,
   documentdbVsCodeLocalQuickStartDeepLink,
 } from "./services/externalLinks";
 import { getMetadata } from "./services/metadataService";
@@ -370,7 +369,6 @@ export default function Home() {
               <QuickStartTabs
                 dockerCommand={quickRunCommand}
                 vscodeDeepLinkUrl={documentdbVsCodeLocalQuickStartDeepLink}
-                vscodeMarketplaceUrl={documentdbVsCodeExtensionMarketplaceUrl}
                 dockerDocsUrl="/docs/getting-started/docker"
                 vscodeDocsUrl="/docs/getting-started/vscode-quickstart"
               />

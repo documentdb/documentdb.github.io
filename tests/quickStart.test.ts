@@ -9,10 +9,7 @@ import {
   vscodeExistingConnectionSectionTitle,
 } from '../app/lib/docsAnchors';
 import { getArticleByPath } from '../app/services/articleService';
-import {
-  documentdbVsCodeExtensionMarketplaceUrl,
-  documentdbVsCodeLocalQuickStartDeepLink,
-} from '../app/services/externalLinks';
+import { documentdbVsCodeLocalQuickStartDeepLink } from '../app/services/externalLinks';
 
 const html = renderToStaticMarkup(createElement(Home));
 const cardStart = html.indexOf('id="run-with-docker"');
@@ -137,10 +134,12 @@ describe('homepage local quick start', () => {
 
     const captionStart = guided.indexOf('id="quickstart-vscode-setup-caption"');
     const caption = guided.slice(captionStart, guided.indexOf('</p>', captionStart));
-    expect(caption).toContain('Requires');
-    expect(caption).toContain('href="https://code.visualstudio.com/"');
-    expect(caption).toContain('You may be prompted to install');
-    expect(caption).toContain(`href="${documentdbVsCodeExtensionMarketplaceUrl}"`);
+    // One click covers VS Code with or without the extension; only VS Code itself must come first.
+    expect(caption).toMatch(
+      /Don&#x27;t have VS Code\? <a [^>]*href="https:\/\/code\.visualstudio\.com\/">Download it<\/a> first\./,
+    );
+    expect(caption).not.toContain('marketplace.visualstudio.com');
+    expect(caption).not.toContain('vscode:extension/');
     expect(guided).not.toContain('>Install the extension</');
   });
 
@@ -241,5 +240,10 @@ describe('VS Code quick-start guide', () => {
     expect(guideContent).toContain('DocumentDB: Set up DocumentDB Local');
     expect(guideContent).toContain('No extension gallery service configured');
     expect(guideContent).toContain('code --install-extension ms-azuretools.vscode-documentdb');
+    // Without --force the CLI keeps an older version, and old versions reject the /local link.
+    expect(guideContent).toContain('code --install-extension ms-azuretools.vscode-documentdb --force');
+    expect(guideContent).toContain('opened without a connection string');
+    expect(guideContent).toContain('Reload VS Code after installing or updating');
+    expect(guideContent).not.toContain('VS Code offers to install it first');
   });
 });

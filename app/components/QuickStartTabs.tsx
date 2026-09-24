@@ -7,7 +7,6 @@ import CommandSnippet from "./CommandSnippet";
 type QuickStartTabsProps = {
   dockerCommand: string;
   vscodeDeepLinkUrl: string;
-  vscodeMarketplaceUrl: string;
   dockerDocsUrl: string;
   vscodeDocsUrl: string;
 };
@@ -22,7 +21,6 @@ type TabId = (typeof TABS)[number]["id"];
 export default function QuickStartTabs({
   dockerCommand,
   vscodeDeepLinkUrl,
-  vscodeMarketplaceUrl,
   dockerDocsUrl,
   vscodeDocsUrl,
 }: QuickStartTabsProps) {
@@ -145,25 +143,16 @@ export default function QuickStartTabs({
           id="quickstart-vscode-setup-caption"
           className="mt-3 text-sm leading-6 text-gray-400"
         >
-          Requires{" "}
+          Don&apos;t have VS Code?{" "}
           <Link
             href="https://code.visualstudio.com/"
             target="_blank"
             rel="noopener noreferrer"
             className="font-semibold text-blue-300 transition-colors hover:text-blue-200"
           >
-            VS Code
-          </Link>
-          . You may be prompted to install the{" "}
-          <Link
-            href={vscodeMarketplaceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-semibold text-blue-300 transition-colors hover:text-blue-200"
-          >
-            DocumentDB extension
-          </Link>
-          .
+            Download it
+          </Link>{" "}
+          first.
         </p>
         <p className="mt-4 text-sm leading-6 text-gray-300">
           When setup finishes, select Open Connection.

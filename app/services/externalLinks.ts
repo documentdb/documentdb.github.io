@@ -14,8 +14,5 @@ export const documentdbKubernetesOperatorQuickStartUrl =
 export const documentdbKubernetesOperatorGitHubUrl =
   'https://github.com/documentdb/documentdb-kubernetes-operator';
 
-export const documentdbVsCodeExtensionMarketplaceUrl =
-  'https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-documentdb';
-
 export const documentdbVsCodeLocalQuickStartDeepLink =
   'vscode://ms-azuretools.vscode-documentdb/local';
