@@ -574,6 +574,7 @@ a {
   color: #e5e7eb;
   line-height: 1.8;
   font-size: 1.05rem;
+  overflow-wrap: break-word;
 }
 
 .blog-post__content > :first-child {
@@ -652,6 +653,8 @@ a {
 }
 
 .blog-post__content :not(pre) > code {
+  /* Digests and long identifiers have no break points of their own */
+  overflow-wrap: anywhere;
   padding: 0.18rem 0.42rem;
   border-radius: 10px;
   background: rgba(30, 41, 59, 0.75);
@@ -668,8 +671,12 @@ a {
   box-shadow: 0 24px 60px -28px var(--shadow);
 }
 
+/* Block display lets a wide table scroll inside the post instead of widening the page */
 .blog-post__content table {
-  width: 100%;
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  overflow-x: auto;
   border-collapse: collapse;
 }
 
