@@ -10,7 +10,7 @@ tags:
   - Azure Cosmos DB
   - Cosmos DB for MongoDB vCore
   - MongoDB Compatibility
-  - Naming
+  - MIT License
   - Disambiguation
   - Open Source
 ---
