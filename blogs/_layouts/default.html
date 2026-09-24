@@ -65,19 +65,21 @@
             <img class="site-brand__logo" src="{{ logo_href }}" alt="" width="48" height="48">
             <span>DocumentDB</span>
           </a>
-          <nav class="site-nav" aria-label="Primary">{{ nav_links }}</nav>
-          {% comment %}details gives the phone menu a toggle without adding any script to the blog{% endcomment %}
-          <details class="site-menu">
-            <summary class="site-menu__toggle" aria-label="Navigation menu">
-              <svg class="site-menu__icon-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M4 12h16M4 17h16" />
-              </svg>
-              <svg class="site-menu__icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M18 6 6 18" />
-              </svg>
-            </summary>
-            <nav class="site-menu__links" aria-label="Primary">{{ nav_links }}</nav>
-          </details>
+          {% comment %}One landmark for both layouts; screen readers otherwise lose it while the menu is closed{% endcomment %}
+          <nav class="site-nav-wrap" aria-label="Primary">
+            <div class="site-nav">{{ nav_links }}</div>
+            <details class="site-menu">
+              <summary class="site-menu__toggle" aria-label="Navigation menu">
+                <svg class="site-menu__icon-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M4 12h16M4 17h16" />
+                </svg>
+                <svg class="site-menu__icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M18 6 6 18" />
+                </svg>
+              </summary>
+              <div class="site-menu__links">{{ nav_links }}</div>
+            </details>
+          </nav>
         </div>
       </header>
 
@@ -91,5 +93,26 @@
         </div>
       </footer>
     </div>
+    {% comment %}The open panel covers the page, so close it whenever focus or the page moves on{% endcomment %}
+    <script>
+      (function () {
+        var menu = document.querySelector(".site-menu");
+        if (!menu) return;
+        function close() { menu.open = false; }
+        menu.addEventListener("keydown", function (event) {
+          if (event.key === "Escape" && menu.open) {
+            close();
+            menu.querySelector("summary").focus();
+          }
+        });
+        menu.addEventListener("focusout", function (event) {
+          if (!menu.contains(event.relatedTarget)) close();
+        });
+        menu.querySelector(".site-menu__links").addEventListener("click", function (event) {
+          if (event.target.closest("a")) close();
+        });
+        window.addEventListener("pageshow", close);
+      })();
+    </script>
   </body>
 </html>

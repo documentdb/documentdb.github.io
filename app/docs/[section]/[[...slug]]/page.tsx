@@ -229,7 +229,7 @@ export default async function ArticlePage({ params }: PageProps) {
 
                         {/* Coming Soon Component for coming-soon layout */}
                         {showComingSoonHeading && (
-                            <h1 className="text-4xl font-bold text-white mb-4">
+                            <h1 className="text-3xl sm:text-4xl font-bold text-white mb-4">
                                 {pageTitle}
                             </h1>
                         )}

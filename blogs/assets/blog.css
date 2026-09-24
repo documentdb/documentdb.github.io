@@ -97,7 +97,6 @@ a {
   transition: color 160ms ease;
 }
 
-.site-nav a:hover,
 .site-nav a[aria-current="page"] {
   color: #60a5fa;
 }
@@ -122,11 +121,6 @@ a {
 
 .site-menu__toggle::-webkit-details-marker {
   display: none;
-}
-
-.site-menu__toggle:hover {
-  border-color: #60a5fa;
-  color: #fff;
 }
 
 .site-menu__toggle:focus-visible {
@@ -174,14 +168,30 @@ a {
   font-weight: 500;
 }
 
-.site-menu__links a:hover,
 .site-menu__links a[aria-current="page"] {
   background: rgba(38, 38, 45, 0.9);
   color: #60a5fa;
 }
 
-/* Matches the main site's navbar, which collapses to a menu button below 1280px */
-@media (max-width: 1279px) {
+/* Touch screens would keep a tapped item highlighted */
+@media (hover: hover) {
+  .site-nav a:hover {
+    color: #60a5fa;
+  }
+
+  .site-menu__toggle:hover {
+    border-color: #60a5fa;
+    color: #fff;
+  }
+
+  .site-menu__links a:hover {
+    background: rgba(38, 38, 45, 0.9);
+    color: #60a5fa;
+  }
+}
+
+/* Same query as the main navbar's Tailwind max-xl; print keeps the plain link list */
+@media screen and (width < 80rem) {
   .site-nav {
     display: none;
   }
@@ -721,6 +731,20 @@ a {
   .site-header__inner,
   .site-footer__inner {
     width: min(1280px, calc(100% - 1.5rem));
+  }
+
+  /* Keeps the menu button on screen on a 280px fold cover or at 150% zoom */
+  .site-header__inner {
+    gap: 1rem;
+  }
+
+  .site-brand {
+    font-size: 1.25rem;
+  }
+
+  .site-brand__logo {
+    width: 2.5rem;
+    height: 2.5rem;
   }
 
   .post-card__body,
