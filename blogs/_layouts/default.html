@@ -48,6 +48,16 @@
     {% assign logo_href = site_root | append: '/images/DocumentDB Logo - background removed.png' | replace: '//', '/' %}
     {% assign blogs_href = site.baseurl | append: '/' | replace: '//', '/' %}
 
+    {% capture nav_links %}
+      <a href="{{ home_href }}">Home</a>
+      <a href="https://github.com/documentdb/documentdb" target="_blank" rel="noopener noreferrer">GitHub</a>
+      <a href="{{ site.discord_url }}" target="_blank" rel="noopener noreferrer">Discord</a>
+      <a href="{{ docs_href }}">Docs</a>
+      <a href="{{ packages_href }}">Download</a>
+      <a href="{{ operator_href }}">K8s Operator</a>
+      <a href="{{ blogs_href }}" aria-current="page">Blogs</a>
+    {% endcapture %}
+
     <div class="site-shell">
       <header class="site-header">
         <div class="site-header__inner">
@@ -55,14 +65,20 @@
             <img class="site-brand__logo" src="{{ logo_href }}" alt="" width="48" height="48">
             <span>DocumentDB</span>
           </a>
-          <nav class="site-nav" aria-label="Primary">
-            <a href="{{ home_href }}">Home</a>
-            <a href="https://github.com/documentdb/documentdb" target="_blank" rel="noopener noreferrer">GitHub</a>
-            <a href="{{ site.discord_url }}" target="_blank" rel="noopener noreferrer">Discord</a>
-            <a href="{{ docs_href }}">Docs</a>
-            <a href="{{ packages_href }}">Download</a>
-            <a href="{{ operator_href }}">K8s Operator</a>
-            <a href="{{ blogs_href }}" aria-current="page">Blogs</a>
+          {% comment %}One landmark for both layouts; screen readers otherwise lose it while the menu is closed{% endcomment %}
+          <nav class="site-nav-wrap" aria-label="Primary">
+            <div class="site-nav">{{ nav_links }}</div>
+            <details class="site-menu">
+              <summary class="site-menu__toggle" aria-label="Navigation menu">
+                <svg class="site-menu__icon-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M4 12h16M4 17h16" />
+                </svg>
+                <svg class="site-menu__icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M18 6 6 18" />
+                </svg>
+              </summary>
+              <div class="site-menu__links">{{ nav_links }}</div>
+            </details>
           </nav>
         </div>
       </header>
@@ -77,5 +93,27 @@
         </div>
       </footer>
     </div>
+    {% comment %}The open panel covers the page, so close it whenever focus or the page moves on{% endcomment %}
+    <script>
+      (function () {
+        var menu = document.querySelector(".site-menu");
+        if (!menu) return;
+        function close() { menu.open = false; }
+        menu.addEventListener("keydown", function (event) {
+          if (event.key === "Escape" && menu.open) {
+            close();
+            menu.querySelector("summary").focus();
+          }
+        });
+        // Safari blurs to nothing when a link is clicked, so only close once focus lands outside
+        document.addEventListener("focusin", function (event) {
+          if (menu.open && !menu.contains(event.target)) close();
+        });
+        menu.querySelector(".site-menu__links").addEventListener("click", function (event) {
+          if (event.target.closest("a")) close();
+        });
+        window.addEventListener("pageshow", close);
+      })();
+    </script>
   </body>
 </html>
