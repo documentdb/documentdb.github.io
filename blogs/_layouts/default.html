@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% if page.title %}{{ page.title }} · {% endif %}DocumentDB</title>
     <meta name="description" content="{{ page.description | default: site.description | escape }}">
+    {% if page.tags and page.tags.size > 0 %}
+    <meta name="keywords" content="{{ page.tags | join: ', ' | escape }}">
+    {% endif %}
     <meta name="theme-color" content="#09090b">
 
     {% assign social_title = page.title | default: site.title %}
