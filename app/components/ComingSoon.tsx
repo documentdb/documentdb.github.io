@@ -2,7 +2,7 @@ export default function ComingSoon() {
   return (
     <div className="relative mb-8">
       {/* Main container with glow effect */}
-      <div className="relative w-80 h-80 mx-auto">
+      <div className="relative w-full max-w-80 h-80 mx-auto">
         {/* Background glow */}
         <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-cyan-500/20 rounded-2xl blur-xl"></div>
 

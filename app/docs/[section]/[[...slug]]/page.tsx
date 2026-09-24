@@ -262,8 +262,9 @@ export default async function ArticlePage({ params }: PageProps) {
                                             </p>
                                         </div>
                                     </div>
+                                    {/* min-w-0 stops the command's longest line from sizing the column */}
                                     <div className="grid gap-4 lg:grid-cols-2">
-                                        <div className="rounded-xl border border-neutral-800 bg-neutral-900/70 p-4">
+                                        <div className="min-w-0 rounded-xl border border-neutral-800 bg-neutral-900/70 p-4">
                                             <p className="text-sm font-semibold text-white">
                                                 Run locally with Docker
                                             </p>
@@ -282,7 +283,7 @@ export default async function ArticlePage({ params }: PageProps) {
                                                 </Link>
                                             </div>
                                         </div>
-                                        <div className="rounded-xl border border-neutral-800 bg-neutral-900/70 p-4">
+                                        <div className="min-w-0 rounded-xl border border-neutral-800 bg-neutral-900/70 p-4">
                                             <p className="text-sm font-semibold text-white">
                                                 Install from Linux packages
                                             </p>

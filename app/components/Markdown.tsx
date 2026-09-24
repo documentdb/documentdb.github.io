@@ -61,7 +61,8 @@ export default function Markdown({ content, sourcePath }: MarkdownProps) {
     return elements;
   }, [content, sourcePath]);
 
-  return <div className="space-y-8">{processedContent}</div>;
+  // Long inline code, URLs and identifiers would otherwise push the article wider than a phone
+  return <div className="space-y-8 break-words">{processedContent}</div>;
 }
 
 function getMarkdownComponents(sourcePath: string) {
@@ -69,7 +70,7 @@ function getMarkdownComponents(sourcePath: string) {
     // H1 headings (main page title from Markdown content)
     h1: ({ children, ...props }: any) => (
       <>
-        <h1 className="text-4xl font-bold text-white mb-4" {...props}>
+        <h1 className="text-3xl sm:text-4xl font-bold text-white mb-4" {...props}>
           {children}
         </h1>
         <div className="w-24 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-green-500 rounded-full mb-6"></div>

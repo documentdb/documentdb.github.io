@@ -188,7 +188,7 @@ export default function PackagesPage() {
           </div>
         </section>
 
-        <section className="mb-8 rounded-xl border border-neutral-700 bg-neutral-800/70 p-6">
+        <section className="mb-8 break-words rounded-xl border border-neutral-700 bg-neutral-800/70 p-6">
           <h2 className="mb-4 text-2xl font-bold text-white">
             2. Copy and run this command
           </h2>
@@ -241,13 +241,14 @@ export default function PackagesPage() {
               </div>
               <div className="mb-5 rounded-lg border border-neutral-700 bg-neutral-900/60 p-4">
                 <p className="mb-3 text-sm font-semibold text-white">Package Finder</p>
+                {/* Selects stay 16px on phones because iOS zooms into smaller form fields */}
                 <div className="grid gap-3 md:grid-cols-2">
                   <label className="text-xs font-medium text-gray-300">
                     Package format
                     <select
                       value={packageFamily}
                       onChange={(event) => setPackageFamily(event.target.value as PackageFamily)}
-                      className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm text-gray-100"
+                      className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-800 px-3 py-2 text-base text-gray-100 sm:text-sm"
                     >
                       <option value="apt">APT (Ubuntu 24.04)</option>
                       <option value="rpm">RPM (EL9)</option>
@@ -260,7 +261,7 @@ export default function PackagesPage() {
                       <select
                         value={aptTarget}
                         onChange={(event) => setAptTarget(event.target.value as AptDistro)}
-                        className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm text-gray-100"
+                        className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-800 px-3 py-2 text-base text-gray-100 sm:text-sm"
                       >
                         {Object.entries(aptTargetLabels).map(([value, label]) => (
                           <option key={value} value={value}>
@@ -275,7 +276,7 @@ export default function PackagesPage() {
                       <select
                         value={rpmTarget}
                         onChange={(event) => setRpmTarget(event.target.value as RpmDistro)}
-                        className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm text-gray-100"
+                        className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-800 px-3 py-2 text-base text-gray-100 sm:text-sm"
                       >
                         {Object.entries(rpmTargetLabels).map(([value, label]) => (
                           <option key={value} value={value}>
@@ -292,7 +293,7 @@ export default function PackagesPage() {
                       <select
                         value={aptArch}
                         onChange={(event) => setAptArch(event.target.value as AptArch)}
-                        className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm text-gray-100"
+                        className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-800 px-3 py-2 text-base text-gray-100 sm:text-sm"
                       >
                         <option value="amd64">amd64</option>
                         <option value="arm64">arm64</option>
@@ -304,7 +305,7 @@ export default function PackagesPage() {
                       <select
                         value={rpmArch}
                         onChange={(event) => setRpmArch(event.target.value as RpmArch)}
-                        className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm text-gray-100"
+                        className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-800 px-3 py-2 text-base text-gray-100 sm:text-sm"
                       >
                         <option value="x86_64">x86_64</option>
                         <option value="aarch64">aarch64</option>
@@ -318,7 +319,7 @@ export default function PackagesPage() {
                       <select
                         value={aptPgVersion}
                         onChange={(event) => setAptPgVersion(event.target.value as AptPgVersion)}
-                        className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm text-gray-100"
+                        className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-800 px-3 py-2 text-base text-gray-100 sm:text-sm"
                       >
                         {availableAptPgVersions.map((pgVersion) => (
                           <option key={pgVersion} value={pgVersion}>
@@ -333,7 +334,7 @@ export default function PackagesPage() {
                       <select
                         value={rpmPgVersion}
                         onChange={(event) => setRpmPgVersion(event.target.value as RpmPgVersion)}
-                        className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm text-gray-100"
+                        className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-800 px-3 py-2 text-base text-gray-100 sm:text-sm"
                       >
                         <option value="17">17</option>
                         <option value="18">18</option>

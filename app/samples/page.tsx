@@ -133,13 +133,13 @@ export default function Samples() {
           />
         </div>
 
-        {/* Filters */}
+        {/* Filters; selects stay 16px on phones because iOS zooms into smaller form fields */}
         <div className="flex flex-wrap gap-3 mb-10 justify-center">
           {/* Language */}
           <select
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
-            className="bg-neutral-800/80 border border-neutral-700/50 text-gray-300 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-purple-500/60 cursor-pointer"
+            className="bg-neutral-800/80 border border-neutral-700/50 text-gray-300 text-base sm:text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-purple-500/60 cursor-pointer"
           >
             <option value="">All Languages</option>
             {LANGUAGES.map((l) => (
@@ -151,7 +151,7 @@ export default function Samples() {
           <select
             value={industry}
             onChange={(e) => setIndustry(e.target.value)}
-            className="bg-neutral-800/80 border border-neutral-700/50 text-gray-300 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-purple-500/60 cursor-pointer"
+            className="bg-neutral-800/80 border border-neutral-700/50 text-gray-300 text-base sm:text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-purple-500/60 cursor-pointer"
           >
             <option value="">All Industries</option>
             {INDUSTRIES.map((i) => (
@@ -160,7 +160,7 @@ export default function Samples() {
           </select>
 
           {/* Difficulty */}
-          <div className="flex gap-2">
+          <div className="flex flex-wrap justify-center gap-2">
             {DIFFICULTIES.map((d) => (
               <button
                 key={d}

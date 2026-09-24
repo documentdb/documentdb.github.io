@@ -48,6 +48,16 @@
     {% assign logo_href = site_root | append: '/images/DocumentDB Logo - background removed.png' | replace: '//', '/' %}
     {% assign blogs_href = site.baseurl | append: '/' | replace: '//', '/' %}
 
+    {% capture nav_links %}
+      <a href="{{ home_href }}">Home</a>
+      <a href="https://github.com/documentdb/documentdb" target="_blank" rel="noopener noreferrer">GitHub</a>
+      <a href="{{ site.discord_url }}" target="_blank" rel="noopener noreferrer">Discord</a>
+      <a href="{{ docs_href }}">Docs</a>
+      <a href="{{ packages_href }}">Download</a>
+      <a href="{{ operator_href }}">K8s Operator</a>
+      <a href="{{ blogs_href }}" aria-current="page">Blogs</a>
+    {% endcapture %}
+
     <div class="site-shell">
       <header class="site-header">
         <div class="site-header__inner">
@@ -55,15 +65,19 @@
             <img class="site-brand__logo" src="{{ logo_href }}" alt="" width="48" height="48">
             <span>DocumentDB</span>
           </a>
-          <nav class="site-nav" aria-label="Primary">
-            <a href="{{ home_href }}">Home</a>
-            <a href="https://github.com/documentdb/documentdb" target="_blank" rel="noopener noreferrer">GitHub</a>
-            <a href="{{ site.discord_url }}" target="_blank" rel="noopener noreferrer">Discord</a>
-            <a href="{{ docs_href }}">Docs</a>
-            <a href="{{ packages_href }}">Download</a>
-            <a href="{{ operator_href }}">K8s Operator</a>
-            <a href="{{ blogs_href }}" aria-current="page">Blogs</a>
-          </nav>
+          <nav class="site-nav" aria-label="Primary">{{ nav_links }}</nav>
+          {% comment %}details gives the phone menu a toggle without adding any script to the blog{% endcomment %}
+          <details class="site-menu">
+            <summary class="site-menu__toggle" aria-label="Navigation menu">
+              <svg class="site-menu__icon-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M4 12h16M4 17h16" />
+              </svg>
+              <svg class="site-menu__icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M18 6 6 18" />
+              </svg>
+            </summary>
+            <nav class="site-menu__links" aria-label="Primary">{{ nav_links }}</nav>
+          </details>
         </div>
       </header>
 
