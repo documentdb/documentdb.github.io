@@ -97,9 +97,108 @@ a {
   transition: color 160ms ease;
 }
 
-.site-nav a:hover,
 .site-nav a[aria-current="page"] {
   color: #60a5fa;
+}
+
+.site-menu {
+  display: none;
+}
+
+.site-menu__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid rgba(64, 64, 64, 0.9);
+  border-radius: 0.375rem;
+  color: #e5e7eb;
+  cursor: pointer;
+  list-style: none;
+  transition: border-color 160ms ease, color 160ms ease;
+}
+
+.site-menu__toggle::-webkit-details-marker {
+  display: none;
+}
+
+.site-menu__toggle:focus-visible {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+}
+
+.site-menu__toggle svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.site-menu__icon-close,
+.site-menu[open] .site-menu__icon-open {
+  display: none;
+}
+
+.site-menu[open] .site-menu__icon-close {
+  display: block;
+}
+
+.site-menu__links {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(64, 64, 64, 0.9);
+  background: rgb(23, 23, 27);
+  /* The header is sticky, so page scrolling never reveals a panel taller than a landscape phone */
+  max-height: calc(100vh - 4rem);
+  max-height: calc(100dvh - 4rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.site-menu__links a {
+  padding: 0.625rem 0.75rem;
+  border-radius: 0.375rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.site-menu__links a[aria-current="page"] {
+  background: rgba(38, 38, 45, 0.9);
+  color: #60a5fa;
+}
+
+/* Touch screens would keep a tapped item highlighted */
+@media (hover: hover) {
+  .site-nav a:hover {
+    color: #60a5fa;
+  }
+
+  .site-menu__toggle:hover {
+    border-color: #60a5fa;
+    color: #fff;
+  }
+
+  .site-menu__links a:hover {
+    background: rgba(38, 38, 45, 0.9);
+    color: #60a5fa;
+  }
+}
+
+/* Same query as the main navbar's Tailwind max-xl; print keeps the plain link list */
+@media screen and (width < 80rem) {
+  .site-nav {
+    display: none;
+  }
+
+  .site-menu {
+    display: block;
+  }
 }
 
 .blog-main {
@@ -485,6 +584,7 @@ a {
   color: #e5e7eb;
   line-height: 1.8;
   font-size: 1.05rem;
+  overflow-wrap: break-word;
 }
 
 .blog-post__content > :first-child {
@@ -563,6 +663,8 @@ a {
 }
 
 .blog-post__content :not(pre) > code {
+  /* Digests and long identifiers have no break points of their own */
+  overflow-wrap: anywhere;
   padding: 0.18rem 0.42rem;
   border-radius: 10px;
   background: rgba(30, 41, 59, 0.75);
@@ -579,8 +681,12 @@ a {
   box-shadow: 0 24px 60px -28px var(--shadow);
 }
 
+/* Block display lets a wide table scroll inside the post instead of widening the page */
 .blog-post__content table {
-  width: 100%;
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  overflow-x: auto;
   border-collapse: collapse;
 }
 
@@ -611,15 +717,6 @@ a {
 }
 
 @media (max-width: 820px) {
-  .site-header__inner {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .site-nav {
-    justify-content: flex-start;
-  }
-
   .blog-main {
     padding-top: 3rem;
   }
@@ -634,6 +731,20 @@ a {
   .site-header__inner,
   .site-footer__inner {
     width: min(1280px, calc(100% - 1.5rem));
+  }
+
+  /* Keeps the menu button on screen on a 280px fold cover or at 150% zoom */
+  .site-header__inner {
+    gap: 1rem;
+  }
+
+  .site-brand {
+    font-size: 1.25rem;
+  }
+
+  .site-brand__logo {
+    width: 2.5rem;
+    height: 2.5rem;
   }
 
   .post-card__body,

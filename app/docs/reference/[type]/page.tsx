@@ -38,7 +38,7 @@ export default async function CommandReferencePage({ params }: { params: Promise
     <article>
       <Breadcrumb type={type} />
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-white mb-4 capitalize">
+        <h1 className="text-3xl sm:text-4xl font-bold text-white mb-4 capitalize">
           MongoDB Query Language (MQL) {capitalCase(pluralize(type))}
         </h1>
         <div className="w-24 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-green-500 rounded-full mb-6"></div>

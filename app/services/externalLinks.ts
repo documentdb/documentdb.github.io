@@ -13,3 +13,6 @@ export const documentdbKubernetesOperatorQuickStartUrl =
 
 export const documentdbKubernetesOperatorGitHubUrl =
   'https://github.com/documentdb/documentdb-kubernetes-operator';
+
+export const documentdbVsCodeLocalQuickStartDeepLink =
+  'vscode://ms-azuretools.vscode-documentdb/local';

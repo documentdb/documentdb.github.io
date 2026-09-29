@@ -17,8 +17,9 @@ export default function ReferenceLayout({
 }>) {
   const groupedReferences = getReferencesGroupedByTypeAndCategory();
 
+  // Phones get no sidebar, so the page scrolls rather than a 100vh pane half under the navbar
   return (
-    <div className="min-h-screen bg-neutral-900 relative overflow-hidden max-h-screen">
+    <div className="min-h-screen bg-neutral-900 relative overflow-hidden md:max-h-screen">
       {/* Background elements */}
       <div className="absolute inset-0 bg-gradient-to-br from-neutral-900 via-neutral-800 to-black"></div>
       <div className="absolute inset-0 opacity-5">
@@ -28,7 +29,7 @@ export default function ReferenceLayout({
           style={{ animationDelay: "1.5s" }}
         ></div>
       </div>
-      <div className="relative flex h-screen">
+      <div className="relative flex md:h-screen">
         {/* Sidebar (desktop only; mobile gets the disclosure below) */}
         <div className="hidden w-80 bg-neutral-800/50 backdrop-blur-sm border-r border-neutral-700/50 md:flex flex-col h-full">
           <div className="p-6 border-b border-neutral-700/50 flex-shrink-0">
@@ -52,7 +53,7 @@ export default function ReferenceLayout({
           </div>
           <Index groupedReferences={groupedReferences} />
         </div>
-        <article className="flex-1 p-4 sm:p-8 overflow-y-auto h-full">
+        <article className="min-w-0 flex-1 p-4 sm:p-8 md:h-full md:overflow-y-auto">
           <div className="max-w-4xl">
             {/* Mobile reference navigation */}
             <details className="mb-6 rounded-lg border border-neutral-700/50 bg-neutral-800/50 md:hidden">
