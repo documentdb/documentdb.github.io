@@ -33,6 +33,12 @@ const navItems: NavItem[] = [
   { label: "Docs", href: "/docs", kind: "link" },
   { label: "AI", href: "/ai", kind: "link" },
   { label: "Download", href: "/packages", kind: "link" },
+  {
+    label: "Agent-Kit",
+    href: "https://github.com/Azure/documentdb-agent-kit",
+    kind: "anchor",
+    newTab: true,
+  },
   { label: "K8s Operator", href: "/kubernetes-operator", kind: "link" },
   { label: "Blogs", href: withBasePath("/blogs/"), kind: "anchor" },
   { label: "Samples", href: "/samples", kind: "link" },
