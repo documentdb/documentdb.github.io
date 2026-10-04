@@ -12,11 +12,11 @@ On a clean Ubuntu 24.04 or EL9 host, download and run the installer:
 
 ```sh
 curl -fsSLo documentdb-install.sh https://documentdb.io/install.sh &&
-sh documentdb-install.sh
+sudo sh documentdb-install.sh
 ```
 
 This installs v0.117-0 from this repository on PostgreSQL 18; add `--pg-major 17`
-for 17. For disposable RC1 testing, add `--version v1.0-RC1`. The installer then
+for 17. To try RC1, add `--version v1.0-RC1`, or use the `pgNN-1.0-rc1` container image. The installer then
 downloads this host's packages from the
 [v1.0-RC1 release](https://github.com/documentdb/documentdb/releases/tag/v1.0-RC1),
 verifies them against its `SHA256SUMS`, and doesn't use this repository. See the

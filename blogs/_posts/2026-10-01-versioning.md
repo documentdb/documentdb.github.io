@@ -27,16 +27,23 @@ These experimental versions are not intended for long-term use, nor will they be
 
 ### Release candidate installation
 
-For installation instructions, see our [README.md](https://github.com/documentdb/documentdb/blob/v1.0-RC1/packaging/README.md#clean-host-installer)
-or use the command below.
+With Docker:
+
+```bash
+docker run -dt --name docdb-rc1 -p 127.0.0.1:10260:10260 \
+  ghcr.io/documentdb/documentdb/documentdb-local:pg17-1.0-rc1 \
+  --username '<YOUR_USERNAME>' --password '<YOUR_PASSWORD>'
+```
+
+Or on Ubuntu 24.04 or RHEL 9:
 
 ```bash
 curl -fsSLo documentdb-install.sh \
   https://documentdb.io/install.sh &&
-sh documentdb-install.sh --version v1.0-RC1
+sudo sh documentdb-install.sh --version v1.0-RC1
 ```
 
-For container images, known issues and what RC1 does and doesn't support, see [Try the 1.0 release candidate](https://documentdb.io/docs/getting-started/release-candidate/).
+See [Try the 1.0 release candidate](https://documentdb.io/docs/getting-started/release-candidate/) for details.
 
 If you find any problems with the RC, please [create an issue on GitHub](https://github.com/documentdb/documentdb/issues).
 
