@@ -13,8 +13,6 @@ tags:
   - "1.0"
 ---
 
-*Episode published September 11, 2026. Recap added October 7, 2026.*
-
 What should developers expect from an open-source document database, and how can they help shape it? On GitHub's Open Source Friday, Patty Chow joined host Sarah to discuss DocumentDB's work toward v1.0 and demonstrate getting started locally.
 
 The conversation covered familiar MongoDB workflows on PostgreSQL, the experience of using DocumentDB through VS Code, and the role of feedback from people trying the project. Viewers also asked where DocumentDB fits alongside MongoDB and PostgreSQL with pgvector.
