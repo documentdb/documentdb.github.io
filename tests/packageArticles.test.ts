@@ -283,11 +283,12 @@ describe('Linux package articles', () => {
     expect(new Set(tags)).toEqual(new Set([FALLBACK_RELEASE.tagName]));
   });
 
-  it('serves the stable installer and selects RC1 only with --version', () => {
+  it('serves the stable installer and selects RC2 only with --version', () => {
     expect(linuxPackagesGuideContent).toContain('https://documentdb.io/install.sh');
     expect(linuxPackagesGuideContent).toContain('installs v0.117-0 from the package repository');
-    expect(linuxPackagesGuideContent).toContain('sh documentdb-install.sh --version v1.0-RC1');
+    expect(linuxPackagesGuideContent).toContain('sh documentdb-install.sh --version v1.0-RC2');
     expect(linuxPackagesGuideContent).toContain("doesn't use the package repository");
+    expect(linuxPackagesGuideContent).toContain('DOCUMENTDB_USAGE_TELEMETRY=false');
   });
 
   it('uses the current release package guide and artifact version', () => {
