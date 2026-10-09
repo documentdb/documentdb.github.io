@@ -27,6 +27,8 @@ These experimental versions are not intended for long-term use, nor will they be
 
 ### Release candidate installation
 
+> **Update:** [v1.0-RC2](https://github.com/documentdb/documentdb/releases/tag/v1.0-RC2) replaces RC1 for testing. Use `rc2` and `v1.0-RC2` in place of `rc1` and `v1.0-RC1` below. The RC2 image sends anonymous usage telemetry by default; add `-e DOCUMENTDB_USAGE_TELEMETRY=false` to opt out.
+
 With Docker:
 
 ```bash
