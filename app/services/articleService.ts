@@ -191,7 +191,7 @@ The current official release publishes the full stack — extension, gateway, se
 > Need another distribution or PostgreSQL major? We welcome community builds. Check out the matching release tag and use the version-parameterized [packaging scripts](https://github.com/documentdb/documentdb/blob/v0.117-0/packaging/README.md). \`build_packages.sh\` builds the extension, \`gateway/build_gateway_packages.sh\` builds the gateway, and \`build_extra_packages.sh\` builds the common, tools, stand-alone, and meta packages. PostgreSQL 15 is extension-only because the setup tools require PostgreSQL 16 or newer. These builds are on demand and are not official release assets hosted by documentdb.io.
 
 > [!NOTE]
-> Want to try DocumentDB 1.0? [v1.0-RC1](/docs/getting-started/release-candidate) is for testing only, gets no fixes (those go into RC2 or 1.0) and has no upgrade path. It isn't in the package repository, so the commands below install v0.117-0.
+> Want to try DocumentDB 1.0? [v1.0-RC2](/docs/getting-started/release-candidate) is for testing only, gets no fixes (those go into a later RC or 1.0) and has no upgrade path. It isn't in the package repository, so the commands below install v0.117-0.
 
 You do not need PostgreSQL already installed — the setup wizard creates and manages its own instance. The install does add the PGDG repository and pull PostgreSQL, PostGIS and around 160 packages (about 140 MB), so pick a host you are willing to have PGDG on.
 
@@ -205,9 +205,10 @@ sudo sh documentdb-install.sh
 \`\`\`
 
 This installs v0.117-0 from the package repository on PostgreSQL 18; add \`--pg-major 17\` for 17.
-To try RC1, run \`sudo sh documentdb-install.sh --version v1.0-RC1\` instead, or use the \`pgNN-1.0-rc1\` container image.
-It downloads this host's packages from the [v1.0-RC1 release](https://github.com/documentdb/documentdb/releases/tag/v1.0-RC1), verifies them against its \`SHA256SUMS\` and doesn't use the package repository. See the [RC guide](/docs/getting-started/release-candidate).
-RC1 gets no fixes and has no upgrade path, so use a clean host.
+To try RC2, run \`sudo sh documentdb-install.sh --version v1.0-RC2\` instead.
+It downloads this host's packages from the [v1.0-RC2 release](https://github.com/documentdb/documentdb/releases/tag/v1.0-RC2), verifies them against its \`SHA256SUMS\` and doesn't use the package repository.
+The \`pgNN-1.0-rc2\` container image also runs RC2; it sends anonymous usage telemetry by default (opt out with \`-e DOCUMENTDB_USAGE_TELEMETRY=false\`). See the [RC guide](/docs/getting-started/release-candidate).
+RC2 gets no fixes and has no upgrade path, so use a clean host.
 
 ## Install
 
@@ -1258,7 +1259,7 @@ The \`latest\` tag is a convenience alias. Pin an explicit tag for anything repr
 | \`ghcr.io/documentdb/documentdb/documentdb-local:pg18-0.117.0\` | DocumentDB 0.117.0 on PostgreSQL 18 |
 | \`…:pg17-0.117.0\` | DocumentDB 0.117.0 on PostgreSQL 17 |
 | \`…:pg16-0.117.0\` · \`…:pg15-0.117.0\` | PostgreSQL 16 and 15 |
-| \`…:pg15-1.0-rc1\` · \`…:pg16-1.0-rc1\` · \`…:pg17-1.0-rc1\` · \`…:pg18-1.0-rc1\` | [v1.0-RC1](https://github.com/documentdb/documentdb/releases/tag/v1.0-RC1), for testing only, with [no fixes to RC1 and no upgrade path](/docs/getting-started/release-candidate). No date for 1.0 yet. Use a new, empty data volume. |
+| \`…:pg15-1.0-rc2\` · \`…:pg16-1.0-rc2\` · \`…:pg17-1.0-rc2\` · \`…:pg18-1.0-rc2\` | [v1.0-RC2](https://github.com/documentdb/documentdb/releases/tag/v1.0-RC2), for testing only, with [no fixes to RC2 and no upgrade path](/docs/getting-started/release-candidate). No date for 1.0 yet. Use a new, empty data volume. Sends anonymous usage telemetry by default; see the [privacy statement](https://github.com/documentdb/documentdb/blob/v1.0-RC2/documentdb-local/PRIVACY.md) to opt out. |
 | \`…:latest\` | Currently identical to \`pg17-0.117.0\` |
 
 > \`latest\` tracks **PostgreSQL 17**, while the \`documentdb\` package on Linux pins
