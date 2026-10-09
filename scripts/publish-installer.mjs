@@ -3,11 +3,11 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-// v0.117-0 ships no installer; RC1's installs from the stable repository.
+// v0.117-0 ships no installer; RC2's installs from the stable repository.
 // Release assets can be replaced, so the digest is pinned too.
 export const installerSource = {
-  release: 'v1.0-RC1',
-  sha256: 'dfacd0cd85ad23de191dee9d39b8fc5b4abe9cf1da7db75ea539ad487a2e9f34',
+  release: 'v1.0-RC2',
+  sha256: 'b9d16b3b86d3b1541e701be0ce38086dcb0bc904f761a36c7ede9fefe91d45f2',
 };
 
 export async function publishInstaller(outputDirectory = 'out') {
