@@ -9,7 +9,7 @@ tags:
   - DocumentDB
   - VS Code
   - "1.0"
-  - Release
+  - GUI
   - Tools
 ---
 ![DocumentDB for VS Code 1.0]({{ '/assets/images/posts/documentdb-for-vs-code-1-0/hero.png' | relative_url }})
