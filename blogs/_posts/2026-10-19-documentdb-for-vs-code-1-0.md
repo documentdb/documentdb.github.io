@@ -1,7 +1,7 @@
 ---
 title: "DocumentDB for VS Code 1.0: Run It Locally, Bring Your Data"
 description: The free, open-source DocumentDB GUI for VS Code reaches 1.0. Start DocumentDB Local in a few clicks, bring your data with copy and paste, and understand it with the Cluster Dashboard and Query Insights.
-date: 2026-10-16
+date: 2026-10-19
 featured: true
 author: Tomasz Naumowicz and the DocumentDB for VS Code team
 category: documentdb-blog
