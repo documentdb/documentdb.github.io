@@ -2,6 +2,31 @@
 
 Repository-backed installation commands for DocumentDB.
 
+> This repository serves v0.117-0. v1.0-RC2 is for testing only, gets no fixes (those go into
+> a later RC or 1.0), has no upgrade path, and isn't in this repository; see
+> [Try the 1.0 release candidate](https://documentdb.io/docs/getting-started/release-candidate/).
+
+## Clean-host installer
+
+On a clean Ubuntu 24.04 or EL9 host, download and run the installer:
+
+```sh
+curl -fsSLo documentdb-install.sh https://documentdb.io/install.sh &&
+sudo sh documentdb-install.sh
+```
+
+This installs v0.117-0 from this repository on PostgreSQL 18; add `--pg-major 17`
+for 17. To try RC2, add `--version v1.0-RC2`. The installer then downloads this host's
+packages from the
+[v1.0-RC2 release](https://github.com/documentdb/documentdb/releases/tag/v1.0-RC2),
+verifies them against its `SHA256SUMS`, and doesn't use this repository. The
+`pgNN-1.0-rc2` container image also runs RC2; it sends anonymous usage telemetry by default
+(opt out with `-e DOCUMENTDB_USAGE_TELEMETRY=false`). See the
+[RC guide](https://documentdb.io/docs/getting-started/release-candidate/).
+
+The site serves the `install.sh` attached to the release named in
+`scripts/publish-installer.mjs`, and the build fails if its SHA256 changes.
+
 ## What is published
 
 Starting with **v0.116-0**, DocumentDB ships a multi-package layout with a setup wizard and

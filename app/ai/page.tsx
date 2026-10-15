@@ -278,7 +278,7 @@ export default function AIPage() {
           </div>
 
           <div className="min-w-0 rounded-3xl border border-white/10 bg-neutral-900/90 p-5 shadow-[0_24px_80px_-40px_rgba(139,92,246,0.45)] sm:p-6">
-            <div className="mb-4 flex items-center justify-between gap-3">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
               <span className="inline-flex rounded-full border border-violet-400/30 bg-violet-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-violet-200">
                 Quick start
               </span>
@@ -372,7 +372,7 @@ export default function AIPage() {
             {quickStartSteps.map((item) => (
               <article
                 key={item.step}
-                className="flex h-full flex-col rounded-3xl border border-neutral-800 bg-neutral-900/80 p-5 shadow-[0_24px_80px_-50px_rgba(139,92,246,0.45)] sm:p-6"
+                className="flex h-full min-w-0 flex-col rounded-3xl border border-neutral-800 bg-neutral-900/80 p-5 shadow-[0_24px_80px_-50px_rgba(139,92,246,0.45)] sm:p-6"
               >
                 <div className="mb-4 flex items-center gap-3">
                   <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-violet-400/30 bg-violet-500/10 text-xs font-semibold text-violet-200">

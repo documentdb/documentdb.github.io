@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "npm run compile && next dev --turbopack",
-    "build": "npm run build:next && npm run build:blogs && npm run build:sitemap",
+    "build": "npm run build:next && npm run build:blogs && npm run build:sitemap && npm run build:installer",
+    "build:installer": "node scripts/publish-installer.mjs",
     "build:next": "npm run compile && next build --turbopack",
     "build:blogs": "bundle exec jekyll build --config blogs/_config.yml --source blogs --destination out/blogs --baseurl \"${JEKYLL_BASE_PATH:-/blogs}\"",
     "build:sitemap": "node scripts/generate-sitemap.mjs",
@@ -47,7 +48,7 @@
     "autoprefixer": "^10.4.23",
     "eslint": "^10.8.0",
     "eslint-config-next": "^16.2.12",
-    "ink": "^7.1.1",
+    "ink": "^8.0.0",
     "minimatch": "^10.1.1",
     "serve": "^14.2.5",
     "tailwindcss": "^4.1.18",

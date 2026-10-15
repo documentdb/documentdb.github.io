@@ -7,8 +7,9 @@ export default function Breadcrumb({ type, category, name }: {
     category?: string;
     name?: string;
 }) {
+    // The separator spans carry no spaces, so without flex-wrap a long trail never breaks
     return (
-        <nav className="mb-6 text-sm text-gray-400">
+        <nav className="mb-6 flex flex-wrap items-center gap-y-1 text-sm text-gray-400">
             <Link href="/docs/reference" className="hover:text-blue-400 transition-colors">
                 Reference
             </Link>
