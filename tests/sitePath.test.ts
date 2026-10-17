@@ -4,10 +4,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 // it after stubbing.
 async function importWithEnv(env: Record<string, string | undefined>) {
   vi.resetModules();
-  for (const [key, value] of Object.entries(env)) {
-    if (value !== undefined) {
-      vi.stubEnv(key, value);
-    }
+  // Pin both variables so the invoking shell's base path can't leak in.
+  for (const key of ['NEXT_PUBLIC_BASE_PATH', 'NEXT_BASE_PATH']) {
+    vi.stubEnv(key, env[key] ?? '');
   }
   return (await import('../app/services/sitePath')).withBasePath;
 }

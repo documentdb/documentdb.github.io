@@ -36,12 +36,12 @@ export type ReleaseInfo = {
 
 // A reference release, not evidence of current repository availability.
 export const FALLBACK_RELEASE: ReleaseInfo = {
-  tagName: "v0.117-0",
-  aptVersion: "0.117-0",
-  rpmVersion: "0.117.0-1.el9",
-  metaVersion: "0.117.0",
-  metaRpmVersion: "0.117.0-1",
-  releaseUrl: "https://github.com/documentdb/documentdb/releases/tag/v0.117-0",
+  tagName: "v1.0-0",
+  aptVersion: "1.0-0",
+  rpmVersion: "1.0.0-1.el9",
+  metaVersion: "1.0.0",
+  metaRpmVersion: "1.0.0-1",
+  releaseUrl: "https://github.com/documentdb/documentdb/releases/tag/v1.0-0",
   assetNames: [],
 };
 

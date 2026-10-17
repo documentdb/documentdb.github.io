@@ -50,8 +50,8 @@ const operatorBenefits = [
     eyebrow: "Security",
     title: "TLS and access controls",
     description:
-      "Choose from four TLS modes and integrate with secrets, SCRAM auth, RBAC, and secure cluster networking.",
-    highlights: ["4 TLS modes", "SCRAM", "RBAC"],
+      "Choose from three TLS modes and integrate with secrets, SCRAM auth, RBAC, and secure cluster networking.",
+    highlights: ["3 TLS modes", "SCRAM", "RBAC"],
     icon: "shield" as const,
   },
   {
@@ -194,7 +194,7 @@ const setupSteps = [
     step: "01",
     title: "Prepare the cluster",
     description:
-      "Use kind or minikube locally, or a Kubernetes 1.35+ cluster such as AKS, EKS, or GKE to run the operator preview.",
+      "Use kind or minikube locally, or a Kubernetes 1.35+ cluster such as AKS, EKS, or GKE to run the operator.",
   },
   {
     step: "02",
@@ -228,7 +228,7 @@ const bestFitScenarios = [
 ] as const;
 
 const operatorQuickStartCommand = `helm install documentdb-operator oci://ghcr.io/documentdb/documentdb-operator \\
-  --namespace documentdb-operator --create-namespace --wait`;
+  --version 1.0.0 --namespace documentdb-operator --create-namespace --wait`;
 
 export const metadata = getMetadata({
   title: "DocumentDB Kubernetes Operator",
@@ -262,7 +262,7 @@ export default function KubernetesOperatorPage() {
           <div className="grid items-center gap-8 lg:gap-10 xl:grid-cols-[1.15fr_0.85fr]">
             <div className="min-w-0">
               <p className="mb-3 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-300">
-                Operator preview
+                Generally available · Operator 1.0.0
               </p>
               <h1 className="mb-5 text-4xl font-extrabold tracking-tight text-white sm:text-6xl lg:text-7xl">
                 DocumentDB Kubernetes Operator
@@ -345,12 +345,12 @@ export default function KubernetesOperatorPage() {
 
               <div className="mt-5 rounded-2xl border border-neutral-800 bg-neutral-950/70 p-5">
                 <p className="text-sm font-semibold text-white">
-                  Preview status
+                  Versions
                 </p>
                 <p className="mt-2 text-sm leading-6 text-gray-300">
-                  The operator is still in preview. Use this page to assess fit,
-                  then follow the quick start or multi-cluster guides for the
-                  current support envelope.
+                  The operator has its own version numbers. Choose a release
+                  compatible with your engine and Kubernetes versions, then
+                  follow the quick start or multi-cluster guides.
                 </p>
               </div>
             </div>
@@ -457,7 +457,7 @@ export default function KubernetesOperatorPage() {
                   What to expect before you start
                 </p>
                 <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-400">
-                  The operator preview targets Kubernetes 1.35+, requires
+                  The operator targets Kubernetes 1.35+, requires
                   cert-manager to be installed first, and uses CloudNativePG
                   under the hood. Cross-cluster topologies also require network
                   connectivity between clusters and the documented multi-cluster

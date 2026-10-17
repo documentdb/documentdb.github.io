@@ -185,8 +185,20 @@ describe('client-reachable modules and the private base path', () => {
       const code = source.replace(/\/\/[^\n]*|\/\*[\s\S]*?\*\//g, '');
 
       expect(code).not.toContain('NEXT_BASE_PATH');
-      expect(code).not.toContain('sitePath');
-      expect(code).not.toContain('withBasePath');
     },
   );
+
+  // The resolver must give the same route with or without a base path; the
+  // renderer may prefix through withBasePath, which reads the public copy.
+  it('app/lib/markdownLinks.ts does not import sitePath', async () => {
+    const { readFile } = await import('node:fs/promises');
+    const { fileURLToPath } = await import('node:url');
+    const source = await readFile(
+      fileURLToPath(new URL('../app/lib/markdownLinks.ts', import.meta.url)),
+      'utf8',
+    );
+    const code = source.replace(/\/\/[^\n]*|\/\*[\s\S]*?\*\//g, '');
+    expect(code).not.toContain('sitePath');
+    expect(code).not.toContain('withBasePath');
+  });
 });

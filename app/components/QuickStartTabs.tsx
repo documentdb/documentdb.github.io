@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRef, useState } from "react";
 import CommandSnippet from "./CommandSnippet";
+import TelemetryNote from "./TelemetryNote";
 
 type QuickStartTabsProps = {
   dockerCommand: string;
@@ -109,6 +110,7 @@ export default function QuickStartTabs({
           Replace the username and password, then run the command.
         </p>
         <CommandSnippet command={dockerCommand} label="bash" />
+        <TelemetryNote />
         <p className="mt-4 text-sm leading-6 text-gray-300">
           Then connect with your preferred client.
         </p>

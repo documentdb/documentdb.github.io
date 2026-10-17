@@ -16,3 +16,14 @@ export const documentdbKubernetesOperatorGitHubUrl =
 
 export const documentdbVsCodeLocalQuickStartDeepLink =
   'vscode://ms-azuretools.vscode-documentdb/local';
+
+// Where the 1.0 banner sends readers: a site-root path or an absolute URL.
+// blogs/_config.yml holds the same target as `release_announcement_url`,
+// relative to the blog.
+export const documentdbReleaseAnnouncementUrl = '/blogs/posts/documentdb-1-0/';
+
+// The one link to promote for 1.0; the site and blog banners point here.
+export const documentdbReleasePageUrl = '/v1/';
+
+export const documentdbLocalPrivacyUrl =
+  'https://github.com/documentdb/documentdb/blob/v1.0-0/documentdb-local/PRIVACY.md';

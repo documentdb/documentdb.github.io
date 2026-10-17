@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import CommandSnippet from "../components/CommandSnippet";
+import TelemetryNote from "../components/TelemetryNote";
 import { getMetadata } from "../services/metadataService";
 import {
   documentdbGitHubForks,
@@ -27,13 +28,20 @@ export const metadata = getMetadata({
 });
 
 const quickRunCommand = `docker run -dt --name documentdb \\
-  -p 10260:10260 \\
-  ghcr.io/documentdb/documentdb/documentdb-local:latest \\
-  --username admin --password password`;
+  -p 127.0.0.1:10260:10260 \\
+  -e USERNAME=admin \\
+  -e PASSWORD=password \\
+  ghcr.io/documentdb/documentdb/documentdb-local:latest`;
 
 const connectCommand = `mongosh "mongodb://admin:password@localhost:10260/?tls=true&tlsAllowInvalidCertificates=true"`;
 
-const createIndexCommand = `db.runCommand({
+const createIndexCommand = `// Real embeddings are longer: set dimensions to your model's size, such as 1536.
+db.documents.insertMany([
+  { title: "Vector indexes", category: "technical", embedding: [0.10, -0.02, 0.30] },
+  { title: "Release notes", category: "news", embedding: [0.90, 0.40, -0.10] }
+]);
+
+db.runCommand({
   createIndexes: "documents",
   indexes: [{
     key: { embedding: "cosmosSearch" },
@@ -41,15 +49,18 @@ const createIndexCommand = `db.runCommand({
     cosmosSearchOptions: {
       kind: "vector-hnsw",
       similarity: "COS",
-      dimensions: 1536
+      dimensions: 3
     }
   }]
-});`;
+});
+
+// $vectorSearch filters need an index on each filtered field.
+db.documents.createIndex({ category: 1 });`;
 
 const vectorSearchCommand = `db.documents.aggregate([
   {
     $vectorSearch: {
-      queryVector: [0.12, -0.04, 0.31, /* ... 1536 dims */],
+      queryVector: [0.12, -0.04, 0.31],
       path: "embedding",
       limit: 10,
       numCandidates: 100,
@@ -113,7 +124,7 @@ const quickStartSteps = [
     step: "03",
     title: "Create a vector index",
     description:
-      "Create a native HNSW vector index with cosine similarity for embedding retrieval.",
+      "Add sample documents, a native HNSW vector index with cosine similarity, and an index on the field you filter by.",
     label: "Index",
     code: createIndexCommand,
   },
@@ -296,6 +307,7 @@ export default function AIPage() {
             </p>
             <div className="mt-5">
               <CommandSnippet command={quickRunCommand} label="Docker" />
+              <TelemetryNote />
             </div>
             <div className="mt-5 grid gap-3 sm:grid-cols-3">
               <div className="rounded-2xl border border-neutral-800 bg-neutral-900/70 p-4">
@@ -386,6 +398,7 @@ export default function AIPage() {
                 <p className="mt-2 text-sm leading-6 text-gray-400">{item.description}</p>
                 <div className="mt-5">
                   <CommandSnippet command={item.code} label={item.label} />
+                  {item.code === quickRunCommand && <TelemetryNote />}
                 </div>
               </article>
             ))}

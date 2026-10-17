@@ -3,6 +3,7 @@ import Link from "next/link";
 import QuickStartTabs from "./components/QuickStartTabs";
 import {
   documentdbKubernetesOperatorQuickStartUrl,
+  documentdbReleasePageUrl,
   documentdbVsCodeLocalQuickStartDeepLink,
 } from "./services/externalLinks";
 import { getMetadata } from "./services/metadataService";
@@ -38,9 +39,9 @@ type Capability = {
 
 const quickRunCommand = `docker run -dt --name documentdb \\
   -p 127.0.0.1:10260:10260 \\
-  ghcr.io/documentdb/documentdb/documentdb-local:latest \\
-  --username '<YOUR_USERNAME>' \\
-  --password '<YOUR_PASSWORD>'`;
+  -e USERNAME='<YOUR_USERNAME>' \\
+  -e PASSWORD='<YOUR_PASSWORD>' \\
+  ghcr.io/documentdb/documentdb/documentdb-local:latest`;
 
 const kubernetesOperatorEntryPoints = [
   {
@@ -117,10 +118,35 @@ const capabilities: Capability[] = [
 ];
 
 const trustBadges = [
+  "1.0 with planned long-term support",
   "Built on PostgreSQL",
   "Native BSON",
   "MIT licensed",
   "Runs locally with Docker",
+];
+
+const releaseHighlights = [
+  {
+    eyebrow: "Versioning",
+    title: "Long-term support or development?",
+    description:
+      "How the proposed 1.0 LTS track and the development track differ, and which one fits your team.",
+    href: "/blogs/posts/versioning/",
+  },
+  {
+    eyebrow: "Tools",
+    title: "DocumentDB for VS Code 1.0",
+    description:
+      "Start DocumentDB Local in a few clicks, bring your data, and understand it with Query Insights.",
+    href: "/blogs/posts/documentdb-for-vs-code-1-0/",
+  },
+  {
+    eyebrow: "Kubernetes",
+    title: "DocumentDB 1.0 on Kubernetes",
+    description:
+      "Operator 1.0.0 is generally available. Deploy and manage DocumentDB clusters declaratively.",
+    href: "/blogs/posts/kubernetes-operator-versioning/",
+  },
 ];
 
 const credibilityPoints = [
@@ -386,6 +412,50 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="border-b border-neutral-800 bg-neutral-900 py-12 sm:py-16">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="max-w-3xl">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-300">
+                DocumentDB 1.0
+              </p>
+              <h2 className="text-3xl font-bold text-white sm:text-4xl">
+                What&apos;s new in 1.0
+              </h2>
+            </div>
+            <Link
+              href={documentdbReleasePageUrl}
+              className="inline-flex items-center text-sm font-semibold text-emerald-300 transition-colors hover:text-emerald-200"
+            >
+              Explore DocumentDB 1.0 <span aria-hidden="true" className="ml-1">&rarr;</span>
+            </Link>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            {releaseHighlights.map((item) => (
+              <a
+                key={item.href}
+                href={withBasePath(item.href)}
+                className="group flex h-full flex-col rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5 transition hover:-translate-y-0.5 hover:border-emerald-400/40 hover:bg-emerald-500/10 sm:p-6"
+              >
+                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300">
+                  {item.eyebrow}
+                </p>
+                <h3 className="mb-2 text-xl font-semibold text-white">
+                  {item.title}
+                </h3>
+                <p className="text-sm leading-6 text-gray-400">
+                  {item.description}
+                </p>
+                <span className="mt-auto pt-5 text-sm font-semibold text-emerald-300 group-hover:text-emerald-200">
+                  Read post <span aria-hidden="true">&rarr;</span>
+                </span>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="relative overflow-hidden border-b border-neutral-800 bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.16),_transparent_38%),radial-gradient(circle_at_bottom_right,_rgba(56,189,248,0.12),_transparent_34%)] py-14 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-8 max-w-3xl sm:mb-10">
@@ -480,7 +550,7 @@ export default function Home() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-8 max-w-3xl">
             <p className="mb-3 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-300">
-              Operator preview
+              Kubernetes operator
             </p>
             <h2 className="mb-4 text-3xl font-bold text-white sm:text-4xl">
               DocumentDB Kubernetes Operator
@@ -511,11 +581,11 @@ export default function Home() {
             <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
               <div>
                 <p className="text-sm font-semibold text-white">
-                  Preview with local, hybrid, and multi-cluster paths
+                  Local, hybrid, and multi-cluster paths
                 </p>
                 <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-300">
-                  The operator is still in preview. Start with the overview, then
-                  follow the quick start or multi-cluster guides.
+                  Start with the overview, then follow the quick start or
+                  multi-cluster guides.
                 </p>
               </div>
 

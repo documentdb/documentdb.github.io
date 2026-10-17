@@ -8,6 +8,7 @@ import type { ReactElement } from 'react';
 import Code from './Code';
 import { headingAnchor } from '../lib/docsAnchors';
 import { resolveMarkdownLink } from '../lib/markdownLinks';
+import { withBasePath } from '../services/sitePath';
 
 interface MarkdownProps {
   content: string;
@@ -254,17 +255,16 @@ function getMarkdownComponents(sourcePath: string) {
 
     // Links: only external links open in a new tab; internal links (/docs/...,
     // /samples, #anchors) navigate in place
-    a: ({ children, href, ...props }: any) => {
+    a: ({ children, href, node: _node, ...props }: any) => {
       const resolvedHref = resolveMarkdownLink(href, sourcePath);
       const isExternal = /^https?:\/\//i.test(resolvedHref ?? '');
       const linkClassName = 'text-blue-400 hover:text-blue-300 transition-colors';
 
       // A rewritten href is a resolved document route, so it is known to be an
-      // internal page and is rendered with next/link. That applies the basePath
-      // from next.config identically on the server and in the browser -
-      // NEXT_BASE_PATH is not readable from the client bundle, so neither this
-      // component nor the resolver may prefix the path itself. Any other href
-      // is left exactly as the author wrote it.
+      // internal page and is rendered with next/link, which applies the
+      // basePath itself. Any other root-relative href may be a route Next does
+      // not own (/blogs/, /install.sh), so it stays a plain anchor and gets the
+      // base path from withBasePath.
       if (resolvedHref && resolvedHref !== href) {
         return (
           <Link href={resolvedHref} className={linkClassName} {...props}>
@@ -275,7 +275,7 @@ function getMarkdownComponents(sourcePath: string) {
 
       return (
         <a
-          href={resolvedHref}
+          href={resolvedHref && /^\/(?!\/)/.test(resolvedHref) ? withBasePath(resolvedHref) : resolvedHref}
           className={linkClassName}
           {...(isExternal ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
           {...props}

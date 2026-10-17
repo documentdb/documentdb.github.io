@@ -10,6 +10,11 @@
   {% assign meta_text = category.meta | default: "Community article" %}
 {% endif %}
 
+{% assign is_release = false %}
+{% if post.tags contains "1.0" %}
+  {% assign is_release = true %}
+{% endif %}
+
 {% if post.uri %}
   {% assign href = post.uri %}
   {% assign is_external = true %}
@@ -20,27 +25,10 @@
 
 <article>
   <a
-    class="post-card post-card--{{ post.category }}{% if include.featured %} post-card--featured{% endif %}"
+    class="post-card post-card--{{ post.category }}{% if include.featured %} post-card--featured{% endif %}{% if is_release %} post-card--release{% endif %}"
     href="{{ href }}"
     {% if is_external %}target="_blank" rel="noopener noreferrer"{% endif %}
-    aria-label="{{ post.title }}{% if is_external %} (opens in a new tab){% endif %}"
   >
-    {% if post.cover_image %}
-      {% if post.cover_image contains '://' %}
-        {% assign cover_image_src = post.cover_image %}
-      {% else %}
-        {% assign cover_image_src = post.cover_image | relative_url %}
-      {% endif %}
-      <div class="post-card__media">
-        <img
-          class="post-card__image"
-          src="{{ cover_image_src }}"
-          alt="{{ post.cover_image_alt | default: post.title | escape }}"
-          loading="lazy"
-        >
-      </div>
-    {% endif %}
-
     <div class="post-card__body">
       <div class="post-card__header">
         <span class="post-card__icon" aria-hidden="true"></span>
@@ -48,6 +36,7 @@
           <p class="post-card__source">{{ category.label | default: post.category }}</p>
           <p class="post-card__meta">{{ meta_text }}</p>
         </div>
+        {% if is_release %}<span class="post-card__ribbon">1.0 release</span>{% endif %}
       </div>
 
       <h2 class="post-card__title">{{ post.title }}</h2>
@@ -68,6 +57,7 @@
           {% if include.featured %}Read featured post{% else %}Read post{% endif %}
         {% endif %}
         <span aria-hidden="true">&rarr;</span>
+        {% if is_external %}<span class="visually-hidden">(opens in a new tab)</span>{% endif %}
       </span>
     </div>
   </a>

@@ -1,3 +1,7 @@
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   aptServesFullStack,
@@ -75,33 +79,33 @@ describe('package metadata', () => {
 });
 
 describe('release metadata', () => {
-  it('uses v0.117-0 for the first paint and feed fallback', () => {
+  it('uses v1.0-0 for the first paint and feed fallback', () => {
     expect(FALLBACK_RELEASE).toMatchObject({
-      tagName: 'v0.117-0',
-      aptVersion: '0.117-0',
-      rpmVersion: '0.117.0-1.el9',
-      metaVersion: '0.117.0',
-      metaRpmVersion: '0.117.0-1',
-      releaseUrl: 'https://github.com/documentdb/documentdb/releases/tag/v0.117-0',
+      tagName: 'v1.0-0',
+      aptVersion: '1.0-0',
+      rpmVersion: '1.0.0-1.el9',
+      metaVersion: '1.0.0',
+      metaRpmVersion: '1.0.0-1',
+      releaseUrl: 'https://github.com/documentdb/documentdb/releases/tag/v1.0-0',
     });
   });
 
-  it('derives v0.117 package versions from the published asset shapes', () => {
+  it('derives v1.0 package versions from the published asset shapes', () => {
     expect(parseReleaseInfo({
-      tag_name: 'v0.117-0',
-      html_url: 'https://github.com/documentdb/documentdb/releases/tag/v0.117-0',
+      tag_name: 'v1.0-0',
+      html_url: 'https://github.com/documentdb/documentdb/releases/tag/v1.0-0',
       assets: [
-        { name: 'ubuntu24.04-documentdb_0.117.0_all.deb' },
-        { name: 'ubuntu24.04-postgresql-18-documentdb_0.117-0_amd64.deb' },
-        { name: 'documentdb-0.117.0-1.noarch.rpm' },
-        { name: 'rhel9-postgresql18-documentdb-0.117.0-1.el9.x86_64.rpm' },
+        { name: 'ubuntu24.04-documentdb_1.0.0_all.deb' },
+        { name: 'ubuntu24.04-postgresql-18-documentdb_1.0-0_amd64.deb' },
+        { name: 'documentdb-1.0.0-1.noarch.rpm' },
+        { name: 'rhel9-postgresql18-documentdb-1.0.0-1.el9.x86_64.rpm' },
       ],
     })).toMatchObject({
-      tagName: 'v0.117-0',
-      aptVersion: '0.117-0',
-      rpmVersion: '0.117.0-1.el9',
-      metaVersion: '0.117.0',
-      metaRpmVersion: '0.117.0-1',
+      tagName: 'v1.0-0',
+      aptVersion: '1.0-0',
+      rpmVersion: '1.0.0-1.el9',
+      metaVersion: '1.0.0',
+      metaRpmVersion: '1.0.0-1',
     });
   });
 });
@@ -212,6 +216,37 @@ describe('buildRpmInstallCommand', () => {
     expect(command).toContain('sudo dnf config-manager --set-enabled crb');
     expect(command).not.toContain('subscription-manager repos --enable');
     expect(command).not.toContain('codeready-builder-for-rhel');
+  });
+
+  it('switches PGDG to its major-only path on CentOS Stream only', () => {
+    const lines = buildRpmInstallCommand('rocky9', 'x86_64', '18')
+      .split('\n')
+      .filter((l) => l.startsWith('if (. /etc/os-release'));
+    // Once before the first dnf call (a repo left by an earlier attempt) and once after PGDG is added.
+    expect(lines).toHaveLength(2);
+    expect(lines[0]).toBe(lines[1]);
+    expect(buildRpmInstallCommand('rhel9', 'x86_64', '18')).not.toContain('pgdg-redhat-all.repo');
+    const baseurl =
+      'baseurl=https://download.postgresql.org/pub/repos/yum/18/redhat/rhel-$releasever_major.$releasever_minor-$basearch\n';
+    const run = (osRelease: string, withRepo = true) => {
+      const dir = mkdtempSync(join(tmpdir(), 'pgdg-'));
+      writeFileSync(join(dir, 'os-release'), osRelease);
+      if (withRepo) writeFileSync(join(dir, 'pgdg.repo'), baseurl);
+      const script = lines[0]
+        .replaceAll('/etc/os-release', join(dir, 'os-release'))
+        .replaceAll('/etc/yum.repos.d/pgdg-redhat-all.repo', join(dir, 'pgdg.repo'))
+        .replace('sudo sed -i ', 'sed -i.bak ')
+        .replace(/ && \\$/, '');
+      execFileSync('sh', ['-c', script]);
+      return withRepo ? readFileSync(join(dir, 'pgdg.repo'), 'utf8') : '';
+    };
+    const fixed = '/redhat/rhel-$releasever_major-$basearch';
+    expect(run('ID=centos\n')).toContain(fixed);
+    expect(run('ID="centos"\n')).toContain(fixed);
+    expect(run("ID='centos'\n")).toContain(fixed);
+    expect(run('ID="rocky"\n')).toBe(baseurl);
+    expect(run('ID="centos\n')).toBe(baseurl);
+    expect(run('ID="centos"\n', false)).toBe('');
   });
 
   it('uses subscription-manager for registered RHEL', () => {

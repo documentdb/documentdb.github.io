@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import AnnouncementBar from "./components/AnnouncementBar";
 import Navbar from "./components/Navbar";
 import { getMetadata } from "./services/metadataService";
 
@@ -19,6 +20,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
+        <AnnouncementBar />
         <Navbar />
         {children}
         <footer className="bg-neutral-900 border-t border-neutral-700">

@@ -5,15 +5,16 @@ import { getAllArticlePaths, getArticleByPath } from "../../../services/articleS
 import { getMetadata } from "../../../services/metadataService";
 import ComingSoon from "../../../components/ComingSoon";
 import CommandSnippet from "../../../components/CommandSnippet";
+import TelemetryNote from "../../../components/TelemetryNote";
 import Markdown from "../../../components/Markdown";
 import MovedNotice from "../../../components/MovedNotice";
 import { aptTargetLabels } from "../../../lib/packageInstall";
 
 const dockerQuickRunCommand = `docker run -dt --name documentdb \\
   -p 127.0.0.1:10260:10260 \\
-  ghcr.io/documentdb/documentdb/documentdb-local:latest \\
-  --username '<YOUR_USERNAME>' \\
-  --password '<YOUR_PASSWORD>'`;
+  -e USERNAME='<YOUR_USERNAME>' \\
+  -e PASSWORD='<YOUR_PASSWORD>' \\
+  ghcr.io/documentdb/documentdb/documentdb-local:latest`;
 
 const primerPrimaryLinkClass =
     "inline-flex w-full items-center justify-center rounded-md bg-blue-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-400 sm:w-auto";
@@ -276,6 +277,7 @@ export default async function ArticlePage({ params }: PageProps) {
                                             </p>
                                             <div className="mt-4">
                                                 <CommandSnippet command={dockerQuickRunCommand} label="Start Docker" />
+                                                <TelemetryNote />
                                             </div>
                                             <p className="mt-4 text-sm text-gray-400">
                                                 Wait for the readiness banner in{" "}
@@ -298,10 +300,6 @@ export default async function ArticlePage({ params }: PageProps) {
                                                 For environments without Docker, or when you need control over
                                                 PostgreSQL, topology, services, and configuration. Install with
                                                 apt or dnf on {aptTargetLabels.ubuntu24} or EL9, then run the setup wizard.
-                                            </p>
-                                            <p className="mt-2 text-sm text-gray-400">
-                                                Pre-GA, fresh installation only; in-place upgrades from earlier
-                                                releases are not supported.
                                             </p>
                                             <div className="mt-4">
                                                 <Link

@@ -70,8 +70,9 @@ describe('homepage local quick start', () => {
     const command = panel('command');
     expect(command).toContain('-p 127.0.0.1:10260:10260');
     expect(command).not.toContain('-p 10260:10260 ');
-    expect(command).toContain("--username &#x27;&lt;YOUR_USERNAME&gt;&#x27;");
-    expect(command).toContain("--password &#x27;&lt;YOUR_PASSWORD&gt;&#x27;");
+    expect(command).toContain("-e USERNAME=&#x27;&lt;YOUR_USERNAME&gt;&#x27;");
+    expect(command).toContain("-e PASSWORD=&#x27;&lt;YOUR_PASSWORD&gt;&#x27;");
+    expect(command).not.toContain('--password');
     expect(command).toContain('ghcr.io/documentdb/documentdb/documentdb-local:latest');
     expect(command).not.toContain('--init-data');
   });

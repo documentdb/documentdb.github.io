@@ -4,7 +4,7 @@ import { getMetadata } from "../services/metadataService";
 export const metadata = getMetadata({
   title: "Install DocumentDB - Docker and Linux Packages",
   description:
-    "Run DocumentDB with Docker on Linux, macOS, or Windows, or install Linux packages on Ubuntu 24.04 or RHEL/Rocky 9 with apt or dnf. Linux packages are pre-GA and for fresh installs.",
+    "Run DocumentDB with Docker on Linux, macOS, or Windows, or install Linux packages on Ubuntu 24.04 or RHEL/Rocky 9 with apt or dnf.",
   path: "/packages/",
   extraKeywords: ["install", "Linux", "APT", "RPM", "dnf", "Ubuntu", "RHEL", "Rocky Linux", "Docker"],
 });

@@ -2,7 +2,7 @@
 title: Meet the DocumentDB Kubernetes Operator
 description: Preview an open-source operator that brings declarative deployment, secure connectivity, high availability, backup and restore, and automated multi-cloud deployment to DocumentDB on Kubernetes.
 date: 2026-03-19
-featured: true
+featured: false
 author: DocumentDB team
 category: documentdb-blog
 tags:
@@ -11,6 +11,8 @@ tags:
   - DocumentDB
   - Open Source
 ---
+
+**Update, October 19, 2026:** The DocumentDB Kubernetes Operator 1.0.0 is generally available. The `documentdb.io/preview` API version and the `preview` in the docs URLs are names kept for compatibility. See [DocumentDB 1.0 on Kubernetes]({{ '/posts/kubernetes-operator-versioning/' | relative_url }}).
 The DocumentDB Kubernetes Operator brings MongoDB API compatible document database management to any Kubernetes cluster — with declarative deployment, automatic high availability, backup and restore, TLS, and a documented multi-cloud deployment path across AKS, GKE, and EKS — all fully open source under the MIT license.
 
 [DocumentDB](https://github.com/documentdb/documentdb) is an open-source, MongoDB API compatible document database engine built on PostgreSQL, governed by the Linux Foundation. It powers vCore-based Azure Cosmos DB for MongoDB and provides native support for BSON data types, aggregation pipelines, change streams, vector search, and ACID transactions. The Kubernetes Operator runs and manages DocumentDB on Kubernetes: when you deploy a cluster, it creates and manages PostgreSQL instances, the DocumentDB Gateway, and the supporting Kubernetes resources around them. The gateway translates the MongoDB wire protocol, so existing MongoDB drivers — PyMongo, Node.js, Java, Go, C++ — work without code changes, and teams can keep using familiar clients such as `mongosh`.

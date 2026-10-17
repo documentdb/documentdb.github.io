@@ -2,7 +2,7 @@
 title: "Linux packages for DocumentDB: start simple, keep control"
 description: Install DocumentDB on Linux with apt or dnf and guided setup. Start with the complete stack, use your own local PostgreSQL, or install only the extension.
 date: 2026-09-10
-featured: true
+featured: false
 author: DocumentDB team
 category: documentdb-blog
 tags:

@@ -5,10 +5,11 @@ on:
   push:
     branches:
       - main
-  # Runs on pull requests targeting the default branch
+  # Runs on pull requests targeting the default branch or the 1.0 release branch
   pull_request:
     branches:
       - main
+      - 1.0-release-readiness
 # Supersede in-flight runs for a pull request when new commits arrive, so a
 # rebase or force-push does not leave several runs racing on stale commits.
 # Pushes to main are never cancelled: every commit on the default branch
@@ -96,9 +97,9 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y createrepo-c dpkg-dev rpm python3
-      - name: Generate repository from v0.117-0
+      - name: Generate repository from v1.0-0
         env:
-          DOCUMENTDB_VERSION: v0.117-0
+          DOCUMENTDB_VERSION: v1.0-0
         run: .github/scripts/download_packages.sh
       - name: Verify release inventory and metadata
         run: python3 .github/scripts/verify_package_inventory.py

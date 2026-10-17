@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import CommandSnippet from "../components/CommandSnippet";
+import TelemetryNote from "../components/TelemetryNote";
 import {
   aptTargetLabels,
   aptTargetPgVersions,
@@ -29,9 +30,9 @@ import {
 
 const dockerCommand = `docker run -dt --name documentdb \\
   -p 127.0.0.1:10260:10260 \\
-  ghcr.io/documentdb/documentdb/documentdb-local:latest \\
-  --username '<YOUR_USERNAME>' \\
-  --password '<YOUR_PASSWORD>'`;
+  -e USERNAME='<YOUR_USERNAME>' \\
+  -e PASSWORD='<YOUR_PASSWORD>' \\
+  ghcr.io/documentdb/documentdb/documentdb-local:latest`;
 
 const nextGuides = [
   { title: "VS Code", href: "/docs/getting-started/vscode-quickstart" },
@@ -206,8 +207,9 @@ export default function PackagesPage() {
               </div>
             </details>
 
-            <p className="mt-4 text-sm text-amber-100">
-              Pre-GA: fresh installs only. In-place upgrades from earlier releases are not supported.
+            <p className="mt-4 text-sm text-gray-300">
+              Already running DocumentDB from packages?{" "}
+              <Link href="/docs/linux-packages#upgrading" className={linkClass}>Upgrade in place</Link> instead.
             </p>
             {releaseStatus === "loading" ? (
               <p role="status" className="mt-2 text-sm text-gray-400">Checking the published package release...</p>
@@ -314,6 +316,7 @@ export default function PackagesPage() {
                 <h2 className={stepClass}>1. Start DocumentDB</h2>
                 <p className={stepTextClass}>With Docker running, replace the username and password, then run:</p>
                 {selectionReady && <CommandSnippet command={dockerCommand} label="Docker" />}
+                {selectionReady && <TelemetryNote />}
                 <p className="mt-2 text-sm text-gray-400">
                   It takes a few seconds to accept connections. Volumes, image versions, and readiness checks are in the{" "}
                   <Link href="/docs/getting-started/docker" className={linkClass}>Docker quickstart</Link>.

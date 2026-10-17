@@ -51,10 +51,11 @@ describe('Linux package articles', () => {
     expect(blocks).toContain(buildRpmInstallCommand('rhel9', 'auto', '18'));
     expect(blocks).toContain(buildSetupCommand('18'));
     expect(linuxPackagesGuideContent).toContain('amd64 or arm64');
-    expect(linuxPackagesGuideContent.indexOf('fresh installation only')).toBeLessThan(
+    // Existing installs must see the upgrade route before the first install command.
+    expect(linuxPackagesGuideContent.indexOf('(/docs/linux-packages#upgrading)')).toBeGreaterThan(-1);
+    expect(linuxPackagesGuideContent.indexOf('(/docs/linux-packages#upgrading)')).toBeLessThan(
       linuxPackagesGuideContent.indexOf('```bash'),
     );
-    expect(linuxPackagesGuideContent).toContain('not in-place package upgrades');
     expect(linuxPackagesGuideContent).toContain(
       'Removing packages preserves database files',
     );
@@ -91,6 +92,8 @@ describe('Linux package articles', () => {
     expect(article.content).toContain('acknowledged: true');
     expect(article.content).toContain('Run this shell example on the same host as DocumentDB');
     expect(article.content).toContain('## Architecture Components');
+    expect(article.content).toContain('four primary components');
+    expect(article.content).toContain('**pg_documentdb_extended_rum**');
     expect(article.content).toContain('## Common Use Cases');
     expect(article.content).toContain('## Community and Support');
     const packageIndex = article.navigation.findIndex((item) =>
@@ -117,9 +120,9 @@ describe('Linux package articles', () => {
     );
     expect(source).toContain('-p 127.0.0.1:10260:10260');
     expect(source).not.toContain('-p 10260:10260');
-    expect(source).toContain("--username '<YOUR_USERNAME>'");
-    expect(source).toContain("--password '<YOUR_PASSWORD>'");
-    expect(source).toContain('Pre-GA, fresh installation only');
+    expect(source).toContain("-e USERNAME='<YOUR_USERNAME>'");
+    expect(source).toContain("-e PASSWORD='<YOUR_PASSWORD>'");
+    expect(source).not.toContain('Pre-GA');
   });
 
   it('offers both server methods before client-specific setup or optional Docker commands', () => {
@@ -283,25 +286,25 @@ describe('Linux package articles', () => {
     expect(new Set(tags)).toEqual(new Set([FALLBACK_RELEASE.tagName]));
   });
 
-  it('serves the stable installer and selects RC2 only with --version', () => {
+  it('serves the stable installer without a pinned or RC version', () => {
     expect(linuxPackagesGuideContent).toContain('https://documentdb.io/install.sh');
-    expect(linuxPackagesGuideContent).toContain('installs v0.117-0 from the package repository');
-    expect(linuxPackagesGuideContent).toContain('sh documentdb-install.sh --version v1.0-RC2');
-    expect(linuxPackagesGuideContent).toContain("doesn't use the package repository");
-    expect(linuxPackagesGuideContent).toContain('DOCUMENTDB_USAGE_TELEMETRY=false');
+    expect(linuxPackagesGuideContent).toContain('installs the current release (v1.0-0) from the package repository');
+    // install.sh rejects --version v1.0-0, and RCs are retired at GA.
+    expect(linuxPackagesGuideContent).not.toContain('--version v1.0');
+    expect(linuxPackagesGuideContent).not.toMatch(/RC2|release-candidate/);
   });
 
   it('uses the current release package guide and artifact version', () => {
     const offlineGuide = getArticleByPath('linux-packages', ['offline']);
 
     expect(linuxPackagesGuideContent).toContain(
-      'documentdb/blob/v0.117-0/packaging/README.md',
+      'documentdb/blob/v1.0-0/packaging/README.md',
     );
     expect(linuxPackagesGuideContent).toContain(
       '`--load-sample-data` to the setup command to seed the `StoreData` database',
     );
     expect(offlineGuide?.content).toContain(
-      'ubuntu24.04-postgresql-18-documentdb_0.117-0_amd64.deb',
+      'ubuntu24.04-postgresql-18-documentdb_1.0-0_amd64.deb',
     );
     expect(offlineGuide?.content).toContain(
       'pass the five packages for the selected PostgreSQL major',
@@ -386,15 +389,8 @@ describe('Linux package articles', () => {
       'utf8',
     );
 
-    expect(source).toContain(
-      '41,505 store documents and 2 rating documents',
-    );
-    expect(source).toContain(
-      'documentdb-local:pg18-0.117.0',
-    );
-    expect(source).toContain(
-      'Currently identical to \\`pg17-0.117.0\\`',
-    );
+    // The DocumentDB Local page comes from the docs repo; the site adds no image or sample section.
+    expect(source).not.toContain('Currently identical to');
     expect(source).not.toContain(
       '5 users, 5 products, 4 orders, and 2',
     );
@@ -425,8 +421,8 @@ describe('Linux package articles', () => {
       for (const block of dockerBlocks) {
         expect(block, slug).toContain('-p 127.0.0.1:10260:10260');
         expect(block, slug).not.toContain('-p 10260:10260');
-        expect(block, slug).not.toContain('--username <YOUR_USERNAME>');
-        expect(block, slug).not.toContain('--password <YOUR_PASSWORD>');
+        expect(block, slug).not.toContain('--username');
+        expect(block, slug).not.toContain('--password');
       }
     }
 
@@ -442,25 +438,19 @@ describe('Linux package articles', () => {
     );
 
     expect(articleSource).toContain(
-      'docker run -dt -p 127.0.0.1:10260:10260 --name documentdb',
-    );
-    expect(articleSource).toContain(
-      "  --username '<YOUR_USERNAME>' --password '<YOUR_PASSWORD>' --init-data true",
+      "  ghcr.io/documentdb/documentdb/documentdb-local:latest \\\\\n  --init-data true",
     );
     expect(articleSource).toContain(
       '  -p 127.0.0.1:10260:10260 \\\\',
-    );
-    expect(articleSource).toContain(
-      '  -v /path/to/init/scripts:/init_doc_db.d \\\\',
     );
     expect(packagePageSource).toContain(
       '  -p 127.0.0.1:10260:10260 \\\\',
     );
     expect(packagePageSource).toContain(
-      "  --username '<YOUR_USERNAME>' \\\\",
+      "  -e USERNAME='<YOUR_USERNAME>' \\\\",
     );
     expect(packagePageSource).toContain(
-      "  --password '<YOUR_PASSWORD>'",
+      "  -e PASSWORD='<YOUR_PASSWORD>' \\\\",
     );
   });
 
@@ -553,5 +543,71 @@ describe('Linux package articles', () => {
     expect(source).toContain('--load-sample-data</code> to seed the{" "}');
     expect(source).toContain('individual subpackages can carry');
     expect(source).not.toContain('and the gateway are');
+  });
+});
+
+describe('manual extension upgrade SQL', () => {
+  it.each([
+    ['the operations guide', () => linuxPackagesOperationsContent],
+    ['PACKAGE-INSTALL.md', () => fs.readFileSync(fileURLToPath(new URL('../PACKAGE-INSTALL.md', import.meta.url)), 'utf8')],
+  ])('restarts PostgreSQL, updates every extension in one transaction and gates the gateway in %s', (_name, read) => {
+    const text = read();
+    const command = text.match(/sudo systemctl restart documentdb-postgresql@18\.service &&\nsudo -u documentdb-local psql[\s\S]*?documentdb-gateway-local@18\.service/)?.[0];
+    expect(command).toBeDefined();
+    expect(command).toContain('-X -1 -v ON_ERROR_STOP=1');
+    // Exactly the four statements: no COMMIT/BEGIN of its own to split the transaction.
+    expect(command!.match(/ -c '/g)).toHaveLength(4);
+    expect(command).not.toMatch(/BEGIN|COMMIT|ROLLBACK/);
+    const order = [
+      "-c 'ALTER EXTENSION documentdb_core UPDATE;'",
+      "-c 'ALTER EXTENSION documentdb UPDATE;'",
+      "-c 'CREATE EXTENSION IF NOT EXISTS documentdb_extended_rum CASCADE;'",
+      "-c 'ALTER EXTENSION documentdb_extended_rum UPDATE;' &&\nsudo systemctl start",
+    ].map((part) => command!.indexOf(part));
+    expect(order.every((index) => index >= 0)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+    // The preload check comes before the transaction, which can't detect a missing preload.
+    expect(text.indexOf('SHOW shared_preload_libraries;')).toBeGreaterThan(-1);
+    expect(text.indexOf('SHOW shared_preload_libraries;')).toBeLessThan(text.indexOf(command!));
+    // The old separate-statement form committed each ALTER on its own.
+    expect(text).not.toMatch(/^ALTER EXTENSION documentdb_core UPDATE;$/m);
+    expect(text).toMatch(/only in\s+the `postgres` database/);
+    // Restarting the whole target would start the gateway before setup updates the extensions.
+    expect(text).toMatch(/restart documentdb-postgresql@18\.service &&\nsudo documentdb-setup/);
+    expect(text).not.toMatch(/restart documentdb-local@18\.target &&\nsudo documentdb-setup/);
+  });
+});
+
+describe('docs-owned article normalization', () => {
+  beforeEach(() => {
+    const fixturePaths = new Map([
+      [path.join(process.cwd(), 'articles', 'documentdb-local', 'index.md'),
+        fileURLToPath(new URL('./fixtures/documentdb-local/index.md', import.meta.url))],
+      [path.join(process.cwd(), 'articles', 'getting-started', 'release-notes-1.0.md'),
+        fileURLToPath(new URL('./fixtures/getting-started/release-notes-1.0.md', import.meta.url))],
+    ]);
+    const existsSync = fs.existsSync;
+    const readFileSync = fs.readFileSync;
+    vi.spyOn(fs, 'existsSync').mockImplementation((file) => existsSync(fixturePaths.get(file.toString()) ?? file));
+    vi.spyOn(fs, 'readFileSync').mockImplementation((file, options) =>
+      readFileSync(fixturePaths.get(file.toString()) ?? file, options),
+    );
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('serves the DocumentDB Local page as the docs repo wrote it', () => {
+    const article = getArticleByPath('documentdb-local', []);
+    expect(article?.content).toContain('## Built-in sample data');
+    expect(article?.content).not.toMatch(/## (Container image tags|Data initialization)/);
+    expect(article?.content).not.toContain('on a fresh volume');
+  });
+
+  it('sends the release notes upgrade link to the operations guide', () => {
+    const article = getArticleByPath('getting-started', ['release-notes-1.0']);
+    expect(article?.content).toContain('](/docs/linux-packages#upgrading)');
+    expect(article?.content).not.toContain('prebuilt-packages.md#upgrading-to-10');
   });
 });

@@ -30,6 +30,10 @@ const virtualSections: Record<string, { landingTitle: string; pages: { slug: str
   },
 };
 
+// The documentdb-local image reports usage by default from 1.0; every Docker start command carries the opt-out.
+const documentdbLocalTelemetryNote = `> [!NOTE]
+> The DocumentDB Local image sends usage telemetry by default. To turn it off, add \`-e DOCUMENTDB_USAGE_TELEMETRY=false\` before the image name. See [Usage telemetry](/docs/documentdb-local#usage-telemetry) and the [privacy statement](https://github.com/documentdb/documentdb/blob/v1.0-0/documentdb-local/PRIVACY.md).`;
+
 const dockerGuideContent = `# Docker Quick Start
 
 Run DocumentDB locally with Docker and verify the setup before moving to driver code. For installation choices, open [Docker installation](/packages?method=docker) or [Linux packages installation](/packages?method=packages).
@@ -53,11 +57,13 @@ Then start the container:
 \`\`\`bash
 docker run -dt --name documentdb \\
   -p 127.0.0.1:10260:10260 \\
+  -e USERNAME='<YOUR_USERNAME>' \\
+  -e PASSWORD='<YOUR_PASSWORD>' \\
   ghcr.io/documentdb/documentdb/documentdb-local:latest \\
-  --username '<YOUR_USERNAME>' \\
-  --password '<YOUR_PASSWORD>' \\
   --init-data true
 \`\`\`
+
+${documentdbLocalTelemetryNote}
 
 > Replace \`<YOUR_USERNAME>\` and \`<YOUR_PASSWORD>\` with your own credentials.
 >
@@ -97,7 +103,7 @@ The certificate bypass below is for **local development only**. Use a trusted ce
 \`\`\`bash
 mongosh localhost:10260 \\
   -u '<YOUR_USERNAME>' \\
-  -p '<YOUR_PASSWORD>' \\
+  -p \\
   --authenticationMechanism SCRAM-SHA-256 \\
   --tls \\
   --tlsAllowInvalidCertificates
@@ -155,6 +161,11 @@ Until you remove it, re-running \`docker run --name documentdb\` fails with
 \`Conflict. The container name "/documentdb" is already in use\`. Mount a named volume
 (\`-v documentdb-data:/data\`) before storing anything you want to keep.
 
+A newer image on an existing data volume does not update the DocumentDB schema in that
+volume ([documentdb#773](https://github.com/documentdb/documentdb/issues/773)). To move data
+from an earlier release or a 1.0 release candidate to 1.0, start the 1.0 image on a new
+volume and reload your data, for example with \`mongodump\` and \`mongorestore\`.
+
 ## Troubleshooting and debugging
 
 If something does not work as expected:
@@ -185,13 +196,10 @@ The current official release publishes the full stack — extension, gateway, se
 **Recommended:** install the complete stack, then create a new private PostgreSQL 18 instance. The commands detect architecture on the Linux host where you run them. For containers or macOS/Windows evaluation, choose [Docker installation](/packages?method=docker).
 
 > [!IMPORTANT]
-> This pre-GA release supports **fresh installation only**, not in-place package upgrades from earlier releases. Use a clean host or a new, empty PostgreSQL instance. Removing packages preserves database files; reinstalling is not a data reset.
+> Already running v0.116 or v0.117 from packages? Follow [Upgrading](/docs/linux-packages#upgrading) instead of installing again. Hosts that ran a 1.0 release candidate have no upgrade path; use a clean host. Removing packages preserves database files; reinstalling is not a data reset.
 
 > [!NOTE]
-> Need another distribution or PostgreSQL major? We welcome community builds. Check out the matching release tag and use the version-parameterized [packaging scripts](https://github.com/documentdb/documentdb/blob/v0.117-0/packaging/README.md). \`build_packages.sh\` builds the extension, \`gateway/build_gateway_packages.sh\` builds the gateway, and \`build_extra_packages.sh\` builds the common, tools, stand-alone, and meta packages. PostgreSQL 15 is extension-only because the setup tools require PostgreSQL 16 or newer. These builds are on demand and are not official release assets hosted by documentdb.io.
-
-> [!NOTE]
-> Want to try DocumentDB 1.0? [v1.0-RC2](/docs/getting-started/release-candidate) is for testing only, gets no fixes (those go into a later RC or 1.0) and has no upgrade path. It isn't in the package repository, so the commands below install v0.117-0.
+> Need another distribution or PostgreSQL major? We welcome community builds. Check out the matching release tag, pass \`--version 1.0.0\` (an RC tag shares the 1.0 commit), and use the version-parameterized [packaging scripts](https://github.com/documentdb/documentdb/blob/v1.0-0/packaging/README.md). \`build_packages.sh\` builds the extension, \`gateway/build_gateway_packages.sh\` builds the gateway, and \`build_extra_packages.sh\` builds the common, tools, stand-alone, and meta packages. PostgreSQL 15 is extension-only because the setup tools require PostgreSQL 16 or newer. These builds are on demand and are not official release assets hosted by documentdb.io.
 
 You do not need PostgreSQL already installed — the setup wizard creates and manages its own instance. The install does add the PGDG repository and pull PostgreSQL, PostGIS and around 160 packages (about 140 MB), so pick a host you are willing to have PGDG on.
 
@@ -204,11 +212,8 @@ curl -fsSLo documentdb-install.sh https://documentdb.io/install.sh &&
 sudo sh documentdb-install.sh
 \`\`\`
 
-This installs v0.117-0 from the package repository on PostgreSQL 18; add \`--pg-major 17\` for 17.
-To try RC2, run \`sudo sh documentdb-install.sh --version v1.0-RC2\` instead.
-It downloads this host's packages from the [v1.0-RC2 release](https://github.com/documentdb/documentdb/releases/tag/v1.0-RC2), verifies them against its \`SHA256SUMS\` and doesn't use the package repository.
-The \`pgNN-1.0-rc2\` container image also runs RC2; it sends anonymous usage telemetry by default (opt out with \`-e DOCUMENTDB_USAGE_TELEMETRY=false\`). See the [RC guide](/docs/getting-started/release-candidate).
-RC2 gets no fixes and has no upgrade path, so use a clean host.
+This installs the current release (v1.0-0) from the package repository on PostgreSQL 18; add \`--pg-major 17\` for 17.
+On a host where DocumentDB is already set up, the installer only reports its status and doesn't upgrade it; to move an existing install to 1.0, follow [Upgrading](/docs/linux-packages#upgrading).
 
 ## Install
 
@@ -412,7 +417,7 @@ Use the extension package for your PostgreSQL major: \`postgresql-N-documentdb\`
 or \`postgresqlN-documentdb\` on EL9. You own PostgreSQL configuration, extension activation,
 and service restarts. Create \`documentdb_extended_rum\` as well as \`documentdb\`:
 \`CREATE EXTENSION documentdb CASCADE\` does not pull it in, and without it every index
-creation fails. Follow the matching release's [manual package instructions](https://github.com/documentdb/documentdb/blob/v0.117-0/packaging/README.md),
+creation fails. Follow the matching release's [manual package instructions](https://github.com/documentdb/documentdb/blob/v1.0-0/packaging/README.md),
 or the [extension-only offline instructions](/docs/linux-packages/offline#smaller-offline-cases)
 when PostgreSQL and all extension dependencies are already installed.
 
@@ -433,17 +438,16 @@ For an adopted instance, use the operator's existing PostgreSQL connection inste
 
 ## Upgrading
 
-> [!WARNING]
-> In-place package upgrades from earlier releases are not supported yet. Use a clean host
-> or a new, empty PostgreSQL instance and follow the current
-> [fresh installation](/docs/getting-started/packages). Removing packages alone does not
-> create a fresh database: package removal preserves PostgreSQL data and in-database content,
-> and a later setup run reuses an initialized data directory. Upgrading only
-> \`postgresql-N-documentdb\` does not install the gateway, tools, common payload, or
-> \`documentdb-N\`.
+Package installs from v0.116 or later upgrade in place to 1.0. Move the entire stack
+together; upgrading only \`postgresql-N-documentdb\` does not update the gateway, tools,
+common payload, or \`documentdb-N\`. On a package-managed private PostgreSQL 18 instance:
 
-For a later point release that uses the same multi-package layout, move the entire stack
-together. On a package-managed private PostgreSQL 18 instance:
+> [!WARNING]
+> A host that ran a 1.0 release candidate (RC1 or RC2) has no upgrade path. Move it to a
+> clean host or a new, empty PostgreSQL instance and follow the
+> [fresh installation](/docs/getting-started/packages). Removing packages alone does not create a
+> fresh database: package removal preserves PostgreSQL data and in-database content, and a
+> later setup run reuses an initialized data directory.
 
 \`\`\`bash
 sudo systemctl stop documentdb-gateway-local@18.service
@@ -456,28 +460,58 @@ sudo apt install --only-upgrade documentdb-18 postgresql-18-documentdb \\
 # EL9: use this instead of the apt commands above
 sudo dnf upgrade documentdb-18 postgresql18-documentdb \\
   documentdb-common documentdb-gateway documentdb-postgresql-tools
-
-# PostgreSQL has the old shared library loaded until it restarts.
-sudo systemctl restart documentdb-postgresql@18.service
 \`\`\`
 
-Then update the extensions in **every database** that has DocumentDB installed:
-
-\`\`\`sql
-ALTER EXTENSION documentdb_core UPDATE;
-ALTER EXTENSION documentdb UPDATE;
-ALTER EXTENSION documentdb_extended_rum UPDATE;  -- only if installed
-\`\`\`
-
-Finally restart the gateway:
+Upgrading the packages does not update the database catalog. The simplest way is to restart
+PostgreSQL so it loads the new libraries, then re-run setup with the options you installed with.
+Setup updates the extensions and then starts the gateway:
 
 \`\`\`bash
+sudo systemctl restart documentdb-postgresql@18.service &&
+sudo documentdb-setup --pg-version 18 --use-new-postgres-instance --admin-user admin
+\`\`\`
+
+Setup adds any missing \`shared_preload_libraries\` entries and updates the extensions, but only in
+the \`postgres\` database. It also asks for the admin password and sets it on the existing admin
+user: enter the current password to keep it.
+
+To update by hand, or for every other database that has DocumentDB installed, first check that
+the extended RUM library is preloaded:
+
+\`\`\`bash
+sudo -u documentdb-local psql -h /run/documentdb-local/18/postgresql -p 9718 -d postgres -X -Atc "SHOW shared_preload_libraries;"
+\`\`\`
+
+If \`pg_documentdb_extended_rum\` is missing (possible on a 0.116 install), re-run setup as above
+first; the update below would succeed without it, and index builds would fail later. Then restart
+PostgreSQL, update the extensions in one transaction, and start the gateway only if that worked:
+
+\`\`\`bash
+sudo systemctl restart documentdb-postgresql@18.service &&
+sudo -u documentdb-local psql -h /run/documentdb-local/18/postgresql -p 9718 -d postgres \\
+  -X -1 -v ON_ERROR_STOP=1 \\
+  -c 'ALTER EXTENSION documentdb_core UPDATE;' \\
+  -c 'ALTER EXTENSION documentdb UPDATE;' \\
+  -c 'CREATE EXTENSION IF NOT EXISTS documentdb_extended_rum CASCADE;' \\
+  -c 'ALTER EXTENSION documentdb_extended_rum UPDATE;' &&
 sudo systemctl start documentdb-gateway-local@18.service
 \`\`\`
 
-PostgreSQL applies intermediate upgrade scripts automatically. Take a backup first. For an
-adopted PostgreSQL instance, restart its operator-managed PostgreSQL service instead of
-\`documentdb-postgresql@18.service\`.
+\`-1\` runs the statements as one transaction: if any fails, every extension stays at its old version
+and the gateway stays stopped. \`-X\` skips \`~/.psqlrc\`, which could otherwise turn \`ON_ERROR_STOP\` off. For another database, run the \`psql\` part with that \`-d\`.
+PostgreSQL applies intermediate upgrade scripts automatically. Take a backup first.
+
+On a host with both PostgreSQL 17 and 18, \`documentdb-common\`, \`documentdb-gateway\` and
+\`documentdb-postgresql-tools\` serve both majors, so upgrading them affects both: stop both gateways
+(\`documentdb-gateway-local@17.service\` and \`@18.service\`) before upgrading, then update each major.
+
+For an adopted PostgreSQL instance, setup never restarts PostgreSQL. Stop the gateway
+(\`documentdb-gateway-local@18.service\`) before upgrading, restart the operator-managed PostgreSQL
+service yourself, then re-run
+\`documentdb-setup --pg-version 18 --target-postgres-instance <cluster> --admin-user admin\`; it
+updates the extensions and then starts the gateway. If
+setup has to change \`shared_preload_libraries\`, it exits without updating the extensions: restart
+PostgreSQL and run it once more. By hand, use that instance's own \`psql\` connection.
 
 ## Remove or reset
 
@@ -662,7 +696,7 @@ Then continue with [Set up and connect](/docs/getting-started/packages#set-up-an
 
 If the target already has PostgreSQL, the PGDG extension dependencies (\`postgresql-N-cron\`, \`-pgvector\`, \`-postgis-3\`) and \`jq\`, you do not need a bundle:
 
-- **Extension only, one file** — \`sudo apt install ./ubuntu24.04-postgresql-18-documentdb_0.117-0_amd64.deb\`. No gateway and no \`documentdb-setup\`.
+- **Extension only, one file** — \`sudo apt install ./ubuntu24.04-postgresql-18-documentdb_1.0-0_amd64.deb\`. No gateway and no \`documentdb-setup\`.
 - **Full stack from the release assets** — pass the five packages for the selected PostgreSQL major to a *single* \`apt install\` / \`dnf install\`: \`documentdb-N\`, the matching \`postgresql-N-documentdb\` / \`postgresqlN-documentdb\` extension, \`documentdb-common\`, \`documentdb-gateway\`, and \`documentdb-postgresql-tools\`. For PostgreSQL 18 only, the optional \`documentdb\` meta package may be included; it selects \`documentdb-18\`. Local files resolve dependencies only against enabled repositories, so a package whose dependencies are not included still fails.
 `;
 
@@ -745,10 +779,12 @@ Start it with Docker:
 \`\`\`bash
 docker run -dt --name documentdb \\
   -p 127.0.0.1:10260:10260 \\
-  ghcr.io/documentdb/documentdb/documentdb-local:latest \\
-  --username '<YOUR_USERNAME>' \\
-  --password '<YOUR_PASSWORD>'
+  -e USERNAME='<YOUR_USERNAME>' \\
+  -e PASSWORD='<YOUR_PASSWORD>' \\
+  ghcr.io/documentdb/documentdb/documentdb-local:latest
 \`\`\`
+
+${documentdbLocalTelemetryNote}
 
 If you prefer a host installation instead of Docker, use the [Linux Packages Quick Start](/docs/getting-started/packages) on a distribution in the current release matrix.
 
@@ -851,10 +887,12 @@ export DOCUMENTDB_PASSWORD='<YOUR_PASSWORD>'
 
 docker run -dt --name documentdb \\
   -p 127.0.0.1:10260:10260 \\
-  ghcr.io/documentdb/documentdb/documentdb-local:latest \\
-  --username "\${DOCUMENTDB_USERNAME:?Set DOCUMENTDB_USERNAME}" \\
-  --password "\${DOCUMENTDB_PASSWORD:?Set DOCUMENTDB_PASSWORD}"
+  -e USERNAME="\${DOCUMENTDB_USERNAME:?Set DOCUMENTDB_USERNAME}" \\
+  -e PASSWORD="\${DOCUMENTDB_PASSWORD:?Set DOCUMENTDB_PASSWORD}" \\
+  ghcr.io/documentdb/documentdb/documentdb-local:latest
 \`\`\`
+
+${documentdbLocalTelemetryNote}
 
 Wait for the readiness banner in \`docker logs documentdb\` before connecting; see [Docker Quick Start](/docs/getting-started/docker#verify-the-container).
 
@@ -985,10 +1023,12 @@ export DOCUMENTDB_PASSWORD='<YOUR_PASSWORD>'
 
 docker run -dt --name documentdb \\
   -p 127.0.0.1:10260:10260 \\
-  ghcr.io/documentdb/documentdb/documentdb-local:latest \\
-  --username "\${DOCUMENTDB_USERNAME:?Set DOCUMENTDB_USERNAME}" \\
-  --password "\${DOCUMENTDB_PASSWORD:?Set DOCUMENTDB_PASSWORD}"
+  -e USERNAME="\${DOCUMENTDB_USERNAME:?Set DOCUMENTDB_USERNAME}" \\
+  -e PASSWORD="\${DOCUMENTDB_PASSWORD:?Set DOCUMENTDB_PASSWORD}" \\
+  ghcr.io/documentdb/documentdb/documentdb-local:latest
 \`\`\`
+
+${documentdbLocalTelemetryNote}
 
 Wait for the readiness banner in \`docker logs documentdb\` before connecting; see [Docker Quick Start](/docs/getting-started/docker#verify-the-container).
 
@@ -1141,10 +1181,12 @@ Skip this if you installed Linux packages or already have a running instance. If
 \`\`\`bash
 docker run -dt --name documentdb \\
   -p 127.0.0.1:10260:10260 \\
-  ghcr.io/documentdb/documentdb/documentdb-local:latest \\
-  --username '<YOUR_USERNAME>' \\
-  --password '<YOUR_PASSWORD>'
+  -e USERNAME='<YOUR_USERNAME>' \\
+  -e PASSWORD='<YOUR_PASSWORD>' \\
+  ghcr.io/documentdb/documentdb/documentdb-local:latest
 \`\`\`
+
+${documentdbLocalTelemetryNote}
 
 Replace the placeholders with your own credentials. Wait for the readiness banner in \`docker logs documentdb\` before connecting; see [Docker Quick Start](/docs/getting-started/docker#verify-the-container).
 
@@ -1155,7 +1197,7 @@ Use your existing instance's credentials. The certificate bypass is for **local 
 \`\`\`bash
 mongosh localhost:10260 \\
   -u '<YOUR_USERNAME>' \\
-  -p '<YOUR_PASSWORD>' \\
+  -p \\
   --authenticationMechanism SCRAM-SHA-256 \\
   --tls \\
   --tlsAllowInvalidCertificates
@@ -1222,7 +1264,7 @@ Then pass your certificate file to \`mongosh\`:
 \`\`\`bash
 mongosh localhost:10260 \\
   -u '<YOUR_USERNAME>' \\
-  -p '<YOUR_PASSWORD>' \\
+  -p \\
   --authenticationMechanism SCRAM-SHA-256 \\
   --tls \\
   --tlsCAFile ~/documentdb-cert.pem
@@ -1250,75 +1292,14 @@ If \`mongosh\` does not connect on the first try:
 - [Samples Gallery](/samples)
 `;
 
-const documentdbLocalDataInitializationContent = `## Container image tags
-
-The \`latest\` tag is a convenience alias. Pin an explicit tag for anything reproducible:
-
-| Tag | Contents |
-|---|---|
-| \`ghcr.io/documentdb/documentdb/documentdb-local:pg18-0.117.0\` | DocumentDB 0.117.0 on PostgreSQL 18 |
-| \`…:pg17-0.117.0\` | DocumentDB 0.117.0 on PostgreSQL 17 |
-| \`…:pg16-0.117.0\` · \`…:pg15-0.117.0\` | PostgreSQL 16 and 15 |
-| \`…:pg15-1.0-rc2\` · \`…:pg16-1.0-rc2\` · \`…:pg17-1.0-rc2\` · \`…:pg18-1.0-rc2\` | [v1.0-RC2](https://github.com/documentdb/documentdb/releases/tag/v1.0-RC2), for testing only, with [no fixes to RC2 and no upgrade path](/docs/getting-started/release-candidate). No date for 1.0 yet. Use a new, empty data volume. Sends anonymous usage telemetry by default; see the [privacy statement](https://github.com/documentdb/documentdb/blob/v1.0-RC2/documentdb-local/PRIVACY.md) to opt out. |
-| \`…:latest\` | Currently identical to \`pg17-0.117.0\` |
-
-> \`latest\` tracks **PostgreSQL 17**, while the \`documentdb\` package on Linux pins
-> **PostgreSQL 18**. If you evaluate in Docker and then deploy from packages, you change
-> major version unless you pin the tag deliberately.
-
-Every image records what it was built from:
-
-\`\`\`bash
-docker run --rm --entrypoint cat ghcr.io/documentdb/documentdb/documentdb-local:pg18-0.117.0 /version.txt
-\`\`\`
-
-## Data initialization
-
-DocumentDB Local starts **empty**. Pass \`--init-data true\` to seed the \`StoreData\` database
-with the \`stores\` and \`ratings\` collections:
-
-\`\`\`bash
-docker run -dt -p 127.0.0.1:10260:10260 --name documentdb \\
-  ghcr.io/documentdb/documentdb/documentdb-local:latest \\
-  --username '<YOUR_USERNAME>' --password '<YOUR_PASSWORD>' --init-data true
-\`\`\`
-
-Seeding happens once per data volume, on a fresh volume. Existing volumes are not migrated
-automatically; re-create the volume to seed again.
-
-### Control initialization behavior
-
-| Requirement | Arg | Env | Default | Description |
-|---|---|---|---|---|
-| Load built-in sample data | \`--init-data [true\\|false]\` | \`INIT_DATA\` | \`false\` | Seed the \`StoreData\` sample collections on a fresh data volume. |
-| Skip built-in sample data | \`--skip-init-data\` | \`SKIP_INIT_DATA\` | — | Legacy alias for \`--init-data false\`. Does not affect \`--init-data-path\`. |
-| Run custom initialization scripts | \`--init-data-path [PATH]\` | \`INIT_DATA_PATH\` | \`/init_doc_db.d\` | Execute every \`.js\` file in the mounted directory with \`mongosh\`. |
-
-The built-in sample dataset currently includes 41,505 store documents and 2 rating documents.
-
-### Use custom initialization scripts
-
-\`\`\`bash
-docker run -dt --name documentdb \\
-  -p 127.0.0.1:10260:10260 \\
-  -v /path/to/init/scripts:/init_doc_db.d \\
-  ghcr.io/documentdb/documentdb/documentdb-local:latest \\
-  --username '<YOUR_USERNAME>' \\
-  --password '<YOUR_PASSWORD>' \\
-  --init-data-path /init_doc_db.d
-\`\`\`
-
-When \`--init-data-path\` is provided, DocumentDB Local skips the built-in sample data
-and runs only the scripts you mounted.
-`;
-
 const gettingStartedIndexArchitectureContent = `## Architecture Components
 
-DocumentDB consists of three primary components:
+DocumentDB consists of four primary components:
 
 1. **pg_documentdb_core**: Core PostgreSQL extension that provides native BSON storage, field access, and indexing primitives.
 2. **pg_documentdb**: Public API surface that implements document commands, CRUD operations, query execution, and index management.
 3. **pg_documentdb_gw**: Gateway that translates MongoDB wire protocol requests into PostgreSQL operations and handles authentication, sessions, and TLS.
+4. **pg_documentdb_extended_rum**: The index access method behind DocumentDB's document indexes, required in 1.0.
 
 Together, these components let you use DocumentDB through MongoDB-compatible tools and drivers while still benefiting from PostgreSQL internals.
 `;
@@ -1330,8 +1311,6 @@ Choose your environment once, create a working instance, then connect with the c
 1. **Choose Docker or Linux packages.** [Docker installation](/packages?method=docker) is recommended for evaluation and development on Linux, macOS, or Windows. [Linux packages installation](/packages?method=packages) is for environments without Docker, or when you need control over PostgreSQL, topology, services, and configuration.
 2. **Create a working instance.** Follow the [Docker Quick Start](/docs/getting-started/docker) or [Linux Packages Quick Start](/docs/getting-started/packages). Linux package installation has two stages: install packages, then run the setup wizard. Neither copying a command nor installing files alone proves the endpoint is ready.
 3. **Insert and read your first document.** Use the [Visual Studio Code Quick Start](/docs/getting-started/vscode-quickstart), [Node.js Quick Start](/docs/getting-started/nodejs-setup), or [Python Quick Start](/docs/getting-started/python-setup). Keep the same running instance; no second server installation is needed.
-
-Linux packages are pre-GA and support **fresh installation only**, not in-place upgrades from earlier releases. Removing packages preserves database files; reinstalling does not reset data.
 
 For advanced control, [use an existing local PostgreSQL instance](/docs/linux-packages#adopt-an-existing-postgre-sql-instance) with administrator-managed configuration and restart, or [install the PostgreSQL extension only](/docs/linux-packages#install-the-postgre-sql-extension-only). Extension-only installation does not install the gateway, so apps and drivers cannot connect; you use it through SQL.
 `;
@@ -1470,8 +1449,12 @@ function normalizeArticle(section: string, file: string, frontmatter: Record<str
     normalizedContent = normalizedContent.replace(/Micrtosoft/g, 'Microsoft');
   }
 
-  if (section === 'documentdb-local' && file === 'index') {
-    normalizedContent = updateDocumentDbLocalContent(normalizedContent);
+  if (section === 'getting-started' && file === 'release-notes-1.0') {
+    // prebuilt-packages redirects to the quick start and drops the anchor.
+    normalizedContent = normalizedContent.replace(
+      /\]\((?:\.\/)?prebuilt-packages\.md#upgrading-to-10\)/g,
+      '](/docs/linux-packages#upgrading)',
+    );
   }
 
   if (headingOverride) {
@@ -1547,24 +1530,9 @@ function updatePrebuiltPackagesContent(content: string): string {
   const legacyClaim =
     'Everything else — PostgreSQL 15/16, Debian 11/12/13, Ubuntu 22.04, RHEL-compatible 8 — is not built by first-party CI for this release. The [package repository](https://documentdb.io/packages) serves those targets the extension package from an earlier release, or build from the tag with the scripts in [`packaging/`](https://github.com/documentdb/documentdb/blob/main/packaging/README.md). PostgreSQL 15 is extension-only: `documentdb-setup` needs 16 or newer.';
   const currentPolicy =
-    'Everything else — PostgreSQL 15/16, Debian 11/12/13, Ubuntu 22.04, RHEL-compatible 8 — is not built by first-party CI or hosted by documentdb.io for this release. Starting with v0.116, packages from earlier releases are not carried forward. Build from the matching tag with the [`packaging/` scripts](https://github.com/documentdb/documentdb/blob/v0.117-0/packaging/README.md); PostgreSQL 15 remains extension-only because `documentdb-setup` requires 16 or newer.';
+    'Everything else — PostgreSQL 15/16, Debian 11/12/13, Ubuntu 22.04, RHEL-compatible 8 — is not built by first-party CI or hosted by documentdb.io for this release. Starting with v0.116, packages from earlier releases are not carried forward. Build from the matching tag with the [`packaging/` scripts](https://github.com/documentdb/documentdb/blob/v1.0-0/packaging/README.md); PostgreSQL 15 remains extension-only because `documentdb-setup` requires 16 or newer.';
 
   return content.replace(legacyClaim, currentPolicy);
-}
-
-function updateDocumentDbLocalContent(content: string): string {
-  if (/## Data initialization/i.test(content)) {
-    return content;
-  }
-
-  if (/## Feature support/i.test(content)) {
-    return content.replace(
-      /## Feature support/i,
-      `${documentdbLocalDataInitializationContent}\n\n## Feature support`
-    );
-  }
-
-  return `${content}\n\n${documentdbLocalDataInitializationContent}`;
 }
 
 export function getArticleContent(): Article {
