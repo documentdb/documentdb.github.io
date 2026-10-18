@@ -135,7 +135,7 @@ const releaseHighlights = [
   },
   {
     eyebrow: "Tools",
-    title: "DocumentDB for VS Code 1.0",
+    title: "DocumentDB extension for Visual Studio Code 1.0",
     description:
       "Start DocumentDB Local in a few clicks, bring your data, and understand it with Query Insights.",
     href: "/blogs/posts/documentdb-for-vs-code-1-0/",

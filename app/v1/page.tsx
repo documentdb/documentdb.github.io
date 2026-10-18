@@ -72,7 +72,7 @@ const highlights = [
 
 const readMore = [
   { label: "Announcement", title: "DocumentDB 1.0 is here", href: documentdbReleaseAnnouncementUrl },
-  { label: "Tools", title: "DocumentDB for VS Code 1.0", href: "/blogs/posts/documentdb-for-vs-code-1-0/" },
+  { label: "Tools", title: "DocumentDB extension for Visual Studio Code 1.0", href: "/blogs/posts/documentdb-for-vs-code-1-0/" },
   { label: "Kubernetes", title: "DocumentDB 1.0 on Kubernetes", href: "/blogs/posts/kubernetes-operator-versioning/" },
   { label: "Versioning", title: "Long-term support or development?", href: "/blogs/posts/versioning/" },
 ];
@@ -171,7 +171,7 @@ export default function ReleasePage() {
             <div className={cardClass}>
               <h3 className="mb-2 text-xl font-semibold text-white">VS Code</h3>
               <p className="mb-4 text-sm leading-6 text-gray-400">
-                DocumentDB for VS Code 1.0 sets up DocumentDB Local for you, then lets you browse, query and copy
+                The DocumentDB extension for Visual Studio Code 1.0 sets up DocumentDB Local for you, then lets you browse, query and copy
                 data between connections. Needs desktop VS Code and Docker running.
               </p>
               <a

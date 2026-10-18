@@ -31,7 +31,7 @@ tags:
 | **Azure DocumentDB** (2014–2017, historical) | Microsoft's original NoSQL document service — preview August 2014, GA April 2015 — renamed to Azure Cosmos DB in May 2017. | **No relationship** to the open-source DocumentDB project or to today's Azure DocumentDB, beyond reuse of the name. | **Retired name** |
 | **DocumentDB Local** | Container distribution of the open-source engine for local development. | Part of the project. | Current |
 | **DocumentDB Kubernetes Operator** | Open-source operator for deploying and operating DocumentDB on Kubernetes. | Part of the project. | Current |
-| **DocumentDB extension for VS Code** | Open-source, Microsoft-built extension that works against any DocumentDB or MongoDB cluster. | Tooling for the project. | Current |
+| **DocumentDB extension for Visual Studio Code** | Open-source, Microsoft-built extension that works against any DocumentDB or MongoDB cluster. | Tooling for the project. | Current |
 | **MongoDB** (MongoDB, Inc.) | A separate commercial database product. | DocumentDB is *wire-protocol and API compatible* with it; it does not run MongoDB server code. | Current |
 
 ## The five distinctions that actually cause confusion

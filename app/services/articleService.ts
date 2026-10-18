@@ -728,7 +728,7 @@ const optionalSampleDataContent = `Sample data is **opt-in**, not required for y
 
 const vscodeQuickStartGuideContent = `# Visual Studio Code Quick Start
 
-Use DocumentDB for VS Code to set up a local DocumentDB instance, browse sample data, and create your first database without leaving the editor.
+Use the DocumentDB extension for Visual Studio Code to set up a local DocumentDB instance, browse sample data, and create your first database without leaving the editor.
 
 The extension can create the instance for you: it pulls the official image, creates a container and persistent data volume, generates credentials, waits until the database accepts connections, and saves the connection. It does not install Docker.
 
@@ -737,7 +737,7 @@ Already running DocumentDB? Skip provisioning and [connect your existing instanc
 ## Prerequisites
 
 - [Visual Studio Code](https://code.visualstudio.com/)
-- The [DocumentDB for VS Code extension](https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-documentdb)
+- The [DocumentDB extension for Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-documentdb)
 - Docker Desktop or Docker Engine, set to Linux containers, running wherever VS Code is
 - Optional: [mongosh](https://www.mongodb.com/docs/mongodb-shell/install/) for independent connection checks
 
@@ -854,7 +854,7 @@ For extension-specific help or bugs:
 
 ## Next steps
 
-- [DocumentDB for VS Code docs](https://github.com/microsoft/vscode-documentdb/tree/main/docs)
+- [Documentation for the DocumentDB extension for Visual Studio Code](https://github.com/microsoft/vscode-documentdb/tree/main/docs)
 - [Docker Quick Start](/docs/getting-started/docker)
 - [Linux Packages Quick Start](/docs/getting-started/packages)
 - [Mongo Shell Quick Start](/docs/getting-started/mongo-shell-quickstart)
