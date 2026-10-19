@@ -46,7 +46,7 @@ Run DocumentDB locally with Docker and verify the setup before moving to driver 
 
 ## Start DocumentDB
 
-If you do not already have the image locally, pull it first:
+Pull the image first; this also replaces an older cached \`latest\`:
 
 \`\`\`bash
 docker pull ghcr.io/documentdb/documentdb/documentdb-local:latest
@@ -199,7 +199,7 @@ The current official release publishes the full stack — extension, gateway, se
 > Already running v0.116 or v0.117 from packages? Follow [Upgrading](/docs/linux-packages#upgrading) instead of installing again. Hosts that ran a 1.0 release candidate have no upgrade path; use a clean host. Removing packages preserves database files; reinstalling is not a data reset.
 
 > [!NOTE]
-> Need another distribution or PostgreSQL major? We welcome community builds. Check out the matching release tag, pass \`--version 1.0.0\` (an RC tag shares the 1.0 commit), and use the version-parameterized [packaging scripts](https://github.com/documentdb/documentdb/blob/v1.0-0/packaging/README.md). \`build_packages.sh\` builds the extension, \`gateway/build_gateway_packages.sh\` builds the gateway, and \`build_extra_packages.sh\` builds the common, tools, stand-alone, and meta packages. PostgreSQL 15 is extension-only because the setup tools require PostgreSQL 16 or newer. These builds are on demand and are not official release assets hosted by documentdb.io.
+> Need another distribution or PostgreSQL major? We welcome community builds. Check out the \`v1.0-0\` tag, pass \`--version 1.0.0\`, and use the version-parameterized [packaging scripts](https://github.com/documentdb/documentdb/blob/v1.0-0/packaging/README.md). \`build_packages.sh\` builds the extension, \`gateway/build_gateway_packages.sh\` builds the gateway, and \`build_extra_packages.sh\` builds the common, tools, stand-alone, and meta packages. PostgreSQL 15 is extension-only because the setup tools require PostgreSQL 16 or newer. These builds are on demand and are not official release assets hosted by documentdb.io.
 
 You do not need PostgreSQL already installed — the setup wizard creates and manages its own instance. The install does add the PGDG repository and pull PostgreSQL, PostGIS and around 160 packages (about 140 MB), so pick a host you are willing to have PGDG on.
 
@@ -438,7 +438,7 @@ For an adopted instance, use the operator's existing PostgreSQL connection inste
 
 ## Upgrading
 
-Package installs from v0.116 or later upgrade in place to 1.0. Move the entire stack
+Package installs from v0.116 or v0.117 upgrade in place to 1.0. Move the entire stack
 together; upgrading only \`postgresql-N-documentdb\` does not update the gateway, tools,
 common payload, or \`documentdb-N\`. These steps use systemd; upgrading a host without it isn't covered here.
 On a package-managed private PostgreSQL 18 instance:
