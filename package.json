@@ -7,7 +7,7 @@
     "build": "npm run build:next && npm run build:blogs && npm run build:sitemap && npm run build:installer",
     "build:installer": "node scripts/publish-installer.mjs",
     "build:next": "npm run compile && next build --turbopack",
-    "build:blogs": "bundle exec jekyll build --config blogs/_config.yml --source blogs --destination out/blogs --baseurl \"${JEKYLL_BASE_PATH:-/blogs}\"",
+    "build:blogs": "node scripts/build-jekyll.mjs",
     "build:sitemap": "node scripts/generate-sitemap.mjs",
     "compile": "npm run compile:clean && npm run compile:content && npm run compile:samples",
     "compile:content": "tsx scripts/compile-content.tsx",

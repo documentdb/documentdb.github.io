@@ -5,6 +5,7 @@ date: 2026-09-10
 featured: false
 author: DocumentDB team
 category: documentdb-blog
+section: announcements
 tags:
   - DocumentDB
   - Linux
@@ -12,12 +13,7 @@ tags:
   - APT
   - RPM
 ---
-{% assign blog_base = site.baseurl %}
-{% assign blog_base_last = blog_base | slice: -1, 1 %}
-{% if blog_base_last == '/' %}{% assign blog_base_end = blog_base | size | minus: 1 %}{% assign blog_base = blog_base | slice: 0, blog_base_end %}{% endif %}
-{% assign site_root = blog_base %}
-{% assign blogs_at = blog_base | size | minus: 6 %}
-{% if blogs_at >= 0 %}{% assign blogs_tail = blog_base | slice: blogs_at, 6 %}{% if blogs_tail == '/blogs' %}{% assign site_root = blog_base | slice: 0, blogs_at %}{% endif %}{% endif %}
+{% assign site_root = site.baseurl %}
 
 **Update, October 19, 2026:** DocumentDB 1.0 is the current release. [Read the announcement]({{ site.release_announcement_url | relative_url }}). Packages from v0.116 or v0.117 [upgrade in place]({{ site_root }}/docs/linux-packages/#upgrading).
 

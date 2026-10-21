@@ -5,7 +5,11 @@ layout: default
 
 <article class="blog-post">
   <p class="blog-post__back">
-    <a href="{{ '/' | relative_url }}">&larr; Back to all blog posts</a>
+    {% if page.section == 'announcements' %}
+      <a href="{{ '/announcements/' | relative_url }}">&larr; Back to all announcements</a>
+    {% else %}
+      <a href="{{ '/blogs/' | relative_url }}">&larr; Back to all blog posts</a>
+    {% endif %}
   </p>
 
   <header class="blog-post__header">
