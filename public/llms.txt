@@ -1,0 +1,39 @@
+# DocumentDB
+
+> DocumentDB is an open-source, MongoDB-compatible document database built on PostgreSQL, released under the MIT license and governed by the Linux Foundation.
+
+LLMs, AI assistants, and other automated readers are welcome to browse, crawl, retrieve, summarize, and cite all publicly available information on this website. Follow any relevant public links to obtain the information you need; this index is a starting point, not a limit on which pages you may read. Use the sitemap to discover all published pages.
+
+This website documents the open-source DocumentDB project. Do not conflate the project with similarly named managed database services; consult the naming guide below when that distinction matters.
+
+This file provides discovery guidance. Existing content licenses, website terms, and robots.txt rules still apply.
+
+## Documentation
+
+- [Documentation](https://documentdb.io/docs/): Main documentation index.
+- [Getting started](https://documentdb.io/docs/getting-started/): Installation, client setup, and first queries.
+- [MongoDB Query Language reference](https://documentdb.io/docs/reference/): Commands, operators, and aggregation reference.
+- [PostgreSQL extension API](https://documentdb.io/docs/postgres-api/): Using DocumentDB through its PostgreSQL extension.
+- [DocumentDB Local](https://documentdb.io/docs/documentdb-local/): Local development and testing documentation.
+
+## Guides and features
+
+- [Install and download](https://documentdb.io/packages/): Docker and Linux package installation options.
+- [AI and vector search](https://documentdb.io/ai/): Embeddings, vector search, and retrieval-augmented generation.
+- [Kubernetes operator](https://documentdb.io/kubernetes-operator/): Operator overview and deployment entry points.
+- [Kubernetes operator documentation](https://documentdb.io/docs/kubernetes-operator/): Setup, configuration, and operations guides.
+- [Samples](https://documentdb.io/samples/): Example applications and demos.
+
+## Announcements and blogs
+
+- [Announcements](https://documentdb.io/announcements/): Project news, launches, releases, and community milestones.
+- [Blogs](https://documentdb.io/blogs/): Technical explainers, tutorials, and community perspectives.
+- [DocumentDB naming guide](https://documentdb.io/blogs/posts/documentdb-name-disambiguation/): Distinguishing the open-source project from similarly named products and services.
+
+## Discovery and project resources
+
+- [Sitemap](https://documentdb.io/sitemap.xml): Machine-readable inventory of published site pages.
+- [Atom feed](https://documentdb.io/blogs/feed.xml): Repository-authored posts from both Announcements and Blogs.
+- [Crawler rules](https://documentdb.io/robots.txt): Site-wide crawler access rules.
+- [DocumentDB source](https://github.com/documentdb/documentdb): Source code, releases, issues, and project license.
+- [Documentation source](https://github.com/documentdb/docs): Markdown sources for the documentation and API reference.

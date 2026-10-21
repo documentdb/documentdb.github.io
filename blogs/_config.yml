@@ -3,11 +3,13 @@ description: Insights, updates, and deep dives into the world of document databa
 # Shared external links. The Next.js app keeps the same values in
 # app/services/externalLinks.ts; update both when one changes.
 discord_url: https://discord.gg/vH7bYu524D
-# Where the 1.0 banner and update notes send readers: a blog path (resolved
-# under baseurl) or an absolute URL. app/services/externalLinks.ts holds the
-# site-root form.
-release_announcement_url: /posts/documentdb-1-0/
-baseurl: /blogs
+# Shared release announcement target. app/services/externalLinks.ts holds
+# the same site-root path.
+release_announcement_url: /blogs/posts/documentdb-1-0/
+baseurl: ""
+layouts_dir: blogs/_layouts
+includes_dir: blogs/_includes
+data_dir: blogs/_data
 # Absolute host for og:url, og:image, and the Atom feed's permanent IDs.
 url: "https://documentdb.io"
 permalink: pretty
@@ -27,4 +29,5 @@ defaults:
     values:
       layout: post
       category: documentdb-blog
-      permalink: /posts/:title/
+      section: blogs
+      permalink: /blogs/posts/:title/

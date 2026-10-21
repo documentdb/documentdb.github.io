@@ -6,6 +6,7 @@ featured: true
 release_post: true
 author: DocumentDB team
 category: documentdb-blog
+section: announcements
 tags:
   - DocumentDB
   - Kubernetes
@@ -86,6 +87,6 @@ or contribute. As DocumentDB reaches 1.0, the operator brings its database
 capabilities into the Kubernetes workflows your team already uses.
 
 [operator]: https://github.com/documentdb/documentdb-kubernetes-operator
-[versioning]: {{ '/posts/versioning/' | relative_url }}
+[versioning]: {{ '/blogs/posts/versioning/' | relative_url }}
 [installation]: https://documentdb.io/documentdb-kubernetes-operator/latest/preview/getting-started/before-you-start/
 [quickstart]: https://documentdb.io/documentdb-kubernetes-operator/latest/preview/#quickstart

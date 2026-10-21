@@ -51,7 +51,7 @@ jobs:
           node-version: 24
           cache: npm
       - name: Setup Ruby
-        # The full site build now includes the Jekyll-powered blogs section.
+        # The full site build includes the Jekyll-powered content sections.
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: 3.3
