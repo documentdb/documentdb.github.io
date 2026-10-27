@@ -6,7 +6,8 @@ featured: true
 release_post: true
 author: Tomasz Naumowicz and the team behind the DocumentDB extension for Visual Studio Code
 category: documentdb-blog
-cover_image: /assets/images/posts/documentdb-for-vs-code-1-0/hero.png
+section: announcements
+cover_image: /blogs/assets/images/posts/documentdb-for-vs-code-1-0/hero.png
 cover_image_alt: DocumentDB extension for Visual Studio Code 1.0
 tags:
   - DocumentDB
@@ -27,7 +28,7 @@ The extension does the rest: it pulls the official DocumentDB image, creates a p
 
 The DocumentDB Local image sends usage telemetry by default. The [privacy statement](https://github.com/documentdb/documentdb/blob/v1.0-0/documentdb-local/PRIVACY.md) explains what is sent and how to turn it off.
 
-![DocumentDB Local setup in VS Code with the Introduction, Configure, Set up and Done steps]({{ '/assets/images/posts/documentdb-for-vs-code-1-0/documentdb-local.png' | relative_url }})
+![DocumentDB Local setup in VS Code with the Introduction, Configure, Set up and Done steps]({{ '/blogs/assets/images/posts/documentdb-for-vs-code-1-0/documentdb-local.png' | relative_url }})
 
 ## Bring your data with you
 
@@ -35,7 +36,7 @@ Sample data is a good start, but your own data tells you more. With **copy and p
 
 That means a collection from MongoDB Atlas, Azure or a shared development cluster can land in your DocumentDB Local instance in a few clicks. If the target already has documents, you decide what happens with duplicates: stop, skip, overwrite, or give the pasted documents new IDs. The collection's indexes can come along too.
 
-![Copy and paste in three steps: copy the source collection, paste it into the target, then choose how to handle conflicts]({{ '/assets/images/posts/documentdb-for-vs-code-1-0/copy-and-paste.png' | relative_url }})
+![Copy and paste in three steps: copy the source collection, paste it into the target, then choose how to handle conflicts]({{ '/blogs/assets/images/posts/documentdb-for-vs-code-1-0/copy-and-paste.png' | relative_url }})
 
 Copy and paste is built for development and small to medium datasets. For large production migrations, use a dedicated migration service.
 
@@ -43,7 +44,7 @@ Copy and paste is built for development and small to medium datasets. For large 
 
 Whether the data came from a sample, a copy or a production cluster, the first question is usually "what's in here?" The **Cluster Dashboard** answers it on one page: whether you're connected, the round-trip time, and an inventory of every database and collection with its storage size, index size and document count. Sort and filter the list, drill into a database, or create and delete databases and collections right there.
 
-![Cluster Dashboard showing connection status, storage and document metrics, and a filterable database inventory]({{ '/assets/images/posts/documentdb-for-vs-code-1-0/cluster-dashboard.png' | relative_url }})
+![Cluster Dashboard showing connection status, storage and document metrics, and a filterable database inventory]({{ '/blogs/assets/images/posts/documentdb-for-vs-code-1-0/cluster-dashboard.png' | relative_url }})
 
 ## Understand how it runs
 
@@ -51,7 +52,7 @@ Queries don't always come from you anymore. Whether you wrote one yourself or an
 
 **Index management** sits right next to it, so understanding a query and fixing it happen in the same place. See which indexes are used and which are not, and hide an index first to check the impact before you delete it.
 
-![Query Insights streaming an AI performance analysis next to the query plan summary]({{ '/assets/images/posts/documentdb-for-vs-code-1-0/query-insights-streaming.png' | relative_url }})
+![Query Insights streaming an AI performance analysis next to the query plan summary]({{ '/blogs/assets/images/posts/documentdb-for-vs-code-1-0/query-insights-streaming.png' | relative_url }})
 
 ## And there is more
 
@@ -61,7 +62,7 @@ Queries don't always come from you anymore. Whether you wrote one yourself or an
 
 ## A shared milestone, built in the open
 
-![The road to version 1.0 of the DocumentDB extension for Visual Studio Code, from v0.2 in May 2025 to 1.0 in October 2026]({{ '/assets/images/posts/documentdb-for-vs-code-1-0/road-to-1.0-illustrated.jpg' | relative_url }})
+![The road to version 1.0 of the DocumentDB extension for Visual Studio Code, from v0.2 in May 2025 to 1.0 in October 2026]({{ '/blogs/assets/images/posts/documentdb-for-vs-code-1-0/road-to-1.0-illustrated.jpg' | relative_url }})
 
 DocumentDB 1.0 is a milestone for the open-source database. Version 1.0 of the extension celebrates the developer experience around it, one that also works with the MongoDB-compatible databases you already run.
 

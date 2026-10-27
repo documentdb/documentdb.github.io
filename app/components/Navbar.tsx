@@ -40,6 +40,7 @@ const navItems: NavItem[] = [
     newTab: true,
   },
   { label: "K8s Operator", href: "/kubernetes-operator", kind: "link" },
+  { label: "Announcements", href: withBasePath("/announcements/"), kind: "anchor" },
   { label: "Blogs", href: withBasePath("/blogs/"), kind: "anchor" },
   { label: "Samples", href: "/samples", kind: "link" },
 ];
@@ -119,7 +120,7 @@ export default function Navbar() {
             <span>DocumentDB</span>
           </Link>
 
-          <div className="hidden items-center space-x-6 xl:flex xl:space-x-8">
+          <div className="hidden items-center gap-4 xl:flex">
             {navItems.map((item) =>
               renderNavItem(
                 item,

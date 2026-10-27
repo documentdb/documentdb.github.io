@@ -1,12 +1,18 @@
 # DocumentDB Website
 
-A modern website for DocumentDB built with [Next.js](https://nextjs.org/) for the main site and [Jekyll](https://jekyllrb.com/) for the `/blogs/` section. The site features community blog posts and technical documentation, with content automatically pulled from the [documentdb/docs](https://github.com/documentdb/docs) repository during the build process.
+A modern website for DocumentDB built with [Next.js](https://nextjs.org/) for the main site and [Jekyll](https://jekyllrb.com/) for the Announcements (`/announcements/`) and Blogs (`/blogs/`) sections. The site features project news, community blog posts, and technical documentation, with documentation content automatically pulled from the [documentdb/docs](https://github.com/documentdb/docs) repository during the build process.
+
+## LLM Access and Discovery
+
+[public/llms.txt](public/llms.txt) is published at `/llms.txt` by the Next.js static export. It welcomes LLMs and AI assistants to access all public site content and provides links to documentation, Announcements, Blogs, the sitemap, and source repositories. Keep these links current when site sections change.
+
+This is a discovery guide, not an access-control mechanism or a replacement for existing content licenses and website terms. [public/robots.txt](public/robots.txt) already allows all crawlers.
 
 ## Prerequisites for Development
 
 - **[Node.js](https://nodejs.org/)** (*20 or higher*)
 
-- **[Ruby](https://www.ruby-lang.org/)** with **Bundler** (*for the Jekyll-powered blog section*)
+- **[Ruby](https://www.ruby-lang.org/)** with **Bundler** (*for the Jekyll-powered content sections*)
 
 - **[Git](https://git-scm.com/)** (*for cloning documentation content*)
 
@@ -36,7 +42,7 @@ Get started by cloning and running this repository locally.
     npm run dev
     ```
 
-1. For a full static preview, including the Jekyll-powered blog section:
+1. For a full static preview, including Announcements and Blogs:
 
     ```bash
     npm run build
@@ -51,11 +57,22 @@ The first time you run `npm run dev` or `npm run build`, documentation content w
 
 We welcome contributions to improve the DocumentDB website, whether it's blog posts, bug fixes, or enhancements to the site itself.
 
-### Contributing Blog Posts
+### Contributing Announcements and Blog Posts
 
-Blog posts are managed locally in this repository. Contribute directly through a pull request to this repository.
+Announcements and blog posts are managed locally in this repository. Contribute directly through a pull request to this repository.
 
-You can publish blog content in two ways:
+Choose a `section` by topic, regardless of where the article is hosted:
+
+- `announcements`: project news, launches, releases, and community milestones.
+- `blogs`: explainers, tutorials, technical deep dives, and community perspectives.
+
+Release announcement posts should specify `section: announcements`; the `featured` and `release_post` flags continue to control card emphasis.
+
+The two navigation tabs link to separate static HTML pages, so readers and crawlers can follow their links without JavaScript. Existing local article URLs remain under `/blogs/posts/`, and `/blogs/feed.xml` continues to include all local posts from both sections for existing subscribers.
+
+The listing pages live in the top-level [announcements/](announcements/) and [blogs/](blogs/) directories. Both share the templates, post metadata, and articles under `blogs/`. `npm run build:blogs` builds both directories in a temporary Jekyll site and publishes only `out/announcements/` and `out/blogs/`, preserving the rest of the Next.js export. Set `NEXT_BASE_PATH=/preview` for a prefixed deployment; the existing `JEKYLL_BASE_PATH=/preview/blogs` setting is also supported when `NEXT_BASE_PATH` is unset.
+
+You can publish content in two ways:
 
 1. **Markdown posts hosted in this repo**
 
@@ -75,7 +92,8 @@ You can publish blog content in two ways:
    featured: false
    author: Your Name
    category: documentdb-blog
-   cover_image: /assets/images/posts/my-post-title/hero.png
+   section: blogs
+   cover_image: /blogs/assets/images/posts/my-post-title/hero.png
    cover_image_alt: Short description of the image
    tags:
      - Example
@@ -89,15 +107,15 @@ You can publish blog content in two ways:
    blogs/assets/images/posts/my-post-title/
    ```
 
-   Then write the post body in Markdown. Jekyll renders the post page and uses the same card layout on the blog index. Images can be referenced directly from Markdown, for example:
+   Then write the post body in Markdown. Jekyll renders the post page and includes it only in the selected section, using the same card layout for both sections. Local posts default to `section: blogs` when it is omitted; set `section: announcements` for news. `category` identifies the publication and controls the card styling, not the section. Images can be referenced directly from Markdown, for example:
 
    ```md
-   ![Architecture diagram]({{ '/assets/images/posts/my-post-title/diagram.png' | relative_url }})
+   ![Architecture diagram]({{ '/blogs/assets/images/posts/my-post-title/diagram.png' | relative_url }})
    ```
 
 1. **Curated external articles**
 
-   Open [blogs/_data/posts.yml](blogs/_data/posts.yml) and add a new entry following the existing YAML format when you want the card to link to an article hosted elsewhere.
+   Open [blogs/_data/posts.yml](blogs/_data/posts.yml) and add a new entry following the existing YAML format when you want the card to link to an article hosted elsewhere. Every external entry must specify `section: announcements` or `section: blogs`.
 
 1. Submit a pull request for review
 

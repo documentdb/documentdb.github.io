@@ -19,7 +19,7 @@ export const documentdbVsCodeLocalQuickStartDeepLink =
 
 // Where the 1.0 banner sends readers: a site-root path or an absolute URL.
 // blogs/_config.yml holds the same target as `release_announcement_url`,
-// relative to the blog.
+// relative to the site root.
 export const documentdbReleaseAnnouncementUrl = '/blogs/posts/documentdb-1-0/';
 
 // The one link to promote for 1.0; the site and blog banners point here.
