@@ -21,7 +21,8 @@
           "microsoft-open-source-blog",
           "aws-blog",
           "azure-cosmos-db-blog",
-          "yugabytedb-blog"
+          "yugabytedb-blog",
+          "layerbase-blog"
         ]
       },
       "section": {

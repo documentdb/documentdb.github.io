@@ -50,3 +50,24 @@
     - MongoDB API
     - Distributed
   uri: https://www.yugabyte.com/blog/mongodb-api-in-yugabytedb/
+- title: |-
+    DocumentDB 1.0 on Layerbase
+  category: layerbase-blog
+  section: blogs
+  description: |-
+    Layerbase adds DocumentDB 1.0 as one of its 19 cloud database engines, available from $5/month on the Solo plan, with MongoDB-compatible connections and branching.
+  tags:
+    - DocumentDB 1.0
+    - Cloud
+  uri: https://layerbase.com/blog/documentdb-v1-on-layerbase
+- title: |-
+    MongoDB vs FerretDB vs DocumentDB: YCSB Benchmarks
+  category: layerbase-blog
+  section: blogs
+  description: |-
+    A comparison of MongoDB, FerretDB, and DocumentDB throughput and tail latency, with dated August and October YCSB results on a 4 vCPU, 8 GB hardware profile.
+  tags:
+    - Benchmarks
+    - YCSB
+    - FerretDB
+  uri: https://layerbase.com/blog/ferretdb-vs-documentdb-benchmark
