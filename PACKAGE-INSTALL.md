@@ -66,7 +66,9 @@ sudo dnf clean all
 ```
 
 To remain on an older target, use the matching GitHub release assets or build from that
-release tag. Those paths are not part of the current hosted support matrix.
+release tag. On Debian 13, [PGDG's 1.0 extension package](https://github.com/documentdb/docs/blob/main/getting-started/prebuilt-packages.md#pgdg-extension-packages)
+is another option; switching to it is a provider change, not an in-place upgrade. None of
+these paths is part of the current hosted support matrix.
 
 ## Supported PostgreSQL Versions
 
