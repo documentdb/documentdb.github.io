@@ -28,6 +28,12 @@
           "source": "kubernetes-operator",
           "target": "articles/kubernetes-operator"
         }
+      ],
+      "versions": [
+        {
+          "label": "v0.117",
+          "ref": "v0.117-0"
+        }
       ]
     }
   ],

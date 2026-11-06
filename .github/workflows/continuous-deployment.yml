@@ -162,7 +162,7 @@ jobs:
         # this is the independent belt-and-braces check on the final artifact.
         run: |
           set -euo pipefail
-          for page in out/index.html out/docs/index.html out/docs/getting-started/index.html out/docs/reference/index.html out/blogs/index.html out/announcements/index.html; do
+          for page in out/index.html out/docs/index.html out/docs/getting-started/index.html out/docs/reference/index.html out/blogs/index.html out/announcements/index.html out/docs/versions/index.html; do
             if [ ! -f "$page" ]; then
               echo "Missing expected page: $page"
               exit 1
