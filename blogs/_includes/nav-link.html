@@ -1,0 +1,12 @@
+{%- comment -%}One nav.json link; current_section comes from the layout{%- endcomment -%}
+{%- assign nav_link = include.link -%}
+{%- if include.icon -%}
+  {%- capture nav_label -%}{% include nav-icon.html name=nav_link.icon %}<span{% unless include.labelled %} class="visually-hidden"{% endunless %}>{{ nav_link.label | escape }}</span>{%- endcapture -%}
+{%- else -%}
+  {%- assign nav_label = nav_link.label | escape -%}
+{%- endif -%}
+{%- if nav_link.href contains '://' -%}
+<a href="{{ nav_link.href | escape }}" target="_blank" rel="noopener noreferrer">{{ nav_label }}{% unless include.icon %}{% include nav-icon.html name='external' %}{% endunless %}</a>
+{%- else -%}
+<a href="{{ nav_link.href | relative_url }}"{% if nav_link.section and nav_link.section == current_section %} aria-current="page"{% endif %}>{{ nav_label }}</a>
+{%- endif -%}

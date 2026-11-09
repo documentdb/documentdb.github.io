@@ -1,0 +1,64 @@
+{% assign section_local_posts = site.posts | where: "section", page.section %}
+{% assign section_external_posts = site.data.posts | where: "section", page.section %}
+{% assign featured_local_posts = section_local_posts | where: "featured", true %}
+{% assign featured_external_posts = section_external_posts | where: "featured", true %}
+{% assign local_posts = section_local_posts | where_exp: "post", "post.featured != true" %}
+{% assign external_posts = section_external_posts | where_exp: "post", "post.featured != true" %}
+
+<section class="blog-hero">
+  <p class="blog-hero__kicker">{{ page.kicker }}</p>
+  <h1 class="blog-hero__title">{{ page.title }}</h1>
+  <p class="blog-hero__description">{{ page.description }}</p>
+  {% if page.section == 'announcements' %}
+    <a class="blog-hero__cta" href="{{ site.release_announcement_url | relative_url }}">Read the DocumentDB 1.0 announcement <span aria-hidden="true">&rarr;</span></a>
+  {% endif %}
+</section>
+
+{% if featured_local_posts.size > 0 or featured_external_posts.size > 0 %}
+  <section class="posts-group" aria-labelledby="featured-posts-title">
+    <div class="posts-group__header">
+      <h2 class="posts-group__title" id="featured-posts-title">Featured</h2>
+      <p class="posts-group__description">Highlights from the DocumentDB team and community.</p>
+    </div>
+
+    <div class="posts-list" aria-label="Featured {{ page.section }}">
+      {% for post in featured_local_posts %}
+        {% include post-card.html post=post featured=true %}
+      {% endfor %}
+
+      {% for post in featured_external_posts %}
+        {% include post-card.html post=post featured=true %}
+      {% endfor %}
+    </div>
+  </section>
+{% endif %}
+
+{% if local_posts.size > 0 %}
+  <section class="posts-group" aria-labelledby="published-here-title">
+    <div class="posts-group__header">
+      <h2 class="posts-group__title" id="published-here-title">Published here</h2>
+      <p class="posts-group__description">Posts from the DocumentDB team.</p>
+    </div>
+
+    <div class="posts-list" aria-label="Repository-authored {{ page.section }}">
+      {% for post in local_posts %}
+        {% include post-card.html post=post featured=false %}
+      {% endfor %}
+    </div>
+  </section>
+{% endif %}
+
+{% if external_posts.size > 0 %}
+  <section class="posts-group" aria-labelledby="external-posts-title">
+    <div class="posts-group__header">
+      <h2 class="posts-group__title" id="external-posts-title">From around the web</h2>
+      <p class="posts-group__description">Curated partner and community articles hosted outside this repository.</p>
+    </div>
+
+    <div class="posts-list" aria-label="External {{ page.section }}">
+      {% for post in external_posts %}
+        {% include post-card.html post=post featured=false %}
+      {% endfor %}
+    </div>
+  </section>
+{% endif %}

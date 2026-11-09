@@ -6,13 +6,27 @@ import Link from "next/link";
 import { useMemo } from 'react';
 import type { ReactElement } from 'react';
 import Code from './Code';
-import { headingAnchor } from '../lib/docsAnchors';
+import { githubHeadingAnchor, headingAnchor } from '../lib/docsAnchors';
 import { resolveMarkdownLink } from '../lib/markdownLinks';
+import { withBasePath } from '../services/sitePath';
 
 interface MarkdownProps {
   content: string;
   sourcePath: string;
 }
+
+// GFM table cells can't hold newlines, so docs break lines with <br>; render that one tag, not raw HTML.
+function remarkBrTags() {
+  return (tree: any) => {
+    const visit = (node: any) => node.children?.forEach((child: any, i: number) => {
+      if (child.type === 'html' && /^<br\s*\/?>$/i.test(child.value)) node.children[i] = { type: 'break' };
+      else visit(child);
+    });
+    visit(tree);
+  };
+}
+
+const remarkPlugins = [remarkGfm, remarkBrTags];
 
 export default function Markdown({ content, sourcePath }: MarkdownProps) {
   const processedContent = useMemo(() => {
@@ -28,7 +42,7 @@ export default function Markdown({ content, sourcePath }: MarkdownProps) {
         elements.push(
           <div key={`intro-${index}`} className="mb-8">
             <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
+              remarkPlugins={remarkPlugins}
               components={getMarkdownComponents(sourcePath)}
             >
               {section}
@@ -43,12 +57,12 @@ export default function Markdown({ content, sourcePath }: MarkdownProps) {
 
         elements.push(
           <div key={`section-${index}`} className="bg-neutral-800/50 backdrop-blur-sm rounded-lg border border-neutral-700/50 p-6">
-            <a className="invisible scroll-mt-24" id={headingAnchor(title)} />
+            <HeadingAnchors title={title} />
             <h2 className="text-xl sm:text-2xl font-semibold text-white mb-4">
               {title}
             </h2>
             <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
+              remarkPlugins={remarkPlugins}
               components={getMarkdownComponents(sourcePath)}
             >
               {sectionContent}
@@ -63,6 +77,22 @@ export default function Markdown({ content, sourcePath }: MarkdownProps) {
 
   // Long inline code, URLs and identifiers would otherwise push the article wider than a phone
   return <div className="space-y-8 break-words">{processedContent}</div>;
+}
+
+// Docs Markdown links headings GitHub's way, so emit that id alongside the site's own.
+function HeadingAnchors({ title }: { title: string }) {
+  const anchor = headingAnchor(title);
+  const githubAnchor = githubHeadingAnchor(title);
+  return (
+    <>
+      <a className="invisible scroll-mt-24" id={anchor} />
+      {githubAnchor !== anchor && <a className="invisible scroll-mt-24" id={githubAnchor} />}
+    </>
+  );
+}
+
+function hastText(node: any): string {
+  return node?.type === 'text' ? node.value : (node?.children ?? []).map(hastText).join('');
 }
 
 function getMarkdownComponents(sourcePath: string) {
@@ -85,10 +115,13 @@ function getMarkdownComponents(sourcePath: string) {
     ),
 
     // H3 sections (subsections within H2 cards)
-    h3: ({ children, ...props }: any) => (
-      <h3 className="text-lg font-medium text-white mb-3 mt-6">
-        {children}
-      </h3>
+    h3: ({ children, node }: any) => (
+      <>
+        <HeadingAnchors title={hastText(node)} />
+        <h3 className="text-lg font-medium text-white mb-3 mt-6">
+          {children}
+        </h3>
+      </>
     ),
 
     // H4 subsections
@@ -122,7 +155,7 @@ function getMarkdownComponents(sourcePath: string) {
     // Inline code
     code: ({ inline, children, ...props }: any) => {
       return (
-        <code className="bg-neutral-900/50 px-2 py-1 rounded text-green-400 font-mono text-sm" {...props}>
+        <code className="bg-neutral-900/50 px-2 py-1 rounded text-green-400 font-mono text-sm [overflow-wrap:anywhere]" {...props}>
           {children}
         </code>
       );
@@ -254,17 +287,16 @@ function getMarkdownComponents(sourcePath: string) {
 
     // Links: only external links open in a new tab; internal links (/docs/...,
     // /samples, #anchors) navigate in place
-    a: ({ children, href, ...props }: any) => {
+    a: ({ children, href, node: _node, ...props }: any) => {
       const resolvedHref = resolveMarkdownLink(href, sourcePath);
       const isExternal = /^https?:\/\//i.test(resolvedHref ?? '');
       const linkClassName = 'text-blue-400 hover:text-blue-300 transition-colors';
 
       // A rewritten href is a resolved document route, so it is known to be an
-      // internal page and is rendered with next/link. That applies the basePath
-      // from next.config identically on the server and in the browser -
-      // NEXT_BASE_PATH is not readable from the client bundle, so neither this
-      // component nor the resolver may prefix the path itself. Any other href
-      // is left exactly as the author wrote it.
+      // internal page and is rendered with next/link, which applies the
+      // basePath itself. Any other root-relative href may be a route Next does
+      // not own (/blogs/, /install.sh), so it stays a plain anchor and gets the
+      // base path from withBasePath.
       if (resolvedHref && resolvedHref !== href) {
         return (
           <Link href={resolvedHref} className={linkClassName} {...props}>
@@ -275,7 +307,7 @@ function getMarkdownComponents(sourcePath: string) {
 
       return (
         <a
-          href={resolvedHref}
+          href={resolvedHref && /^\/(?!\/)/.test(resolvedHref) ? withBasePath(resolvedHref) : resolvedHref}
           className={linkClassName}
           {...(isExternal ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
           {...props}

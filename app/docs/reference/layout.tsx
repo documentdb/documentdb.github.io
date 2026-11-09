@@ -17,9 +17,9 @@ export default function ReferenceLayout({
 }>) {
   const groupedReferences = getReferencesGroupedByTypeAndCategory();
 
-  // Phones get no sidebar, so the page scrolls rather than a 100vh pane half under the navbar
+  // overflow-clip, not hidden: hidden makes a scroll container and the sidebar would stop sticking
   return (
-    <div className="min-h-screen bg-neutral-900 relative overflow-hidden md:max-h-screen">
+    <div className="min-h-screen bg-neutral-900 relative overflow-clip">
       {/* Background elements */}
       <div className="absolute inset-0 bg-gradient-to-br from-neutral-900 via-neutral-800 to-black"></div>
       <div className="absolute inset-0 opacity-5">
@@ -29,9 +29,9 @@ export default function ReferenceLayout({
           style={{ animationDelay: "1.5s" }}
         ></div>
       </div>
-      <div className="relative flex md:h-screen">
-        {/* Sidebar (desktop only; mobile gets the disclosure below) */}
-        <div className="hidden w-80 bg-neutral-800/50 backdrop-blur-sm border-r border-neutral-700/50 md:flex flex-col h-full">
+      <div className="relative flex">
+        {/* Sidebar (desktop only; mobile gets the disclosure below), held under the 4rem navbar */}
+        <div className="hidden w-80 bg-neutral-800/50 backdrop-blur-sm border-r border-neutral-700/50 md:flex flex-col md:sticky md:top-16 md:h-[calc(100dvh-4rem)]">
           <div className="p-6 border-b border-neutral-700/50 flex-shrink-0">
             <Link href="/docs" className="text-blue-400 hover:text-blue-300 text-sm mb-4 flex items-center transition-colors">
               <svg
@@ -53,7 +53,7 @@ export default function ReferenceLayout({
           </div>
           <Index groupedReferences={groupedReferences} />
         </div>
-        <article className="min-w-0 flex-1 p-4 sm:p-8 md:h-full md:overflow-y-auto">
+        <article className="min-w-0 flex-1 p-4 sm:p-8">
           <div className="max-w-4xl">
             {/* Mobile reference navigation */}
             <details className="mb-6 rounded-lg border border-neutral-700/50 bg-neutral-800/50 md:hidden">

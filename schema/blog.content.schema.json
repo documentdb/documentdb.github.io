@@ -15,7 +15,7 @@
       },
       "category": {
         "type": "string",
-        "description": "A unique identifier representing the source or topical category of the blog post. This value determines which section or feed the post appears in, and must be a key defined in blogs/_data/categories.yml.",
+        "description": "The publication or source of the article, used for its label and card styling. Must be a key defined in blogs/_data/categories.yml; the section property controls which listing includes it.",
         "enum": [
           "documentdb-blog",
           "microsoft-open-source-blog",
@@ -23,6 +23,11 @@
           "azure-cosmos-db-blog",
           "yugabytedb-blog"
         ]
+      },
+      "section": {
+        "type": "string",
+        "description": "The listing for this article: announcements for project news, launches, and milestones; blogs for explainers, tutorials, and community perspectives.",
+        "enum": ["announcements", "blogs"]
       },
       "description": {
         "type": "string",
@@ -45,6 +50,7 @@
     "required": [
       "title",
       "category",
+      "section",
       "description",
       "tags",
       "uri"

@@ -116,16 +116,16 @@ describe("install selection links", () => {
 describe("published package availability", () => {
   const assetNames = [
     ...["documentdb-18", "documentdb-common", "documentdb-postgresql-tools"].flatMap((name) => [
-      `ubuntu24.04-${name}_0.117.0_all.deb`,
-      `${name}-0.117.0-1.noarch.rpm`,
+      `ubuntu24.04-${name}_1.0.0_all.deb`,
+      `${name}-1.0.0-1.noarch.rpm`,
     ]),
     ...["amd64", "arm64"].flatMap((arch) => [
-      `ubuntu24.04-documentdb-gateway_0.117.0_${arch}.deb`,
-      `ubuntu24.04-postgresql-18-documentdb_0.117-0_${arch}.deb`,
+      `ubuntu24.04-documentdb-gateway_1.0.0_${arch}.deb`,
+      `ubuntu24.04-postgresql-18-documentdb_1.0-0_${arch}.deb`,
     ]),
     ...["x86_64", "aarch64"].flatMap((arch) => [
-      `documentdb-gateway-0.117.0-1.el9.${arch}.rpm`,
-      `rhel9-postgresql18-documentdb-0.117.0-1.el9.${arch}.rpm`,
+      `documentdb-gateway-1.0.0-1.el9.${arch}.rpm`,
+      `rhel9-postgresql18-documentdb-1.0.0-1.el9.${arch}.rpm`,
     ]),
   ];
   const release = { ...FALLBACK_RELEASE, assetNames };
@@ -151,7 +151,7 @@ describe("published package availability", () => {
     expect(releaseHasPackages(partial, defaultInstallSelection.packages)).toBe(false);
   });
 
-  it.each([null, {}, { tag_name: "v0.117-0", assets: [] }, { tag_name: "../other", assets: [] }])(
+  it.each([null, {}, { tag_name: "v1.0-0", assets: [] }, { tag_name: "../other", assets: [] }])(
     "surfaces malformed or incomplete metadata instead of inventing current versions",
     (payload) => {
       expect(() => parseReleaseInfo(payload)).toThrow();

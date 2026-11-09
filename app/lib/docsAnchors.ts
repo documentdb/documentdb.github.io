@@ -8,5 +8,14 @@ export function headingAnchor(title: string): string {
   return kebabCase(title);
 }
 
+// GitHub's fragment for the heading, which in-page links in the docs Markdown use.
+export function githubHeadingAnchor(title: string): string {
+  return title
+    .trim()
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s_-]/gu, '')
+    .replace(/\s/g, '-');
+}
+
 export const vscodeExistingConnectionSectionTitle = 'Connect an existing instance';
 export const vscodeExistingConnectionSectionAnchor = headingAnchor(vscodeExistingConnectionSectionTitle);

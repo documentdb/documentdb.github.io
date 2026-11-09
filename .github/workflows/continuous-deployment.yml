@@ -156,13 +156,13 @@ jobs:
         env:
           JEKYLL_BASE_PATH: /blogs
         run: npm run build
-      - name: Verify exported documentation pages
+      - name: Verify exported site pages
         # A partially failed content compile must never reach production as a
         # docs-less site. compile-content fails the build on clone/copy errors;
         # this is the independent belt-and-braces check on the final artifact.
         run: |
           set -euo pipefail
-          for page in out/index.html out/docs/index.html out/docs/getting-started/index.html out/docs/reference/index.html; do
+          for page in out/index.html out/docs/index.html out/docs/getting-started/index.html out/docs/reference/index.html out/blogs/index.html out/announcements/index.html; do
             if [ ! -f "$page" ]; then
               echo "Missing expected page: $page"
               exit 1

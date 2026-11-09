@@ -36,34 +36,21 @@
     <meta name="twitter:description" content="{{ social_description | escape }}">
     <meta name="twitter:image" content="{{ social_image }}">
 
-    <link rel="alternate" type="application/atom+xml" title="DocumentDB Blog" href="{{ '/feed.xml' | relative_url }}">
-    <link rel="stylesheet" href="{{ '/assets/blog.css' | relative_url }}">
+    <link rel="alternate" type="application/atom+xml" title="DocumentDB Blog" href="{{ '/blogs/feed.xml' | relative_url }}">
+    <link rel="stylesheet" href="{{ '/blogs/assets/blog.css' | relative_url }}">
   </head>
   <body>
-    {% assign site_root = site.baseurl | replace: '/blogs', '' %}
-    {% if site_root == '' %}
-      {% assign site_root = '/' %}
-    {% endif %}
+    {% assign home_href = '/' | relative_url %}
+    {% assign logo_href = '/images/DocumentDB Logo - background removed.png' | relative_url %}
+    {% assign current_section = page.section | default: 'blogs' %}
 
-    {% assign home_href = site_root | append: '/' | replace: '//', '/' %}
-    {% assign docs_href = site_root | append: '/docs' | replace: '//', '/' %}
-    {% assign packages_href = site_root | append: '/packages' | replace: '//', '/' %}
-    {% assign operator_href = site_root | append: '/kubernetes-operator' | replace: '//', '/' %}
-    {% assign logo_href = site_root | append: '/images/DocumentDB Logo - background removed.png' | replace: '//', '/' %}
-    {% assign blogs_href = site.baseurl | append: '/' | replace: '//', '/' %}
-
-    {% capture nav_links %}
-      <a href="{{ home_href }}">Home</a>
-      <a href="https://github.com/documentdb/documentdb" target="_blank" rel="noopener noreferrer">GitHub</a>
-      <a href="{{ site.discord_url }}" target="_blank" rel="noopener noreferrer">Discord</a>
-      <a href="{{ docs_href }}">Docs</a>
-      <a href="{{ packages_href }}">Download</a>
-      <a href="https://github.com/Azure/documentdb-agent-kit" target="_blank" rel="noopener noreferrer">Agent-Kit</a>
-      <a href="{{ operator_href }}">K8s Operator</a>
-      <a href="{{ blogs_href }}" aria-current="page">Blogs</a>
-    {% endcapture %}
-
+    {% assign release_page_href = '/v1/' | relative_url %}
     <div class="site-shell">
+      <a class="release-bar" href="{{ release_page_href }}">
+        <span class="release-bar__badge">New</span>
+        <strong>DocumentDB 1.0 is here.</strong>
+        <span class="release-bar__link">See what's new <span aria-hidden="true">&rarr;</span></span>
+      </a>
       <header class="site-header">
         <div class="site-header__inner">
           <a class="site-brand" href="{{ home_href }}">
@@ -72,7 +59,24 @@
           </a>
           {% comment %}One landmark for both layouts; screen readers otherwise lose it while the menu is closed{% endcomment %}
           <nav class="site-nav-wrap" aria-label="Primary">
-            <div class="site-nav">{{ nav_links }}</div>
+            {% comment %}blogs/_data/nav.json also drives app/components/Navbar.tsx{% endcomment %}
+            <div class="site-nav">
+              {%- for item in site.data.nav.links -%}
+                {%- if item.items -%}
+                <details class="site-dropdown">
+                  <summary>{{ item.label }}{% include nav-icon.html name='chevron' %}</summary>
+                  <div class="site-dropdown__panel">
+                    {%- for link in item.items %}{% include nav-link.html link=link %}{% endfor -%}
+                  </div>
+                </details>
+                {%- else %}
+                {% include nav-link.html link=item %}
+                {%- endif -%}
+              {%- endfor %}
+              <span class="site-nav__icons">
+                {%- for link in site.data.nav.icons %}{% include nav-link.html link=link icon=true %}{% endfor -%}
+              </span>
+            </div>
             <details class="site-menu">
               <summary class="site-menu__toggle" aria-label="Navigation menu">
                 <svg class="site-menu__icon-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
@@ -82,7 +86,19 @@
                   <path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M18 6 6 18" />
                 </svg>
               </summary>
-              <div class="site-menu__links">{{ nav_links }}</div>
+              <div class="site-menu__links">
+                {%- for item in site.data.nav.links -%}
+                  {%- if item.items %}
+                  <p class="site-menu__group">{{ item.label }}</p>
+                  {%- for link in item.items %}{% include nav-link.html link=link %}{% endfor -%}
+                  {%- else %}
+                  {% include nav-link.html link=item %}
+                  {%- endif -%}
+                {%- endfor %}
+                <div class="site-menu__icons">
+                  {%- for link in site.data.nav.icons %}{% include nav-link.html link=link icon=true labelled=true %}{% endfor -%}
+                </div>
+              </div>
             </details>
           </nav>
         </div>
@@ -98,26 +114,34 @@
         </div>
       </footer>
     </div>
-    {% comment %}The open panel covers the page, so close it whenever focus or the page moves on{% endcomment %}
+    {% comment %}Open panels cover the page, so close them whenever focus, a tap or the page moves on{% endcomment %}
     <script>
       (function () {
-        var menu = document.querySelector(".site-menu");
-        if (!menu) return;
-        function close() { menu.open = false; }
-        menu.addEventListener("keydown", function (event) {
-          if (event.key === "Escape" && menu.open) {
-            close();
-            menu.querySelector("summary").focus();
-          }
+        var panels = Array.prototype.slice.call(document.querySelectorAll(".site-header details"));
+        function closeOutside(target) {
+          panels.forEach(function (panel) {
+            if (panel.open && !panel.contains(target)) panel.open = false;
+          });
+        }
+        panels.forEach(function (panel) {
+          panel.addEventListener("toggle", function () {
+            if (panel.open) closeOutside(panel);
+          });
+          panel.addEventListener("keydown", function (event) {
+            if (event.key === "Escape" && panel.open) {
+              panel.open = false;
+              panel.querySelector("summary").focus();
+            }
+          });
+          panel.addEventListener("click", function (event) {
+            if (event.target.closest("a")) panel.open = false;
+          });
         });
         // Safari blurs to nothing when a link is clicked, so only close once focus lands outside
-        document.addEventListener("focusin", function (event) {
-          if (menu.open && !menu.contains(event.target)) close();
-        });
-        menu.querySelector(".site-menu__links").addEventListener("click", function (event) {
-          if (event.target.closest("a")) close();
-        });
-        window.addEventListener("pageshow", close);
+        document.addEventListener("focusin", function (event) { closeOutside(event.target); });
+        // Safari never focuses a clicked summary either
+        document.addEventListener("pointerdown", function (event) { closeOutside(event.target); });
+        window.addEventListener("pageshow", function () { closeOutside(null); });
       })();
     </script>
   </body>

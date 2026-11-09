@@ -51,7 +51,7 @@ jobs:
           node-version: 24
           cache: npm
       - name: Setup Ruby
-        # The full site build now includes the Jekyll-powered blogs section.
+        # The full site build includes the Jekyll-powered content sections.
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: 3.3
@@ -96,9 +96,9 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y createrepo-c dpkg-dev rpm python3
-      - name: Generate repository from v0.117-0
+      - name: Generate repository from v1.0-0
         env:
-          DOCUMENTDB_VERSION: v0.117-0
+          DOCUMENTDB_VERSION: v1.0-0
         run: .github/scripts/download_packages.sh
       - name: Verify release inventory and metadata
         run: python3 .github/scripts/verify_package_inventory.py

@@ -40,7 +40,8 @@ export default function Index({
 }: {
   groupedReferences: Record<string, Record<string, ReferencePage[]>>;
 }) {
-  const pathname = usePathname();
+  // trailingSlash: true makes this "/x/", but the hrefs compared below have no slash
+  const pathname = usePathname().replace(/\/+$/, '');
   const activeItemRef = useRef<HTMLAnchorElement>(null);
   const containerRef = useRef<HTMLElement>(null);
   
@@ -114,6 +115,7 @@ export default function Index({
                 <Link
                   href={`/docs/reference/${typeSection.type}`}
                   ref={isTypeActive ? activeItemRef : null}
+                  aria-current={isTypeActive ? 'page' : undefined}
                   className={`flex-1 px-3 py-3 rounded-lg text-sm font-semibold uppercase transition-all duration-200 ${
                     isTypeActive
                       ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
@@ -147,6 +149,7 @@ export default function Index({
                       <Link
                         href={`/docs/reference/${typeSection.type}/${categorySection.category}`}
                         ref={isCategoryActive ? activeItemRef : null}
+                        aria-current={isCategoryActive ? 'page' : undefined}
                         className={`flex-1 px-3 py-3 rounded-lg text-sm transition-all duration-200 ${
                           isCategoryActive
                             ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
@@ -170,6 +173,7 @@ export default function Index({
                           <Link
                             href={itemPath}
                             ref={isItemActive ? activeItemRef : null}
+                            aria-current={isItemActive ? 'page' : undefined}
                             className={`flex-1 px-3 py-3 rounded-lg text-sm transition-all duration-200 ${
                               isItemActive
                                 ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"

@@ -1,0 +1,30 @@
+{
+  "links": [
+    { "label": "Docs", "href": "/docs" },
+    { "label": "Install & Download", "href": "/packages" },
+    { "label": "AI", "href": "/ai" },
+    { "label": "Kubernetes", "href": "/kubernetes-operator" },
+    {
+      "label": "Build",
+      "items": [
+        { "label": "Samples", "href": "/samples" },
+        {
+          "label": "VS Code extension",
+          "href": "https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-documentdb"
+        },
+        { "label": "Agent-Kit", "href": "https://github.com/Azure/documentdb-agent-kit" }
+      ]
+    },
+    {
+      "label": "News",
+      "items": [
+        { "label": "Announcements", "href": "/announcements/", "section": "announcements" },
+        { "label": "Blogs", "href": "/blogs/", "section": "blogs" }
+      ]
+    }
+  ],
+  "icons": [
+    { "label": "GitHub", "href": "https://github.com/documentdb/documentdb", "icon": "github" },
+    { "label": "Discord", "href": "https://discord.gg/vH7bYu524D", "icon": "discord" }
+  ]
+}

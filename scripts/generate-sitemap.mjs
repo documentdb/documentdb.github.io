@@ -1,6 +1,6 @@
 // Generates out/sitemap.xml from the exported site and ensures out/robots.txt
 // advertises it. Runs as the last build step, after the Next.js export and the
-// Jekyll blogs build have both written into out/.
+// Jekyll content build have both written into out/.
 //
 // Deliberately dependency-free (plain node:fs) so it runs in every
 // environment the build runs in, including ones without dev dependencies.

@@ -1,6 +1,7 @@
 - title: |-
     DocumentDB Joins the Linux Foundation
   category: microsoft-open-source-blog
+  section: announcements
   featured: true
   description: |-
     Today, we are excited to announce yet another milestone in DocumentDB’s journey: the project is officially joining the Linux Foundation.
@@ -12,6 +13,7 @@
 - title: |-
     AWS : DocumentDB Project Announcement
   category: aws-blog
+  section: announcements
   description: |-
     AWS joins the DocumentDB project to build interoperable, open source document database technology
   tags:
@@ -21,6 +23,7 @@
 - title: |-
     DocumentDB: Open-Source Announcement
   category: azure-cosmos-db-blog
+  section: announcements
   description: |-
     We are excited to announce the official release of DocumentDB—an open-source document database platform and the engine powering Azure Cosmos DB for MongoDB (vCore), built on PostgreSQL. This marks a significant milestone in creating an interoperable, portable, and fully supported production-ready document data store.
   tags:
@@ -30,6 +33,7 @@
 - title: |-
     DocumentDB is Gaining Momentum in the Open-Source Database World
   category: azure-cosmos-db-blog
+  section: announcements
   description: |-
     DocumentDB has quickly caught the attention of major tech publications and earned significant community engagement. In just under a week, our project earned 1000 GitHub stars, nearly 50 forks, and multiple pull requests.
   tags:
@@ -39,6 +43,7 @@
 - title: |-
     MongoDB API in YugabyteDB
   category: yugabytedb-blog
+  section: blogs
   description: |-
     Learn how YugabyteDB now offers a MongoDB-compatible API with the support of the DocumentDB PostgreSQL extension, providing developers with an open source alternative for MongoDB workloads.
   tags:

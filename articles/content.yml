@@ -4,7 +4,7 @@ landing:
   links:
     - title: Getting Started with DocumentDB
       link: /docs/getting-started
-    - title: DocumentDB Kubernetes Operator (Preview)
+    - title: DocumentDB Kubernetes Operator
       link: /docs/kubernetes-operator
     - title: API Reference
       link: /docs/reference
