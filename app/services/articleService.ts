@@ -199,7 +199,7 @@ The current official release publishes the full stack — extension, gateway, se
 > Already running v0.116 or v0.117 from packages? Follow [Upgrading](/docs/linux-packages#upgrading) instead of installing again. Hosts that ran a 1.0 release candidate have no upgrade path; use a clean host. Removing packages preserves database files; reinstalling is not a data reset.
 
 > [!NOTE]
-> Need another distribution or PostgreSQL major? We welcome community builds. Check out the \`v1.0-0\` tag, pass \`--version 1.0.0\`, and use the version-parameterized [packaging scripts](https://github.com/documentdb/documentdb/blob/v1.0-0/packaging/README.md). \`build_packages.sh\` builds the extension, \`gateway/build_gateway_packages.sh\` builds the gateway, and \`build_extra_packages.sh\` builds the common, tools, stand-alone, and meta packages. PostgreSQL 15 is extension-only because the setup tools require PostgreSQL 16 or newer. These builds are on demand and are not official release assets hosted by documentdb.io.
+> Need another distribution or PostgreSQL major? On Debian 13 and 14 or Ubuntu 26.04 and 26.10, [PGDG publishes the 1.0 extension](https://github.com/documentdb/docs/blob/main/getting-started/prebuilt-packages.md#pgdg-extension-packages) as \`postgresql-N-documentdb\` for PostgreSQL 15 to 18. It is extension only, with no gateway or setup wizard. Otherwise, we welcome community builds. Check out the \`v1.0-0\` tag, pass \`--version 1.0.0\`, and use the version-parameterized [packaging scripts](https://github.com/documentdb/documentdb/blob/v1.0-0/packaging/README.md). \`build_packages.sh\` builds the extension, \`gateway/build_gateway_packages.sh\` builds the gateway, and \`build_extra_packages.sh\` builds the common, tools, stand-alone, and meta packages. PostgreSQL 15 is extension-only because the setup tools require PostgreSQL 16 or newer. These builds are on demand and are not official release assets hosted by documentdb.io.
 
 You do not need PostgreSQL already installed — the setup wizard creates and manages its own instance. The install does add the PGDG repository and pull PostgreSQL, PostGIS and around 160 packages (about 140 MB), so pick a host you are willing to have PGDG on.
 
@@ -323,7 +323,7 @@ sudo rm -f /etc/yum.repos.d/documentdb.repo
 sudo dnf clean all
 \`\`\`
 
-To remain on an older target, use its GitHub release assets or build from the matching source tag. Neither path is part of the current hosted support matrix.
+To remain on an older target, use its GitHub release assets or build from the matching source tag. On Debian 13, [PGDG's 1.0 extension package](https://github.com/documentdb/docs/blob/main/getting-started/prebuilt-packages.md#pgdg-extension-packages) is another option; switching to it is a provider change, not an in-place upgrade. None of these paths is part of the current hosted support matrix.
 `;
 
 export const linuxPackagesOperationsContent = `# Operating a package install
