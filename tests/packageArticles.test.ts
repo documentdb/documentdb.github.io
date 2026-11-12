@@ -298,9 +298,9 @@ describe('Linux package articles', () => {
 
   it('serves the stable installer without a pinned or RC version', () => {
     expect(linuxPackagesGuideContent).toContain('https://documentdb.io/install.sh');
-    expect(linuxPackagesGuideContent).toContain('installs the current release (v1.0-0) from the package repository');
-    // install.sh rejects --version v1.0-0, and RCs are retired at GA.
-    expect(linuxPackagesGuideContent).not.toContain('--version v1.0');
+    expect(linuxPackagesGuideContent).toContain('installs the current release (v1.2-0) from the package repository');
+    // install.sh rejects --version v1.2-0, and RCs are retired at GA.
+    expect(linuxPackagesGuideContent).not.toMatch(/--version v1\./);
     expect(linuxPackagesGuideContent).not.toMatch(/RC2|release-candidate/);
   });
 
@@ -308,13 +308,13 @@ describe('Linux package articles', () => {
     const offlineGuide = getArticleByPath('linux-packages', ['offline']);
 
     expect(linuxPackagesGuideContent).toContain(
-      'documentdb/blob/v1.0-0/packaging/README.md',
+      'documentdb/blob/v1.2-0/packaging/README.md',
     );
     expect(linuxPackagesGuideContent).toContain(
       '`--load-sample-data` to the setup command to seed the `StoreData` database',
     );
     expect(offlineGuide?.content).toContain(
-      'ubuntu24.04-postgresql-18-documentdb_1.0-0_amd64.deb',
+      'ubuntu24.04-postgresql-18-documentdb_1.2-0_amd64.deb',
     );
     expect(offlineGuide?.content).toContain(
       'pass the five packages for the selected PostgreSQL major',
@@ -388,9 +388,15 @@ describe('Linux package articles', () => {
       '41,505 documents in `stores` and 2 documents in `ratings`',
     );
     expect(dockerGuide?.content).toContain(
-      'Existing volumes are not migrated automatically',
+      'Existing volumes keep the sample data they were seeded with',
     );
     expect(dockerGuide?.content).not.toContain('use sampledb');
+    // The 1.2 image updates the extensions on a 1.0 or later volume at start, one way.
+    expect(dockerGuide?.content).toContain(
+      'the image updates the DocumentDB extensions on an existing 1.0 or later data volume',
+    );
+    expect(dockerGuide?.content).toContain('This only\ngoes forward');
+    expect(dockerGuide?.content).not.toContain('does not update the DocumentDB schema');
 
     const { readFile } = await import('node:fs/promises');
     const { fileURLToPath } = await import('node:url');
@@ -589,9 +595,13 @@ describe('manual extension upgrade SQL', () => {
     // Setup repoints the gateway at `postgres`, so a gateway on another database must not re-run it.
     expect(text).toMatch(/If your gateway uses another database, take the manual route below\./);
     expect(text).toMatch(/If it uses another database, add the library to\s+`shared_preload_libraries`[\s\S]*?setup would point the\s+gateway back at `postgres`/);
-    // Restarting the whole target would start the gateway before setup updates the extensions.
-    expect(text).toMatch(/restart documentdb-postgresql@18\.service &&\nsudo documentdb-setup/);
+    // Setup restarts PostgreSQL itself; restarting the target first would start the gateway on the old catalog.
+    expect(text).toContain('```bash\nsudo documentdb-setup --pg-version 18 --yes\n```');
     expect(text).not.toMatch(/restart documentdb-local@18\.target &&\nsudo documentdb-setup/);
+    // Without --admin-user the re-run keeps the admin passwords; with it, setup resets that user's.
+    const upgrading = text.match(/^## Upgrading.*$[\s\S]*?(?=^## )/m)?.[0];
+    expect(upgrading).toContain('sudo documentdb-setup --target-postgres-instance 18/main --yes');
+    expect(upgrading).not.toMatch(/documentdb-setup[^\n]*--admin-user/);
   });
 });
 

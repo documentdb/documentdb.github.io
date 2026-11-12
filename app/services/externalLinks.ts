@@ -26,4 +26,4 @@ export const documentdbReleaseAnnouncementUrl = '/blogs/posts/documentdb-1-0/';
 export const documentdbReleasePageUrl = '/v1/';
 
 export const documentdbLocalPrivacyUrl =
-  'https://github.com/documentdb/documentdb/blob/v1.0-0/documentdb-local/PRIVACY.md';
+  'https://github.com/documentdb/documentdb/blob/v1.2-0/documentdb-local/PRIVACY.md';
