@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { kebabCase } from 'change-case';
@@ -13,12 +15,14 @@ import {
   buildRpmInstallCommand,
   buildSetupCommand,
 } from '../app/lib/packageInstall';
-import { FALLBACK_RELEASE } from '../app/lib/releaseInfo';
+import { FALLBACK_RELEASES } from '../app/lib/releaseInfo';
 
 function getCodeBlocks(content: string, language: string): string[] {
   const pattern = new RegExp('```' + language + '\\n([\\s\\S]*?)\\n```', 'g');
   return Array.from(content.matchAll(pattern), (match) => match[1]);
 }
+
+const readRepoFile = (file: string) => fs.readFileSync(fileURLToPath(new URL(`../${file}`, import.meta.url)), 'utf8');
 
 describe('Linux package articles', () => {
   beforeEach(() => {
@@ -293,28 +297,20 @@ describe('Linux package articles', () => {
     ].map((match) => match[1]);
 
     expect(tags.length).toBeGreaterThan(0);
-    expect(new Set(tags)).toEqual(new Set([FALLBACK_RELEASE.tagName]));
-  });
-
-  it('serves the stable installer without a pinned or RC version', () => {
-    expect(linuxPackagesGuideContent).toContain('https://documentdb.io/install.sh');
-    expect(linuxPackagesGuideContent).toContain('installs the current release (v1.0-0) from the package repository');
-    // install.sh rejects --version v1.0-0, and RCs are retired at GA.
-    expect(linuxPackagesGuideContent).not.toContain('--version v1.0');
-    expect(linuxPackagesGuideContent).not.toMatch(/RC2|release-candidate/);
+    expect(new Set(tags)).toEqual(new Set([FALLBACK_RELEASES.latest.tagName]));
   });
 
   it('uses the current release package guide and artifact version', () => {
     const offlineGuide = getArticleByPath('linux-packages', ['offline']);
 
     expect(linuxPackagesGuideContent).toContain(
-      'documentdb/blob/v1.0-0/packaging/README.md',
+      'documentdb/blob/v1.2-0/packaging/README.md',
     );
     expect(linuxPackagesGuideContent).toContain(
       '`--load-sample-data` to the setup command to seed the `StoreData` database',
     );
     expect(offlineGuide?.content).toContain(
-      'ubuntu24.04-postgresql-18-documentdb_1.0-0_amd64.deb',
+      'ubuntu24.04-postgresql-18-documentdb_1.2-0_amd64.deb',
     );
     expect(offlineGuide?.content).toContain(
       'pass the five packages for the selected PostgreSQL major',
@@ -388,8 +384,14 @@ describe('Linux package articles', () => {
       '41,505 documents in `stores` and 2 documents in `ratings`',
     );
     expect(dockerGuide?.content).toContain(
-      'Existing volumes are not migrated automatically',
+      'Existing volumes keep the sample data they were seeded with',
     );
+    // The 1.2 image updates the extensions on a 1.0 or later volume at start, one way.
+    expect(dockerGuide?.content).toContain(
+      'the image updates the DocumentDB extensions on an existing 1.0 or later data volume',
+    );
+    expect(dockerGuide?.content).toContain('This only\ngoes forward');
+    expect(dockerGuide?.content).not.toContain('does not update the DocumentDB schema');
     expect(dockerGuide?.content).not.toContain('use sampledb');
 
     const { readFile } = await import('node:fs/promises');
@@ -618,5 +620,127 @@ describe('docs-owned article normalization', () => {
     expect(article?.content).toContain('## Built-in sample data');
     expect(article?.content).not.toMatch(/## (Container image tags|Data initialization)/);
     expect(article?.content).not.toContain('on a fresh volume');
+  });
+});
+
+describe('release channels', () => {
+  const { latest, stable } = FALLBACK_RELEASES;
+  const installer = 'curl -fsSLo documentdb-install.sh https://documentdb.io/install.sh &&\nsudo sh documentdb-install.sh';
+  const docs = (): [string, string][] => [
+    ['the quick start', linuxPackagesGuideContent],
+    ['PACKAGE-INSTALL.md', readRepoFile('PACKAGE-INSTALL.md')],
+  ];
+  const switchSection = (text: string) => text.match(/^## Switch from `stable` to `latest`\n[\s\S]*?(?=^## )/m)?.[0];
+
+  it.each(docs())('leads %s with the plain installer and offers --stable and --version as options', (_name, text) => {
+    const block = text.indexOf('```sh\n' + installer + '\n```');
+    expect(block).toBeGreaterThan(-1);
+    expect(text).toMatch(new RegExp(`installs (?:the current release \\()?${latest.tagName}\\)? from the \`latest\` channel`));
+    const stableOption = text.match(/^- `--stable`: .*(?:\n {2}.*)*/m)?.[0] ?? '';
+    const pinnedOption = text.match(/^- `--version 1\.0\.0`: .*(?:\n {2}.*)*/m)?.[0] ?? '';
+    expect(stableOption).toContain(stable.tagName);
+    expect(pinnedOption.replace(/\s+/g, ' ')).toContain('the package manager never upgrades it');
+    expect(text.indexOf(stableOption)).toBeGreaterThan(block);
+    expect(text.indexOf(pinnedOption)).toBeGreaterThan(block);
+    expect(text.replace(/\s+/g, ' ')).toContain('on a host where DocumentDB is already installed it changes no packages');
+    // RCs exist only for disposable testing, so the pages do not offer them.
+    expect(text).not.toMatch(/--version [^\s`]*rc/i);
+  });
+
+  it('keeps the plain installer on the 1.0 page and names the 1.0.0 pin beside it', () => {
+    const source = readRepoFile('app/v1/page.tsx');
+    expect(source).toContain('const installerCommand = `' + installer + '`;');
+    const note = source.slice(source.indexOf('<CommandSnippet command={installerCommand}')).replace(/\s+/g, ' ');
+    expect(note).toContain('the newest release from the <code>latest</code> channel');
+    expect(note).toContain('<code>--version 1.0.0</code> for exactly 1.0.0, which apt and dnf never upgrade');
+    expect(note).toContain('<code>--stable</code> for the <code>stable</code> channel');
+  });
+
+  it.each(docs())('uses latest in the manual commands of %s and says in one line how stable differs', (_name, text) => {
+    const commands = getCodeBlocks(text, 'bash').join('\n');
+    expect(commands).toContain('https://documentdb.io/deb latest ubuntu24"');
+    expect(commands).toContain("'baseurl=https://documentdb.io/rpm/latest/rhel9'");
+    expect(commands).not.toContain('https://documentdb.io/deb stable');
+    expect(commands).not.toContain("'baseurl=https://documentdb.io/rpm/rhel9'");
+    const stableBaseurl = buildRpmInstallCommand('rocky9', 'auto', '18', 'stable').match(/baseurl=[^']+/)?.[0];
+    expect(text.replace(/\s+/g, ' ')).toContain(
+      `These commands use the \`latest\` channel. For \`stable\` (${stable.tagName}), write \`stable\` in place of \`latest\` in the DocumentDB APT line, or use \`${stableBaseurl}\` on EL9.`,
+    );
+  });
+
+  it('installs from latest on /packages and shows stable from its own feed', () => {
+    const source = readRepoFile('app/packages/page.tsx');
+    expect(source).toContain('useReleaseInfo("latest")');
+    expect(source).toContain('useReleaseInfo("stable")');
+    expect(source).toMatch(/buildAptInstallCommand\(packages\.target, packages\.arch, packages\.pg\)/);
+    expect(source).toMatch(/buildRpmInstallCommand\(packages\.target, packages\.arch, packages\.pg\)/);
+    expect(source).toContain('<code className="text-gray-300">stable</code> ({stableRelease.tagName})');
+    expect(source).toContain(buildRpmInstallCommand('rocky9', 'auto', '18', 'stable').match(/baseurl=[^']+/)?.[0]);
+    expect(source).toContain('href="/docs/getting-started/packages#clean-host-installer"');
+  });
+
+  it.each(docs().concat([['the operations guide', linuxPackagesOperationsContent]]))(
+    'never pairs stable with a release other than its own in %s',
+    (_name, text) => {
+      const versions = Array.from(text.matchAll(/`stable`[^.\n]*?(v?\d+\.\d+(?:\.\d+|-\d+)?)/g), (m) => m[1]);
+      for (const version of versions) {
+        expect([stable.tagName, stable.metaVersion]).toContain(version);
+      }
+    },
+  );
+
+  it('puts the same one-way switch note after the upgrade steps in both copies', () => {
+    const operations = switchSection(linuxPackagesOperationsContent);
+    const packageInstall = readRepoFile('PACKAGE-INSTALL.md');
+    expect(operations).toBeDefined();
+    expect(switchSection(packageInstall)).toBe(operations);
+    expect(linuxPackagesOperationsContent.indexOf(operations!)).toBeGreaterThan(
+      linuxPackagesOperationsContent.indexOf('## Upgrading'),
+    );
+    const text = operations!.replace(/\s+/g, ' ');
+    expect(text).toContain('This is one-way: 1.0 does not run correctly on data that 1.2 has updated');
+    expect(operations).toContain('```bash\nsudo documentdb-setup --pg-version 18 --yes\n```');
+    expect(operations).not.toMatch(/documentdb-setup[^\n]*--admin-user/);
+    expect(operations).toContain('sudo apt upgrade');
+    expect(operations).toContain('sudo dnf upgrade');
+    // Both upgrade sections link to it.
+    for (const upgrade of [linuxPackagesOperationsContent, packageInstall]) {
+      expect(upgrade).toContain('[switch it to `latest`](#switch-from-stable-to-latest)');
+    }
+  });
+
+  it('switches every stable definition to the latest one with the documented commands', () => {
+    const edits = switchSection(linuxPackagesOperationsContent)!.split('\n').filter((line) => line.startsWith('sudo sed -i '));
+    expect(edits).toHaveLength(2);
+    const printed = (command: string) => {
+      const start = command.indexOf("printf '%s\\n'");
+      return execFileSync('sh', ['-c', command.slice(start, command.indexOf(' | sudo tee', start))], { encoding: 'utf8' });
+    };
+    const aptLine = (channel: 'latest' | 'stable') =>
+      `${buildAptInstallCommand('ubuntu24', 'amd64', '18', channel).match(/echo "(deb [^"]*documentdb\.io[^"]*)"/)![1]}\n`;
+    // What the 1.0 installer and install.sh --stable write; they differ from the site's RPM definition.
+    const installerRpm = (baseurl: string) => ['[documentdb]', 'name=DocumentDB Repository', `baseurl=${baseurl}`,
+      'enabled=1', 'gpgcheck=1', 'repo_gpgcheck=1', 'gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-documentdb', ''].join('\n');
+    const cases = [
+      [edits[0], '/etc/apt/sources.list.d/documentdb.list', aptLine('stable'), aptLine('latest')],
+      [edits[1], '/etc/yum.repos.d/documentdb.repo', printed(buildRpmInstallCommand('rocky9', 'auto', '18', 'stable')),
+        printed(buildRpmInstallCommand('rocky9', 'auto', '18', 'latest'))],
+      [edits[1], '/etc/yum.repos.d/documentdb.repo', installerRpm('https://documentdb.io/rpm/rhel9'),
+        installerRpm('https://documentdb.io/rpm/latest/rhel9')],
+    ];
+    const dir = fs.mkdtempSync(path.join(tmpdir(), 'channel-switch-'));
+    try {
+      for (const [edit, target, before, after] of cases) {
+        expect(edit).toContain(` ${target} &&`);
+        const file = path.join(dir, path.basename(target));
+        fs.writeFileSync(file, before);
+        // -i.bak works with GNU and BSD sed; running it twice shows a rerun is harmless.
+        const script = edit.replace('sudo sed -i ', 'sed -i.bak ').replace(` ${target} &&`, ' "$1"');
+        execFileSync('sh', ['-c', `${script} && ${script}`, 'sh', file]);
+        expect(fs.readFileSync(file, 'utf8')).toBe(after);
+      }
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

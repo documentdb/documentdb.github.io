@@ -1,3 +1,5 @@
+import type { ReleaseChannel } from "./releaseInfo";
+
 export type AptDistro = "ubuntu24";
 export type RpmDistro = "rocky9" | "rhel9";
 export type AptArch = "amd64" | "arm64" | "auto";
@@ -32,6 +34,12 @@ const rpmRepositoryPaths: Record<RpmDistro, "rhel9"> = {
   rhel9: "rhel9",
 };
 
+// stable keeps the paths it had before channels existed; install.sh recognises exactly these definitions.
+const rpmChannelPrefixes: Record<ReleaseChannel, string> = {
+  latest: "latest/",
+  stable: "",
+};
+
 // The website mirrors the official release's Tier-1 package matrix exactly.
 export const aptFullStackDistros: readonly AptDistro[] = ["ubuntu24"];
 export const rpmFullStackDistros: readonly RpmDistro[] = ["rocky9", "rhel9"];
@@ -62,6 +70,7 @@ export function buildAptInstallCommand(
   aptTarget: AptDistro,
   aptArch: AptArch,
   aptPgVersion: AptPgVersion,
+  channel: ReleaseChannel = "latest",
 ): string {
   const pgdgSuite = aptPgdgSuites[aptTarget];
   // "auto" resolves the architecture on the host running the command, so a
@@ -80,7 +89,7 @@ sudo apt install -y curl ca-certificates gnupg && \\
 curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor --yes -o /usr/share/keyrings/postgresql.gpg && \\
 echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] https://apt.postgresql.org/pub/repos/apt ${pgdgSuite}-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list >/dev/null && \\
 curl -fsSL https://documentdb.io/documentdb-archive-keyring.gpg | sudo gpg --dearmor --yes -o /usr/share/keyrings/documentdb-archive-keyring.gpg && \\
-echo "deb [arch=${arch} signed-by=/usr/share/keyrings/documentdb-archive-keyring.gpg] https://documentdb.io/deb stable ${aptTarget}" | sudo tee /etc/apt/sources.list.d/documentdb.list >/dev/null && \\
+echo "deb [arch=${arch} signed-by=/usr/share/keyrings/documentdb-archive-keyring.gpg] https://documentdb.io/deb ${channel} ${aptTarget}" | sudo tee /etc/apt/sources.list.d/documentdb.list >/dev/null && \\
 sudo apt update && \\
 sudo apt install -y ${installTarget}`;
 }
@@ -89,9 +98,10 @@ export function buildRpmInstallCommand(
   rpmTarget: RpmDistro,
   rpmArch: RpmArch,
   rpmPgVersion: RpmPgVersion,
+  channel: ReleaseChannel = "latest",
 ): string {
   const rhelMajorVersion = rpmMajorVersions[rpmTarget];
-  const repositoryPath = rpmRepositoryPaths[rpmTarget];
+  const repositoryPath = `${rpmChannelPrefixes[channel]}${rpmRepositoryPaths[rpmTarget]}`;
   // See buildAptInstallCommand: "auto" resolves on the host so one published
   // example works on x86_64 and aarch64 alike.
   const arch = rpmArch === "auto" ? "$(uname -m)" : rpmArch;

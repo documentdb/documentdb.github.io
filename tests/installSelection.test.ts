@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   defaultInstallSelection,
@@ -7,7 +8,7 @@ import {
   releaseHasPackages,
   selectInstallTarget,
 } from "../app/lib/installSelection";
-import { FALLBACK_RELEASE, parseReleaseInfo } from "../app/lib/releaseInfo";
+import { FALLBACK_RELEASES, parseReleaseInfo, releaseInfoPaths } from "../app/lib/releaseInfo";
 
 describe("install selection links", () => {
   it("defaults to Docker, with packages preset to the PG18 stack and host-resolved architecture", () => {
@@ -116,24 +117,25 @@ describe("install selection links", () => {
 describe("published package availability", () => {
   const assetNames = [
     ...["documentdb-18", "documentdb-common", "documentdb-postgresql-tools"].flatMap((name) => [
-      `ubuntu24.04-${name}_1.0.0_all.deb`,
-      `${name}-1.0.0-1.noarch.rpm`,
+      `ubuntu24.04-${name}_1.2.0_all.deb`,
+      `${name}-1.2.0-1.noarch.rpm`,
     ]),
     ...["amd64", "arm64"].flatMap((arch) => [
-      `ubuntu24.04-documentdb-gateway_1.0.0_${arch}.deb`,
-      `ubuntu24.04-postgresql-18-documentdb_1.0-0_${arch}.deb`,
+      `ubuntu24.04-documentdb-gateway_1.2.0_${arch}.deb`,
+      `ubuntu24.04-postgresql-18-documentdb_1.2-0_${arch}.deb`,
     ]),
     ...["x86_64", "aarch64"].flatMap((arch) => [
-      `documentdb-gateway-1.0.0-1.el9.${arch}.rpm`,
-      `rhel9-postgresql18-documentdb-1.0.0-1.el9.${arch}.rpm`,
+      `documentdb-gateway-1.2.0-1.el9.${arch}.rpm`,
+      `rhel9-postgresql18-documentdb-1.2.0-1.el9.${arch}.rpm`,
     ]),
   ];
-  const release = { ...FALLBACK_RELEASE, assetNames };
+  // The commands install from latest, so its feed decides what the page offers.
+  const release = { ...FALLBACK_RELEASES.latest, assetNames };
 
   it("requires the full stack, including both architectures for automatic selection", () => {
     expect(releaseHasPackages(release, defaultInstallSelection.packages)).toBe(true);
     expect(releaseHasPackages(release, { family: "rpm", target: "rhel9", arch: "auto", pg: "18" })).toBe(true);
-    expect(releaseHasPackages(FALLBACK_RELEASE, defaultInstallSelection.packages)).toBe(false);
+    expect(releaseHasPackages(FALLBACK_RELEASES.latest, defaultInstallSelection.packages)).toBe(false);
     expect(releaseHasPackages(release, { family: "apt", target: "ubuntu24", arch: "amd64", pg: "17" })).toBe(false);
   });
 
@@ -151,10 +153,22 @@ describe("published package availability", () => {
     expect(releaseHasPackages(partial, defaultInstallSelection.packages)).toBe(false);
   });
 
-  it.each([null, {}, { tag_name: "v1.0-0", assets: [] }, { tag_name: "../other", assets: [] }])(
+  it.each([null, {}, { tag_name: "v1.2-0", assets: [] }, { tag_name: "../other", assets: [] }])(
     "surfaces malformed or incomplete metadata instead of inventing current versions",
     (payload) => {
       expect(() => parseReleaseInfo(payload)).toThrow();
     },
   );
+
+  it("reads each channel from the feed the deploy writes for it", () => {
+    const download = readFileSync(new URL("../.github/scripts/download_packages.sh", import.meta.url), "utf8");
+    const drift = readFileSync(new URL("../.github/scripts/check_release_drift.js", import.meta.url), "utf8");
+    for (const [channel, feed] of Object.entries(releaseInfoPaths)) {
+      const file = feed.split("/").pop();
+      // [^;] keeps the match inside that channel's case arm, which ends with ;;.
+      expect(download).toMatch(new RegExp(`^  ${channel}\\)[^;]*RELEASE_INFO="out/packages/${file}"`, "m"));
+      expect(drift).toContain(`{ channel: "${channel}", feed: path.join("out", "packages", "${file}") }`);
+    }
+    expect(releaseInfoPaths.latest).not.toBe(releaseInfoPaths.stable);
+  });
 });

@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 
-// The site publishes out/packages/release-info.json on every deployment, built
-// from the GitHub release the package repository actually mirrors. It is the
+// The site publishes one release feed per package channel on every deployment,
+// built from the GitHub release that channel actually mirrors. They are the
 // only authoritative statement of "what version is on documentdb.io", so the
-// UI derives its version strings from it rather than repeating them.
+// UI derives its version strings from them rather than repeating them.
 //
 // Before this module the versions were hardcoded in the page, and they drifted:
 // the page still advertised 0.114-0 (and 0.113-0 for the repository examples)
@@ -34,15 +34,34 @@ export type ReleaseInfo = {
   assetNames: readonly string[];
 };
 
-// A reference release, not evidence of current repository availability.
-export const FALLBACK_RELEASE: ReleaseInfo = {
-  tagName: "v1.0-0",
-  aptVersion: "1.0-0",
-  rpmVersion: "1.0.0-1.el9",
-  metaVersion: "1.0.0",
-  metaRpmVersion: "1.0.0-1",
-  releaseUrl: "https://github.com/documentdb/documentdb/releases/tag/v1.0-0",
-  assetNames: [],
+export type ReleaseChannel = "latest" | "stable";
+
+// stable kept the feed path it had before channels existed.
+export const releaseInfoPaths: Record<ReleaseChannel, string> = {
+  latest: "/packages/release-info-latest.json",
+  stable: "/packages/release-info.json",
+};
+
+// Reference releases, not evidence of availability; check_release_drift.js parses these literals.
+export const FALLBACK_RELEASES: Record<ReleaseChannel, ReleaseInfo> = {
+  latest: {
+    tagName: "v1.2-0",
+    aptVersion: "1.2-0",
+    rpmVersion: "1.2.0-1.el9",
+    metaVersion: "1.2.0",
+    metaRpmVersion: "1.2.0-1",
+    releaseUrl: "https://github.com/documentdb/documentdb/releases/tag/v1.2-0",
+    assetNames: [],
+  },
+  stable: {
+    tagName: "v1.0-0",
+    aptVersion: "1.0-0",
+    rpmVersion: "1.0.0-1.el9",
+    metaVersion: "1.0.0",
+    metaRpmVersion: "1.0.0-1",
+    releaseUrl: "https://github.com/documentdb/documentdb/releases/tag/v1.0-0",
+    assetNames: [],
+  },
 };
 
 type RawReleaseInfo = {
@@ -126,9 +145,9 @@ export type ReleaseState = {
   error: string | null;
 };
 
-export function useReleaseInfo(): ReleaseState {
+export function useReleaseInfo(channel: ReleaseChannel): ReleaseState {
   const [state, setState] = useState<ReleaseState>({
-    release: FALLBACK_RELEASE,
+    release: FALLBACK_RELEASES[channel],
     status: "loading",
     error: null,
   });
@@ -139,7 +158,7 @@ export function useReleaseInfo(): ReleaseState {
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), 15000);
 
-    fetch(`${basePath}/packages/release-info.json`, { signal: controller.signal })
+    fetch(`${basePath}${releaseInfoPaths[channel]}`, { signal: controller.signal })
       .then((response) => {
         if (!response.ok) {
           throw new Error(`Release metadata is unavailable (HTTP ${response.status}).`);
@@ -154,7 +173,7 @@ export function useReleaseInfo(): ReleaseState {
       .catch((error: unknown) => {
         if (!cancelled) {
           setState({
-            release: FALLBACK_RELEASE,
+            release: FALLBACK_RELEASES[channel],
             status: "fallback",
             error: error instanceof Error && error.name !== "AbortError"
               ? error.message
@@ -169,7 +188,7 @@ export function useReleaseInfo(): ReleaseState {
       window.clearTimeout(timeout);
       controller.abort();
     };
-  }, []);
+  }, [channel]);
 
   return state;
 }

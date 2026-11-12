@@ -21,7 +21,7 @@ import type {
   RpmPgVersion,
 } from '../app/lib/packageInstall';
 import {
-  FALLBACK_RELEASE,
+  FALLBACK_RELEASES,
   parseReleaseInfo,
 } from '../app/lib/releaseInfo';
 
@@ -79,8 +79,16 @@ describe('package metadata', () => {
 });
 
 describe('release metadata', () => {
-  it('uses v1.0-0 for the first paint and feed fallback', () => {
-    expect(FALLBACK_RELEASE).toMatchObject({
+  it('uses v1.2-0 for latest and v1.0-0 for stable before the feeds load', () => {
+    expect(FALLBACK_RELEASES.latest).toMatchObject({
+      tagName: 'v1.2-0',
+      aptVersion: '1.2-0',
+      rpmVersion: '1.2.0-1.el9',
+      metaVersion: '1.2.0',
+      metaRpmVersion: '1.2.0-1',
+      releaseUrl: 'https://github.com/documentdb/documentdb/releases/tag/v1.2-0',
+    });
+    expect(FALLBACK_RELEASES.stable).toMatchObject({
       tagName: 'v1.0-0',
       aptVersion: '1.0-0',
       rpmVersion: '1.0.0-1.el9',
@@ -90,24 +98,22 @@ describe('release metadata', () => {
     });
   });
 
-  it('derives v1.0 package versions from the published asset shapes', () => {
-    expect(parseReleaseInfo({
-      tag_name: 'v1.0-0',
-      html_url: 'https://github.com/documentdb/documentdb/releases/tag/v1.0-0',
-      assets: [
-        { name: 'ubuntu24.04-documentdb_1.0.0_all.deb' },
-        { name: 'ubuntu24.04-postgresql-18-documentdb_1.0-0_amd64.deb' },
-        { name: 'documentdb-1.0.0-1.noarch.rpm' },
-        { name: 'rhel9-postgresql18-documentdb-1.0.0-1.el9.x86_64.rpm' },
-      ],
-    })).toMatchObject({
-      tagName: 'v1.0-0',
-      aptVersion: '1.0-0',
-      rpmVersion: '1.0.0-1.el9',
-      metaVersion: '1.0.0',
-      metaRpmVersion: '1.0.0-1',
-    });
-  });
+  it.each(Object.entries(FALLBACK_RELEASES))(
+    'derives the %s fallback from its release\'s published asset shapes',
+    (_channel, fallback) => {
+      const { metaVersion, aptVersion, rpmVersion, metaRpmVersion } = fallback;
+      expect(parseReleaseInfo({
+        tag_name: fallback.tagName,
+        html_url: fallback.releaseUrl,
+        assets: [
+          { name: `ubuntu24.04-documentdb_${metaVersion}_all.deb` },
+          { name: `ubuntu24.04-postgresql-18-documentdb_${aptVersion}_amd64.deb` },
+          { name: `documentdb-${metaRpmVersion}.noarch.rpm` },
+          { name: `rhel9-postgresql18-documentdb-${rpmVersion}.x86_64.rpm` },
+        ],
+      })).toEqual({ ...fallback, assetNames: expect.any(Array) });
+    },
+  );
 });
 
 describe('buildAptInstallCommand', () => {
@@ -137,9 +143,18 @@ describe('buildAptInstallCommand', () => {
     expect(command).not.toContain('[arch=arm64 ');
   });
 
-  it.each(aptDistros)('uses %s as the DocumentDB repository component', (distro) => {
+  it.each(aptDistros)('uses %s as the DocumentDB repository component of latest by default', (distro) => {
     const command = buildAptInstallCommand(distro, 'amd64', aptTargetPgVersions[distro][0]);
-    expect(command).toContain(`documentdb.io/deb stable ${distro}`);
+    expect(command).toContain(`documentdb.io/deb latest ${distro}"`);
+    expect(command).not.toContain('documentdb.io/deb stable');
+  });
+
+  it.each(['latest', 'stable'] as const)('writes the source install.sh recognises for the %s channel', (channel) => {
+    // install.sh refuses a documentdb.list that is not byte-for-byte one of its own definitions.
+    const command = buildAptInstallCommand('ubuntu24', 'amd64', '18', channel);
+    expect(command).toContain(
+      `echo "deb [arch=amd64 signed-by=/usr/share/keyrings/documentdb-archive-keyring.gpg] https://documentdb.io/deb ${channel} ubuntu24" | sudo tee /etc/apt/sources.list.d/documentdb.list >/dev/null`,
+    );
   });
 
   it.each(aptMatrix)('installs the right package for $distro/$arch/pg$pg', ({ distro, arch, pg }) => {
@@ -184,10 +199,23 @@ describe('buildRpmInstallCommand', () => {
     expect(command).not.toContain('EL-9-aarch64');
   });
 
-  it.each(rpmDistros)('points %s at the shared EL9 DocumentDB repository', (distro) => {
+  it.each(rpmDistros)('points %s at the shared EL9 repository of the latest channel by default', (distro) => {
     const command = buildRpmInstallCommand(distro, 'x86_64', '17');
     expect(command).toContain(
-      `baseurl=https://documentdb.io/rpm/${expectedRpmRepositoryPaths[distro]}`,
+      `'baseurl=https://documentdb.io/rpm/latest/${expectedRpmRepositoryPaths[distro]}'`,
+    );
+  });
+
+  it.each([
+    ['latest', 'https://documentdb.io/rpm/latest/rhel9'],
+    ['stable', 'https://documentdb.io/rpm/rhel9'],
+  ] as const)('writes the definition install.sh recognises for the %s channel', (channel, baseurl) => {
+    const command = buildRpmInstallCommand('rocky9', 'x86_64', '18', channel);
+    const printf = command.slice(command.indexOf("printf '%s\\n'"), command.indexOf(' | sudo tee /etc/yum.repos.d/documentdb.repo'));
+    // install.sh refuses any other documentdb.repo; running the printf also catches quoting mistakes.
+    expect(execFileSync('sh', ['-c', printf], { encoding: 'utf8' })).toBe(
+      ['[documentdb]', 'name=DocumentDB Repository', `baseurl=${baseurl}`, 'enabled=1', 'gpgcheck=1',
+        'gpgkey=https://documentdb.io/documentdb-archive-keyring.gpg', ''].join('\n'),
     );
   });
 

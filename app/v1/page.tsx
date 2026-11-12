@@ -163,6 +163,11 @@ export default function ReleasePage() {
                 repositories. On a clean host:
               </p>
               <CommandSnippet command={installerCommand} label="Installer" />
+              <p className="mt-3 text-sm leading-6 text-gray-400">
+                This installs the newest release from the <code>latest</code> channel. Add{" "}
+                <code>--version 1.0.0</code> for exactly 1.0.0, which apt and dnf never upgrade, or{" "}
+                <code>--stable</code> for the <code>stable</code> channel.
+              </p>
               <Link href="/packages?method=packages" className={`mt-auto pt-4 text-sm ${linkClass}`}>
                 apt and dnf commands <span aria-hidden="true">&rarr;</span>
               </Link>

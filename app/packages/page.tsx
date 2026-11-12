@@ -70,7 +70,9 @@ function InstallLocation({ onChange }: { onChange: (result: SelectionResult) => 
 }
 
 export default function PackagesPage() {
-  const { release, status: releaseStatus, error: releaseError } = useReleaseInfo();
+  // The commands install from latest; stable is only named beside them.
+  const { release, status: releaseStatus, error: releaseError } = useReleaseInfo("latest");
+  const { release: stableRelease } = useReleaseInfo("stable");
   const [state, setState] = useState<SelectionResult | null>(null);
   const [dockerSetup, setDockerSetup] = useState<DockerSetup>("command");
 
@@ -217,7 +219,7 @@ export default function PackagesPage() {
               <div role="alert" className="mt-3 rounded-lg border border-amber-400/40 p-4 text-sm text-amber-100">
                 <p>Cannot confirm the current repository release. {releaseError}</p>
                 <p className="mt-2">
-                  The commands below install the latest packages from the repository. Last known
+                  The commands below install from the <code>latest</code> channel. Last known
                   release: {release.tagName}.{" "}
                   <a href="https://github.com/documentdb/documentdb/releases" className={linkClass}>Browse release assets</a>{" "}
                   or <button type="button" onClick={() => window.location.reload()} className={linkClass}>retry the lookup</button>.
@@ -238,9 +240,24 @@ export default function PackagesPage() {
             )}
 
             <h2 className={stepClass}>1. Install</h2>
-            <p className={stepTextClass}>Adds the PostgreSQL and DocumentDB repositories (plus EPEL and CRB on EL9), then installs PostgreSQL, the extension, and the gateway.</p>
+            <p className={stepTextClass}>Adds the PostgreSQL repository and the DocumentDB <code>latest</code> channel (plus EPEL and CRB on EL9), then installs PostgreSQL, the extension, and the gateway.</p>
             {canInstall ? <CommandSnippet command={installCommand} label={`${family.toUpperCase()} installation`} /> : (
               <p className="text-sm text-gray-400">No command is shown for this selection.</p>
+            )}
+            {canInstall && (
+              <p className="mt-2 text-sm text-gray-400">
+                <code className="text-gray-300">latest</code> serves {release.tagName}, and{" "}
+                <code className="text-gray-300">{family === "apt" ? "apt upgrade" : "dnf upgrade"}</code> follows it to
+                new releases. For <code className="text-gray-300">stable</code> ({stableRelease.tagName}),{" "}
+                {family === "apt" ? (
+                  <>write <code className="text-gray-300">stable</code> in place of <code className="text-gray-300">latest</code> in the DocumentDB line.</>
+                ) : (
+                  <>use <code className="break-all text-gray-300">baseurl=https://documentdb.io/rpm/rhel9</code>.</>
+                )}{" "}
+                For one release that is never upgraded, use the{" "}
+                <Link href="/docs/getting-started/packages#clean-host-installer" className={linkClass}>installer</Link> with{" "}
+                <code className="text-gray-300">--version</code>.
+              </p>
             )}
             {family === "apt" && (
               <p className="mt-2 text-sm text-gray-400">
