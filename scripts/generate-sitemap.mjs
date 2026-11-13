@@ -152,23 +152,22 @@ const sitemap = [
 
 fs.writeFileSync(path.join(outDir, 'sitemap.xml'), sitemap);
 
-// Advertise the sitemap from robots.txt. public/robots.txt (when present) has
+// Advertise both independently published sites from robots.txt. public/robots.txt (when present) has
 // already been copied into out/ by the Next.js build; otherwise create a
 // minimal one.
 const robotsPath = path.join(outDir, 'robots.txt');
-const sitemapLine = `Sitemap: ${siteUrl}/sitemap.xml`;
-
-if (fs.existsSync(robotsPath)) {
-  const robots = fs.readFileSync(robotsPath, 'utf8');
-  if (!robots.includes(sitemapLine)) {
-    fs.writeFileSync(
-      robotsPath,
-      `${robots.trimEnd()}\n\n${sitemapLine}\n`,
-    );
+let robots = fs.existsSync(robotsPath)
+  ? fs.readFileSync(robotsPath, 'utf8')
+  : 'User-agent: *\nAllow: /\n';
+for (const sitemapLine of [
+  `Sitemap: ${siteUrl}/sitemap.xml`,
+  `Sitemap: ${siteUrl}/documentdb-kubernetes-operator/latest/sitemap.xml`,
+]) {
+  if (!robots.split(/\r?\n/).includes(sitemapLine)) {
+    robots = `${robots.trimEnd()}\n\n${sitemapLine}\n`;
   }
-} else {
-  fs.writeFileSync(robotsPath, `User-agent: *\nAllow: /\n\n${sitemapLine}\n`);
 }
+fs.writeFileSync(robotsPath, robots);
 
 console.log(
   `Wrote out/sitemap.xml with ${pages.length} URLs (skipped ${noindexPagesSkipped} noindex ${
