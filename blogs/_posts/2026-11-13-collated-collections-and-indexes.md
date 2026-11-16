@@ -33,9 +33,7 @@ Use `{ locale: "en", strength: 2 }`, so `"a"` and `"A"` compare equal, as do `"b
 You need Docker and a **DocumentDB OSS v1.3 image**. The following command uses `latest`, a moving tag; ensure the image includes v1.3 before proceeding.
 
 ```bash
-docker run -d --name docdb-test -p 127.0.0.1:10260:10260 \
-  ghcr.io/documentdb/documentdb/documentdb-local:latest \
-  --username testuser --password testpass123
+docker run -d --name docdb-test -p 127.0.0.1:10260:10260 \n  -e USERNAME=testuser \n  -e PASSWORD=testpass123 \n  ghcr.io/documentdb/documentdb/documentdb-local:latest
 ```
 
 Allow the gateway to finish starting before connecting. The published port is bound to localhost, and the credentials are for this disposable local example only.
