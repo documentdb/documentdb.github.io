@@ -17,7 +17,7 @@ tags:
 
 **Update, October 19, 2026:** DocumentDB 1.0 is the current release. [Read the announcement]({{ site.release_announcement_url | relative_url }}). Packages from v0.116 or v0.117 [upgrade in place]({{ site_root }}/docs/linux-packages/#upgrading).
 
-Docker remains the fastest way to evaluate DocumentDB on Linux, macOS, or Windows. When you cannot use Docker, or need control over PostgreSQL, services, and configuration on a Linux host, Linux packages give you another option: familiar package managers, guided setup, and a choice about how much of the stack you manage.
+Docker remains the fastest way to evaluate DocumentDB on Linux, macOS, or Windows. When you can't use Docker, or need control over PostgreSQL, services, and configuration on a Linux host, Linux packages give you another option: familiar package managers, guided setup, and a choice about how much of the stack you manage.
 
 DocumentDB is an open-source document database built on PostgreSQL. The Linux packages bring the PostgreSQL extension, gateway, setup tools, and systemd services together, so you can start with a complete installation instead of assembling individual components.
 
@@ -25,12 +25,12 @@ DocumentDB is an open-source document database built on PostgreSQL. The Linux pa
 
 ## Start with the complete stack
 
-The complete-stack path creates a new private PostgreSQL instance and a DocumentDB gateway on your Linux host. You do not need PostgreSQL installed beforehand. Package-managed services and persistent database storage give you a host installation you can inspect, stop, and restart with familiar Linux tools.
+The complete-stack path creates a new private PostgreSQL instance and a DocumentDB gateway on your Linux host. You don't need PostgreSQL installed beforehand. Package-managed services and persistent database storage give you a host installation you can inspect, stop, and restart with familiar Linux tools.
 
 Installation and setup are separate steps:
 
-1. **Install with apt or dnf.** Follow the [Linux installation guide]({{ site_root }}/docs/getting-started/packages/) to configure the signed DocumentDB and PostgreSQL repositories, meet the distribution prerequisites, and install the complete-stack package for your selected PostgreSQL major. This changes system-wide package sources and installs dependencies.
-2. **Run guided setup.** The guide's `documentdb-setup` command explicitly creates a new private instance, configures the database and gateway, and starts the services. Installing packages alone does not create a working endpoint. Enter the administrator password at the terminal prompt, not in a connection URI or shell history.
+1. **Install with apt or dnf.** Follow the [Linux installation guide]({{ site_root }}/docs/getting-started/packages/) to configure the signed DocumentDB and PostgreSQL repositories, meet the distribution prerequisites, and install the complete-stack package for your selected PostgreSQL major. This step changes system-wide package sources and installs dependencies.
+2. **Run guided setup.** The guide's `documentdb-setup` command explicitly creates a new private instance, configures the database and gateway, and starts the services. Installing packages alone doesn't create a working endpoint. Enter the administrator password at the terminal prompt, not in a connection URI or shell history.
 3. **Connect and query.** Follow the guide's connection instructions, then run your first insert and read.
 
 This is a guided installation, not a one-command path from an unprepared machine to production.

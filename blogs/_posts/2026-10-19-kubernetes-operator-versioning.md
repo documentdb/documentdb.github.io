@@ -56,7 +56,7 @@ availability requirements:
   multi-cloud setups using fleet management and Istio.
 
 Multi-region and multi-cloud deployments require additional infrastructure and
-configuration; the repository includes guides and examples for those setups.
+configuration. The repository includes guides and examples for those setups.
 The operator is the cluster-management layer, not a replacement for planning
 storage, networking, and availability around your workload.
 
@@ -78,7 +78,7 @@ relevant upgrade guidance for each.
 ## Get started
 
 Start with the [operator installation guide][installation] for prerequisites and
-Helm setup, then follow the [quick start][quickstart] to deploy your first cluster.
+Helm setup, and then follow the [quick start][quickstart] to deploy your first cluster.
 Pin an explicit Helm chart version, such as `--version 1.0.0`, for repeatable
 installations and review that release's compatibility requirements.
 

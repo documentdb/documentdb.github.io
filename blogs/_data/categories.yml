@@ -13,3 +13,6 @@ azure-cosmos-db-blog:
 yugabytedb-blog:
   label: YugabyteDB Blog
   meta: Partner Content
+layerbase-blog:
+  label: Layerbase Blog
+  meta: Partner Content

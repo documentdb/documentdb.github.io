@@ -5,6 +5,22 @@ REPO="documentdb/documentdb"
 OUT_DIR="out"
 DOCUMENTDB_VERSION="${DOCUMENTDB_VERSION:-latest}"
 SUITE="${SUITE:-stable}"
+# stable keeps its original paths; latest gets its own pools so each suite indexes only its release.
+case "$SUITE" in
+  stable)
+    CHANNEL_PATH=""
+    PACKAGES_DIR="out/packages"
+    RELEASE_INFO="out/packages/release-info.json" ;;
+  latest)
+    CHANNEL_PATH="/latest"
+    # Nothing links to a direct-download mirror of latest, so its assets are only staged.
+    PACKAGES_DIR=$(mktemp -d)
+    RELEASE_INFO="out/packages/release-info-latest.json" ;;
+  *)
+    echo "Error: SUITE must be stable or latest (got '$SUITE')"
+    exit 1 ;;
+esac
+DEB_POOL_ROOT="pool${CHANNEL_PATH}"
 COMPONENTS="${COMPONENTS:-main}"
 ORIGIN="${ORIGIN:-DocumentDB}"
 DESCRIPTION="${DESCRIPTION:-DocumentDB APT and YUM Repository}"
@@ -30,14 +46,14 @@ GOT_DEB=0
 GOT_RPM=0
 DEB_POOL="out/deb/pool/${COMPONENTS}"
 # Debian/Ubuntu pools
-DEB_POOL_DEB11="out/deb/pool/deb11"
-DEB_POOL_DEB12="out/deb/pool/deb12"
-DEB_POOL_DEB13="out/deb/pool/deb13"
-DEB_POOL_UBUNTU22="out/deb/pool/ubuntu22"
-DEB_POOL_UBUNTU24="out/deb/pool/ubuntu24"
+DEB_POOL_DEB11="out/deb/${DEB_POOL_ROOT}/deb11"
+DEB_POOL_DEB12="out/deb/${DEB_POOL_ROOT}/deb12"
+DEB_POOL_DEB13="out/deb/${DEB_POOL_ROOT}/deb13"
+DEB_POOL_UBUNTU22="out/deb/${DEB_POOL_ROOT}/ubuntu22"
+DEB_POOL_UBUNTU24="out/deb/${DEB_POOL_ROOT}/ubuntu24"
 # RPM pools
-RPM_POOL_RHEL8="out/rpm/rhel8"
-RPM_POOL_RHEL9="out/rpm/rhel9"
+RPM_POOL_RHEL8="out/rpm${CHANNEL_PATH}/rhel8"
+RPM_POOL_RHEL9="out/rpm${CHANNEL_PATH}/rhel9"
 
 DEB_DISTS="dists/${SUITE}"
 # AMD64 directories
@@ -82,8 +98,18 @@ echo "Downloading packages from $REPO releases"
 # makes stale versions look supported.
 # ---------------------------------------------------------------------------
 
+# Unauthenticated calls share 60 requests/hour per runner IP and fail CI at random.
+github_api() {
+  if [ -n "${GH_TOKEN:-}" ]; then
+    # Header via stdin keeps the token out of argv.
+    curl -q -fsS -H @- "$@" <<<"Authorization: Bearer $GH_TOKEN"
+  else
+    curl -q -fsS "$@"
+  fi
+}
+
 RELEASES_JSON=$(mktemp)
-if ! curl -fqs "https://api.github.com/repos/${REPO}/releases?per_page=100" > "$RELEASES_JSON"; then
+if ! github_api "https://api.github.com/repos/${REPO}/releases?per_page=100" > "$RELEASES_JSON"; then
   echo "Error: Could not fetch release list"
   exit 1
 fi
@@ -205,7 +231,7 @@ mkdir -p out/packages
 
 for tag in "$PRIMARY_TAG"; do
 
-  if ! release=$(curl -fqs "https://api.github.com/repos/${REPO}/releases/tags/$tag"); then
+  if ! release=$(github_api "https://api.github.com/repos/${REPO}/releases/tags/$tag"); then
     echo "::error::Could not fetch selected release $tag"
     exit 1
   fi
@@ -241,7 +267,7 @@ for asset in data.get('assets', []):
         comp=$(deb_component_for "$filename")
         [ -z "$comp" ] && continue
         claim_package "$comp" "$filename" || continue
-        wget -q -P out/packages "$download_url" || {
+        wget -q -P "$PACKAGES_DIR" "$download_url" || {
           echo "::error::Download failed: $filename"
           exit 1
         }
@@ -251,7 +277,7 @@ for asset in data.get('assets', []):
         # The distro prefix disambiguates release assets; it is not part of
         # the package name and must not survive into the pool.
         clean_name=$(echo "$filename" | sed -E 's/^(deb1[123]|ubuntu2[24]\.04)-//')
-        cp "out/packages/$filename" "$pool/$clean_name"
+        cp "$PACKAGES_DIR/$filename" "$pool/$clean_name"
         sign_deb_package "$pool/$clean_name"
         added=$((added + 1)) ;;
 
@@ -277,7 +303,7 @@ for asset in data.get('assets', []):
             *) continue ;;
           esac
           if [ "$downloaded" -eq 0 ]; then
-            wget -q -P out/packages "$download_url" || {
+            wget -q -P "$PACKAGES_DIR" "$download_url" || {
               echo "::error::Download failed: $filename"
               exit 1
             }
@@ -286,7 +312,7 @@ for asset in data.get('assets', []):
           fi
           mkdir -p "$dest"
           echo "  Adding to ${t}: $filename -> $clean_name"
-          cp "out/packages/$filename" "$dest/$clean_name"
+          cp "$PACKAGES_DIR/$filename" "$dest/$clean_name"
           added=$((added + 1))
         done ;;
 
@@ -294,7 +320,7 @@ for asset in data.get('assets', []):
         # Non-package assets (SHA256SUMS, manifest.txt, ...) are mirrored only
         # for the primary release, which is what the site links to.
         if [ "$tag" = "$PRIMARY_TAG" ]; then
-          wget -q -P out/packages "$download_url" || {
+          wget -q -P "$PACKAGES_DIR" "$download_url" || {
             echo "::error::Download failed: $filename"
             exit 1
           }
@@ -307,10 +333,12 @@ for asset in data.get('assets', []):
 done
 
 rm -f "$RELEASES_JSON" "$SEEN_FILE"
+# PACKAGES_DIR is the published out/packages for stable and a mktemp staging dir otherwise.
+[ "$SUITE" = stable ] || rm -rf "$PACKAGES_DIR"
 
 # release-info.json describes the primary release only: it is the "what is the
 # current version" feed for the site, not an inventory of the pool.
-release=$(curl -fqs "https://api.github.com/repos/${REPO}/releases/tags/${PRIMARY_TAG}")
+# $release still holds PRIMARY_TAG from the download loop.
 echo "$release" | python3 -c "
 import sys, json
 data = json.load(sys.stdin)
@@ -327,7 +355,7 @@ output = {
     } for asset in data.get('assets', [])]
 }
 print(json.dumps(output, indent=2))
-" > out/packages/release-info.json
+" > "$RELEASE_INFO"
 
 echo "Successfully processed packages from $REPO"
 echo "GOT_DEB=$GOT_DEB, GOT_RPM=$GOT_RPM"
@@ -345,120 +373,120 @@ if [ "$GOT_DEB" = "1" ]; then
   echo "Building APT repository with active and retired compatibility components..."
   pushd out/deb >/dev/null
   
-    if [ -d "pool/ubuntu22" ] && [ "$(ls -A pool/ubuntu22/*.deb 2>/dev/null)" ]; then
+    if [ -d "${DEB_POOL_ROOT}/ubuntu22" ] && [ "$(ls -A ${DEB_POOL_ROOT}/ubuntu22/*.deb 2>/dev/null)" ]; then
     mkdir -p "${DEB_DISTS_COMPONENTS_AMD64}" "${DEB_DISTS_COMPONENTS_ARM64}"
-    dpkg-scanpackages --arch amd64 pool/ubuntu22/ > "${DEB_DISTS_COMPONENTS_AMD64}/Packages"
-    dpkg-scanpackages --arch arm64 pool/ubuntu22/ > "${DEB_DISTS_COMPONENTS_ARM64}/Packages"
+    dpkg-scanpackages --arch amd64 ${DEB_POOL_ROOT}/ubuntu22/ > "${DEB_DISTS_COMPONENTS_AMD64}/Packages"
+    dpkg-scanpackages --arch arm64 ${DEB_POOL_ROOT}/ubuntu22/ > "${DEB_DISTS_COMPONENTS_ARM64}/Packages"
     gzip -k -f "${DEB_DISTS_COMPONENTS_AMD64}/Packages" "${DEB_DISTS_COMPONENTS_ARM64}/Packages"
   fi
   
-  if [ -d "pool/deb11" ] && [ "$(ls -A pool/deb11/*.deb 2>/dev/null)" ]; then
+  if [ -d "${DEB_POOL_ROOT}/deb11" ] && [ "$(ls -A ${DEB_POOL_ROOT}/deb11/*.deb 2>/dev/null)" ]; then
     mkdir -p "${DEB_DISTS_DEB11_AMD64}" "${DEB_DISTS_DEB11_ARM64}"
-    dpkg-scanpackages --arch amd64 pool/deb11/ > "${DEB_DISTS_DEB11_AMD64}/Packages"
-    dpkg-scanpackages --arch arm64 pool/deb11/ > "${DEB_DISTS_DEB11_ARM64}/Packages"
+    dpkg-scanpackages --arch amd64 ${DEB_POOL_ROOT}/deb11/ > "${DEB_DISTS_DEB11_AMD64}/Packages"
+    dpkg-scanpackages --arch arm64 ${DEB_POOL_ROOT}/deb11/ > "${DEB_DISTS_DEB11_ARM64}/Packages"
     gzip -k -f "${DEB_DISTS_DEB11_AMD64}/Packages" "${DEB_DISTS_DEB11_ARM64}/Packages"
   fi
   
-  if [ -d "pool/deb12" ] && [ "$(ls -A pool/deb12/*.deb 2>/dev/null)" ]; then
+  if [ -d "${DEB_POOL_ROOT}/deb12" ] && [ "$(ls -A ${DEB_POOL_ROOT}/deb12/*.deb 2>/dev/null)" ]; then
     mkdir -p "${DEB_DISTS_DEB12_AMD64}" "${DEB_DISTS_DEB12_ARM64}"
-    dpkg-scanpackages --arch amd64 pool/deb12/ > "${DEB_DISTS_DEB12_AMD64}/Packages"
-    dpkg-scanpackages --arch arm64 pool/deb12/ > "${DEB_DISTS_DEB12_ARM64}/Packages"
+    dpkg-scanpackages --arch amd64 ${DEB_POOL_ROOT}/deb12/ > "${DEB_DISTS_DEB12_AMD64}/Packages"
+    dpkg-scanpackages --arch arm64 ${DEB_POOL_ROOT}/deb12/ > "${DEB_DISTS_DEB12_ARM64}/Packages"
     gzip -k -f "${DEB_DISTS_DEB12_AMD64}/Packages" "${DEB_DISTS_DEB12_ARM64}/Packages"
   fi
 
-  if [ -d "pool/deb13" ] && [ "$(ls -A pool/deb13/*.deb 2>/dev/null)" ]; then
+  if [ -d "${DEB_POOL_ROOT}/deb13" ] && [ "$(ls -A ${DEB_POOL_ROOT}/deb13/*.deb 2>/dev/null)" ]; then
     mkdir -p "${DEB_DISTS_DEB13_AMD64}" "${DEB_DISTS_DEB13_ARM64}"
-    dpkg-scanpackages --arch amd64 pool/deb13/ > "${DEB_DISTS_DEB13_AMD64}/Packages"
-    dpkg-scanpackages --arch arm64 pool/deb13/ > "${DEB_DISTS_DEB13_ARM64}/Packages"
+    dpkg-scanpackages --arch amd64 ${DEB_POOL_ROOT}/deb13/ > "${DEB_DISTS_DEB13_AMD64}/Packages"
+    dpkg-scanpackages --arch arm64 ${DEB_POOL_ROOT}/deb13/ > "${DEB_DISTS_DEB13_ARM64}/Packages"
     gzip -k -f "${DEB_DISTS_DEB13_AMD64}/Packages" "${DEB_DISTS_DEB13_ARM64}/Packages"
   fi
   
-  if [ -d "pool/ubuntu22" ] && [ "$(ls -A pool/ubuntu22/*.deb 2>/dev/null)" ]; then
+  if [ -d "${DEB_POOL_ROOT}/ubuntu22" ] && [ "$(ls -A ${DEB_POOL_ROOT}/ubuntu22/*.deb 2>/dev/null)" ]; then
     mkdir -p "${DEB_DISTS_UBUNTU22_AMD64}" "${DEB_DISTS_UBUNTU22_ARM64}"
-    dpkg-scanpackages --arch amd64 pool/ubuntu22/ > "${DEB_DISTS_UBUNTU22_AMD64}/Packages"
-    dpkg-scanpackages --arch arm64 pool/ubuntu22/ > "${DEB_DISTS_UBUNTU22_ARM64}/Packages"
+    dpkg-scanpackages --arch amd64 ${DEB_POOL_ROOT}/ubuntu22/ > "${DEB_DISTS_UBUNTU22_AMD64}/Packages"
+    dpkg-scanpackages --arch arm64 ${DEB_POOL_ROOT}/ubuntu22/ > "${DEB_DISTS_UBUNTU22_ARM64}/Packages"
     gzip -k -f "${DEB_DISTS_UBUNTU22_AMD64}/Packages" "${DEB_DISTS_UBUNTU22_ARM64}/Packages"
   fi
   
-  if [ -d "pool/ubuntu24" ] && [ "$(ls -A pool/ubuntu24/*.deb 2>/dev/null)" ]; then
+  if [ -d "${DEB_POOL_ROOT}/ubuntu24" ] && [ "$(ls -A ${DEB_POOL_ROOT}/ubuntu24/*.deb 2>/dev/null)" ]; then
     mkdir -p "${DEB_DISTS_UBUNTU24_AMD64}" "${DEB_DISTS_UBUNTU24_ARM64}"
-    dpkg-scanpackages --arch amd64 pool/ubuntu24/ > "${DEB_DISTS_UBUNTU24_AMD64}/Packages"
-    dpkg-scanpackages --arch arm64 pool/ubuntu24/ > "${DEB_DISTS_UBUNTU24_ARM64}/Packages"
+    dpkg-scanpackages --arch amd64 ${DEB_POOL_ROOT}/ubuntu24/ > "${DEB_DISTS_UBUNTU24_AMD64}/Packages"
+    dpkg-scanpackages --arch arm64 ${DEB_POOL_ROOT}/ubuntu24/ > "${DEB_DISTS_UBUNTU24_ARM64}/Packages"
     gzip -k -f "${DEB_DISTS_UBUNTU24_AMD64}/Packages" "${DEB_DISTS_UBUNTU24_ARM64}/Packages"
   fi
   
   # Create deb11 component (Debian 11 Bullseye)
-  if [ -d "pool/deb11" ] && [ "$(ls -A pool/deb11/*.deb 2>/dev/null)" ]; then
+  if [ -d "${DEB_POOL_ROOT}/deb11" ] && [ "$(ls -A ${DEB_POOL_ROOT}/deb11/*.deb 2>/dev/null)" ]; then
     # AMD64 packages
     mkdir -p "${DEB_DISTS_DEB11_AMD64}"
     echo "Scanning Debian 11 AMD64 packages for deb11 component"
-    dpkg-scanpackages --arch amd64 pool/deb11/ > "${DEB_DISTS_DEB11_AMD64}/Packages"
+    dpkg-scanpackages --arch amd64 ${DEB_POOL_ROOT}/deb11/ > "${DEB_DISTS_DEB11_AMD64}/Packages"
     gzip -k -f "${DEB_DISTS_DEB11_AMD64}/Packages"
     
     # ARM64 packages
     mkdir -p "${DEB_DISTS_DEB11_ARM64}"
     echo "Scanning Debian 11 ARM64 packages for deb11 component"
-    dpkg-scanpackages --arch arm64 pool/deb11/ > "${DEB_DISTS_DEB11_ARM64}/Packages"
+    dpkg-scanpackages --arch arm64 ${DEB_POOL_ROOT}/deb11/ > "${DEB_DISTS_DEB11_ARM64}/Packages"
     gzip -k -f "${DEB_DISTS_DEB11_ARM64}/Packages"
   fi
   
   # Create deb12 component (Debian 12 Bookworm)
-  if [ -d "pool/deb12" ] && [ "$(ls -A pool/deb12/*.deb 2>/dev/null)" ]; then
+  if [ -d "${DEB_POOL_ROOT}/deb12" ] && [ "$(ls -A ${DEB_POOL_ROOT}/deb12/*.deb 2>/dev/null)" ]; then
     # AMD64 packages
     mkdir -p "${DEB_DISTS_DEB12_AMD64}"
     echo "Scanning Debian 12 AMD64 packages for deb12 component"
-    dpkg-scanpackages --arch amd64 pool/deb12/ > "${DEB_DISTS_DEB12_AMD64}/Packages"
+    dpkg-scanpackages --arch amd64 ${DEB_POOL_ROOT}/deb12/ > "${DEB_DISTS_DEB12_AMD64}/Packages"
     gzip -k -f "${DEB_DISTS_DEB12_AMD64}/Packages"
     
     # ARM64 packages
     mkdir -p "${DEB_DISTS_DEB12_ARM64}"
     echo "Scanning Debian 12 ARM64 packages for deb12 component"
-    dpkg-scanpackages --arch arm64 pool/deb12/ > "${DEB_DISTS_DEB12_ARM64}/Packages"
+    dpkg-scanpackages --arch arm64 ${DEB_POOL_ROOT}/deb12/ > "${DEB_DISTS_DEB12_ARM64}/Packages"
     gzip -k -f "${DEB_DISTS_DEB12_ARM64}/Packages"
   fi
 
   # Create deb13 component (Debian 13 Trixie)
-  if [ -d "pool/deb13" ] && [ "$(ls -A pool/deb13/*.deb 2>/dev/null)" ]; then
+  if [ -d "${DEB_POOL_ROOT}/deb13" ] && [ "$(ls -A ${DEB_POOL_ROOT}/deb13/*.deb 2>/dev/null)" ]; then
     # AMD64 packages
     mkdir -p "${DEB_DISTS_DEB13_AMD64}"
     echo "Scanning Debian 13 AMD64 packages for deb13 component"
-    dpkg-scanpackages --arch amd64 pool/deb13/ > "${DEB_DISTS_DEB13_AMD64}/Packages"
+    dpkg-scanpackages --arch amd64 ${DEB_POOL_ROOT}/deb13/ > "${DEB_DISTS_DEB13_AMD64}/Packages"
     gzip -k -f "${DEB_DISTS_DEB13_AMD64}/Packages"
 
     # ARM64 packages
     mkdir -p "${DEB_DISTS_DEB13_ARM64}"
     echo "Scanning Debian 13 ARM64 packages for deb13 component"
-    dpkg-scanpackages --arch arm64 pool/deb13/ > "${DEB_DISTS_DEB13_ARM64}/Packages"
+    dpkg-scanpackages --arch arm64 ${DEB_POOL_ROOT}/deb13/ > "${DEB_DISTS_DEB13_ARM64}/Packages"
     gzip -k -f "${DEB_DISTS_DEB13_ARM64}/Packages"
   fi
   
   # Create ubuntu22 component (Ubuntu 22.04 Jammy)
-  if [ -d "pool/ubuntu22" ] && [ "$(ls -A pool/ubuntu22/*.deb 2>/dev/null)" ]; then
+  if [ -d "${DEB_POOL_ROOT}/ubuntu22" ] && [ "$(ls -A ${DEB_POOL_ROOT}/ubuntu22/*.deb 2>/dev/null)" ]; then
     # AMD64 packages
     mkdir -p "${DEB_DISTS_UBUNTU22_AMD64}"
     echo "Scanning Ubuntu 22.04 AMD64 packages for ubuntu22 component"
-    dpkg-scanpackages --arch amd64 pool/ubuntu22/ > "${DEB_DISTS_UBUNTU22_AMD64}/Packages"
+    dpkg-scanpackages --arch amd64 ${DEB_POOL_ROOT}/ubuntu22/ > "${DEB_DISTS_UBUNTU22_AMD64}/Packages"
     gzip -k -f "${DEB_DISTS_UBUNTU22_AMD64}/Packages"
     
     # ARM64 packages
     mkdir -p "${DEB_DISTS_UBUNTU22_ARM64}"
     echo "Scanning Ubuntu 22.04 ARM64 packages for ubuntu22 component"
-    dpkg-scanpackages --arch arm64 pool/ubuntu22/ > "${DEB_DISTS_UBUNTU22_ARM64}/Packages"
+    dpkg-scanpackages --arch arm64 ${DEB_POOL_ROOT}/ubuntu22/ > "${DEB_DISTS_UBUNTU22_ARM64}/Packages"
     gzip -k -f "${DEB_DISTS_UBUNTU22_ARM64}/Packages"
   fi
   
   # Create ubuntu24 component (Ubuntu 24.04 Noble)
-  if [ -d "pool/ubuntu24" ] && [ "$(ls -A pool/ubuntu24/*.deb 2>/dev/null)" ]; then
+  if [ -d "${DEB_POOL_ROOT}/ubuntu24" ] && [ "$(ls -A ${DEB_POOL_ROOT}/ubuntu24/*.deb 2>/dev/null)" ]; then
     # AMD64 packages
     mkdir -p "${DEB_DISTS_UBUNTU24_AMD64}"
     echo "Scanning Ubuntu 24.04 AMD64 packages for ubuntu24 component"
-    dpkg-scanpackages --arch amd64 pool/ubuntu24/ > "${DEB_DISTS_UBUNTU24_AMD64}/Packages"
+    dpkg-scanpackages --arch amd64 ${DEB_POOL_ROOT}/ubuntu24/ > "${DEB_DISTS_UBUNTU24_AMD64}/Packages"
     gzip -k -f "${DEB_DISTS_UBUNTU24_AMD64}/Packages"
     
     # ARM64 packages
     mkdir -p "${DEB_DISTS_UBUNTU24_ARM64}"
     echo "Scanning Ubuntu 24.04 ARM64 packages for ubuntu24 component"
-    dpkg-scanpackages --arch arm64 pool/ubuntu24/ > "${DEB_DISTS_UBUNTU24_ARM64}/Packages"
+    dpkg-scanpackages --arch arm64 ${DEB_POOL_ROOT}/ubuntu24/ > "${DEB_DISTS_UBUNTU24_ARM64}/Packages"
     gzip -k -f "${DEB_DISTS_UBUNTU24_ARM64}/Packages"
   fi
 
@@ -523,13 +551,13 @@ if [ "$GOT_RPM" = "1" ]; then
   
   # Adjust RPM pool paths if we're in the wrong directory after APT processing
   if [[ "$PWD" == */out/deb ]]; then
-    RHEL8_POOL="../rpm/rhel8"
-    RHEL9_POOL="../rpm/rhel9"
-    MAIN_POOL="../rpm/main"
+    RHEL8_POOL="../rpm${CHANNEL_PATH}/rhel8"
+    RHEL9_POOL="../rpm${CHANNEL_PATH}/rhel9"
+    MAIN_POOL="../rpm${CHANNEL_PATH}/main"
   else
     RHEL8_POOL="$RPM_POOL_RHEL8"
     RHEL9_POOL="$RPM_POOL_RHEL9"
-    MAIN_POOL="out/rpm/main"
+    MAIN_POOL="out/rpm${CHANNEL_PATH}/main"
   fi
   
   for POOL in "$RHEL8_POOL" "$RHEL9_POOL"; do
@@ -583,7 +611,7 @@ fi
 echo "Package repository setup complete!"
 echo ""
 echo "Repository URLs:"
-echo "  APT: https://documentdb.io/deb stable ubuntu24"
-echo "  YUM: https://documentdb.io/rpm/rhel9"
+echo "  APT: https://documentdb.io/deb ${SUITE} ubuntu24"
+echo "  YUM: https://documentdb.io/rpm${CHANNEL_PATH}/rhel9"
 echo "  Retired URLs retain empty metadata for package-manager compatibility."
 echo "  Browse: https://documentdb.io/packages/"

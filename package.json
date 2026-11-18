@@ -49,7 +49,7 @@
     "eslint": "^10.8.0",
     "eslint-config-next": "^16.2.12",
     "ink": "^8.0.0",
-    "minimatch": "^10.1.1",
+    "minimatch": "^11.0.1",
     "serve": "^14.2.5",
     "tailwindcss": "^4.1.18",
     "tsx": "^4.21.0",

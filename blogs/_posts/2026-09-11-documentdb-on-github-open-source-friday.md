@@ -23,7 +23,7 @@ The conversation covered familiar MongoDB workflows on PostgreSQL, the experienc
 
 The [demo introduction begins at 16:31](https://www.youtube.com/watch?v=TkxGupjwdxE&t=991s). Using a local Docker instance and the DocumentDB extension for VS Code, Patty walks through creating a database and collection, importing home-listing data, and querying it in a playground.
 
-That workflow gives developers a way to explore the project in an editor they already use. The sample data makes it possible to inspect documents and try queries without first building a complete application. The episode demonstrates the introductory steps of a larger booking-agent sample; it does not walk through the full application or its vector-search features.
+That workflow gives developers a way to explore the project in an editor they already use. The sample data makes it possible to inspect documents and try queries without first building a complete application. The episode demonstrates the introductory steps of a larger booking-agent sample; it doesn't walk through the full application or its vector-search features.
 
 For an up-to-date setup, use the [getting-started guide](https://documentdb.io/docs/getting-started/). Installation details can change after a recording.
 
@@ -47,6 +47,6 @@ The longer-term discussion includes collaboration across cloud companies and an 
 
 At [54:09](https://www.youtube.com/watch?v=TkxGupjwdxE&t=3249s), Patty explains how evaluating the project and sharing feedback can help its development. A question about installation or a reproducible example of unexpected behavior gives maintainers something concrete to work with.
 
-You do not need to know how to fix the database before reporting a problem. Describe what you were trying to do, include the relevant versions, and show what happened compared with the result you expected.
+You don't need to know how to fix the database before reporting a problem. Describe what you were trying to do, include the relevant versions, and show what happened compared with the result you expected.
 
 Read the [contribution guide](https://github.com/documentdb/documentdb/blob/main/CONTRIBUTING.md) for the project's discussion channels and contribution process. The episode is a useful introduction; trying a workload of your own is the next step.

@@ -2,7 +2,7 @@
 
 Repository-backed installation commands for DocumentDB.
 
-> This repository serves v1.0-0.
+> The `latest` and `stable` channels both serve v1.2-0; see [Release channels](#release-channels).
 
 ## Clean-host installer
 
@@ -13,19 +13,45 @@ curl -fsSLo documentdb-install.sh https://documentdb.io/install.sh &&
 sudo sh documentdb-install.sh
 ```
 
-This installs v1.0-0 from this repository on PostgreSQL 18; add `--pg-major 17`
-for 17. On a host where DocumentDB is already set up, it only reports that instance's status
-and doesn't upgrade it; to move an existing install to 1.0, see
-[Upgrading an existing install](#upgrading-an-existing-install).
+This installs v1.2-0 from the `latest` channel on PostgreSQL 18; add `--pg-major 17` for 17.
+The host keeps that channel, so `apt upgrade` and `dnf upgrade` follow `latest` to new releases.
+To choose another release, add one option:
+
+- `--stable`: the `stable` channel (v1.2-0), with the same repository definition the 1.0
+  installer wrote.
+- `--version 1.0.0`: exactly that release (1.0.0 or later; `1.2` means `1.2.0`), downloaded from
+  its GitHub release and checked against its `SHA256SUMS`. No DocumentDB repository is
+  configured, so the package manager never upgrades it.
+
+The installer only sets up new installs: on a host where DocumentDB is already installed it
+changes no packages. To move an existing install to a newer release, see
+[Upgrading an existing install](#upgrading-an-existing-install). A host whose DocumentDB
+repository file is the other channel's is refused, not rewritten: rerun with the matching option,
+or remove `/etc/apt/sources.list.d/documentdb.list` or `/etc/yum.repos.d/documentdb.repo` to
+switch.
 
 The site serves the `install.sh` attached to the release named in
 `scripts/publish-installer.mjs`, and the build fails if its SHA256 changes.
 
+## Release channels
+
+The repository publishes two channels, each signed with the same key and listing only its own
+release's packages. The commands on this page use `latest`.
+
+| Channel | Release | APT source | DNF `baseurl` |
+|---|---|---|---|
+| `latest` | v1.2-0 | `https://documentdb.io/deb latest ubuntu24` | `https://documentdb.io/rpm/latest/rhel9` |
+| `stable` | v1.2-0 | `https://documentdb.io/deb stable ubuntu24` | `https://documentdb.io/rpm/rhel9` |
+
+`stable` takes new releases later than `latest`. Release metadata is at
+`https://documentdb.io/packages/release-info-latest.json` for `latest` and
+`https://documentdb.io/packages/release-info.json` for `stable`.
+
 ## What is published
 
 Starting with **v0.116-0**, DocumentDB ships a multi-package layout with a setup wizard and
-systemd integration, instead of just a bare PostgreSQL extension package. The website mirrors
-the package assets attached to one official release; it does not combine the current release
+systemd integration, instead of just a bare PostgreSQL extension package. Each channel mirrors
+the package assets attached to one official release; it does not combine that release
 with stale packages from older releases. This deliberately reduces the hosted package matrix
 compared with earlier releases so every advertised combination corresponds to the current,
 first-party-built release.
@@ -66,7 +92,9 @@ sudo dnf clean all
 ```
 
 To remain on an older target, use the matching GitHub release assets or build from that
-release tag. Those paths are not part of the current hosted support matrix.
+release tag. On Debian 13, [PGDG's extension package](https://github.com/documentdb/docs/blob/main/getting-started/prebuilt-packages.md#pgdg-extension-packages)
+is another option; switching to it is a provider change, not an in-place upgrade. None of
+these paths is part of the current hosted support matrix.
 
 ## Supported PostgreSQL Versions
 
@@ -77,6 +105,9 @@ release tag. Those paths are not part of the current hosted support matrix.
 
 This is the recommended path. It installs the whole stack and brings up a working
 wire-protocol endpoint.
+
+These commands use the `latest` channel. For `stable` (v1.2-0), write `stable` in place of
+`latest` in the DocumentDB APT line, or use `baseurl=https://documentdb.io/rpm/rhel9` on EL9.
 
 > These commands assume a regular Linux host where you use `sudo`. In a clean container that
 > already runs as `root`, omit `sudo`, and on Debian/Ubuntu also
@@ -91,7 +122,7 @@ sudo apt install -y curl ca-certificates gnupg && \
 curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor --yes -o /usr/share/keyrings/postgresql.gpg && \
 echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] https://apt.postgresql.org/pub/repos/apt noble-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list >/dev/null && \
 curl -fsSL https://documentdb.io/documentdb-archive-keyring.gpg | sudo gpg --dearmor --yes -o /usr/share/keyrings/documentdb-archive-keyring.gpg && \
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/documentdb-archive-keyring.gpg] https://documentdb.io/deb stable ubuntu24" | sudo tee /etc/apt/sources.list.d/documentdb.list >/dev/null && \
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/documentdb-archive-keyring.gpg] https://documentdb.io/deb latest ubuntu24" | sudo tee /etc/apt/sources.list.d/documentdb.list >/dev/null && \
 sudo apt update && \
 sudo apt install -y documentdb
 ```
@@ -114,7 +145,7 @@ sudo rpm --import https://documentdb.io/documentdb-archive-keyring.gpg && \
 printf '%s\n' \
   '[documentdb]' \
   'name=DocumentDB Repository' \
-  'baseurl=https://documentdb.io/rpm/rhel9' \
+  'baseurl=https://documentdb.io/rpm/latest/rhel9' \
   'enabled=1' \
   'gpgcheck=1' \
   'gpgkey=https://documentdb.io/documentdb-archive-keyring.gpg' | sudo tee /etc/yum.repos.d/documentdb.repo >/dev/null && \
@@ -135,7 +166,7 @@ sudo rpm --import https://documentdb.io/documentdb-archive-keyring.gpg && \
 printf '%s\n' \
   '[documentdb]' \
   'name=DocumentDB Repository' \
-  'baseurl=https://documentdb.io/rpm/rhel9' \
+  'baseurl=https://documentdb.io/rpm/latest/rhel9' \
   'enabled=1' \
   'gpgcheck=1' \
   'gpgkey=https://documentdb.io/documentdb-archive-keyring.gpg' | sudo tee /etc/yum.repos.d/documentdb.repo >/dev/null && \
@@ -225,7 +256,7 @@ Before using this anywhere but a private machine:
 
 ```bash
 sudo documentdb-setup --status      # gateway listener, service states, resolved paths
-documentdb-gateway --version        # DocumentDB version (1.0.0)
+documentdb-gateway --version        # DocumentDB version (1.2.0 on latest)
 dpkg -l | grep documentdb           # or: rpm -qa | grep documentdb
 ```
 
@@ -313,18 +344,17 @@ On a systemd host, a scoped restore stops and disables that major's gateway:
 sudo documentdb-setup --restore --pg-version 18
 ```
 
-On a host without systemd, the current setup tooling cannot safely attribute a nohup gateway process to one
-PostgreSQL major. If only one DocumentDB major is configured, use an unscoped restore so the
-orphan gateway sweep runs:
+On a host without systemd, the same scoped restore stops the gateway that setup started for
+that major and leaves other majors running. It skips a gateway it has no valid record of; if the
+port is still listening afterwards, find the process on it and stop it. Setup runs the gateway
+as `documentdb-gateway`, so `sudo -u documentdb-gateway ss -lntp` shows its PID even in a
+container where root's `ss` doesn't. An unscoped restore also stops nohup gateways started by
+the packaged binary's full path, but it detaches every configured major; re-run setup for the
+majors you are keeping:
 
 ```bash
 sudo documentdb-setup --restore --yes
 ```
-
-If more than one DocumentDB major is configured without systemd, schedule a maintenance window
-and use the same unscoped restore. It detaches every configured major and stops the nohup
-gateways; re-run setup for the majors you are keeping afterward. A scoped restore alone is not
-sufficient on a no-systemd host.
 
 Restart the adopted PostgreSQL service after restore to apply removal of the managed settings.
 On an unscoped multi-major restore, restart each operator-managed PostgreSQL service involved.
@@ -369,7 +399,8 @@ The current release publishes PostgreSQL 17 and 18. Install `documentdb-17` or
 
 ## Upgrading an existing install
 
-Package installs from v0.116 or v0.117 upgrade in place to 1.0. Move the entire stack
+Package installs from v0.116, v0.117 or 1.0 upgrade in place to 1.2 on either channel; to take each new release as
+soon as it is published, [switch it to `latest`](#switch-from-stable-to-latest). Move the entire stack
 together; upgrading only `postgresql-N-documentdb` does not update the gateway, tools, common
 payload, or `documentdb-N`. These steps use systemd; upgrading a host without it isn't covered here.
 On a package-managed private PostgreSQL 18 instance:
@@ -453,7 +484,39 @@ Confirm afterwards with:
 SELECT extname, extversion FROM pg_extension WHERE extname LIKE 'documentdb%';
 ```
 
+## Switch from `stable` to `latest`
+
+Both channels serve 1.2, and `stable` takes new releases later than `latest`. To have a host
+take each new release as soon as it is published, point its one repository file at `latest` and
+upgrade the packages. This is one-way: a release does not run correctly on data that a newer
+release has updated, so back up the data directory first.
+
+```bash
+# Debian / Ubuntu
+sudo sed -i 's/ stable ubuntu24$/ latest ubuntu24/' /etc/apt/sources.list.d/documentdb.list &&
+sudo apt update &&
+sudo apt upgrade
+
+# EL9: use this instead of the apt commands above
+sudo sed -i 's|/rpm/rhel9$|/rpm/latest/rhel9|' /etc/yum.repos.d/documentdb.repo &&
+sudo dnf upgrade
+```
+
+Then re-run setup with the PostgreSQL major, plus any `--data-dir` or `--pg-port` you installed
+with. It restarts PostgreSQL once to load the new libraries, updates the extensions, and starts the
+gateway; without `--admin-user` it keeps every admin user and password:
+
+```bash
+sudo documentdb-setup --pg-version 18 --yes
+```
+
+For an adopted PostgreSQL instance, run `sudo documentdb-setup --target-postgres-instance 18/main --yes`
+(with your cluster name) instead, then the restart and setup commands it prints.
+
 ## Version pinning
+
+Each channel lists only its own release. To install one exact release that the package manager
+never upgrades, use the installer's `--version` option instead.
 
 Run the repository setup for your distro first, then:
 
@@ -480,17 +543,17 @@ published in the documentdb.io package repositories. Community builds are welcom
 For example, after checking out the matching release tag, build an extension package with:
 
 ```bash
-./packaging/build_packages.sh --os deb12 --pg 16 --version 1.0.0
+./packaging/build_packages.sh --os deb12 --pg 16 --version 1.2.0
 ```
 
-`v1.0-0` and `v1.0-RC2` are on the same commit, so pass `--version`; without it the scripts can build RC-versioned packages. That command builds only `postgresql-N-documentdb`. A custom full-stack package set uses
+Without `--version`, the script takes the version from the checked-out release tag, or else from the control file; at `v1.2-0` both give 1.2.0. That command builds only `postgresql-N-documentdb`. A custom full-stack package set uses
 three entry points:
 
 - `packaging/build_packages.sh` — PostgreSQL extension
 - `packaging/gateway/build_gateway_packages.sh` — wire-protocol gateway
 - `packaging/build_extra_packages.sh` — tools, common payload, `documentdb-N`, and meta package
 
-The [v1.0 packaging guide](https://github.com/documentdb/documentdb/blob/v1.0-0/packaging/README.md)
+The [v1.2 packaging guide](https://github.com/documentdb/documentdb/blob/v1.2-0/packaging/README.md)
 documents their required arguments, version formats, prerequisites, and accepted targets.
 PostgreSQL 15 remains extension-only for package-managed installs because the setup tools
 require PostgreSQL 16 or newer.
@@ -505,9 +568,9 @@ they do not retain packages from older releases.
 Examples:
 
 ```text
-ubuntu24.04-documentdb_1.0.0_all.deb
-ubuntu24.04-postgresql-18-documentdb_1.0-0_amd64.deb
-rhel9-postgresql18-documentdb-1.0.0-1.el9.x86_64.rpm
+ubuntu24.04-documentdb_1.2.0_all.deb
+ubuntu24.04-postgresql-18-documentdb_1.2-0_amd64.deb
+rhel9-postgresql18-documentdb-1.2.0-1.el9.x86_64.rpm
 ```
 
 For a full stack, pass the five packages for the selected PostgreSQL major to one command:
@@ -519,10 +582,12 @@ dependencies are not included still fails. Alternatively, use the repository-bac
 above.
 
 - GitHub Releases: https://github.com/documentdb/documentdb/releases
-- Release metadata: https://documentdb.io/packages/release-info.json
+- Release metadata: https://documentdb.io/packages/release-info-latest.json (`latest`),
+  https://documentdb.io/packages/release-info.json (`stable`)
 
 ## Notes
 
-- The current release publishes the `ubuntu24` APT component and the `rpm/rhel9` repository.
+- Each channel publishes the `ubuntu24` APT component and an `rhel9` RPM repository
+  (`rpm/latest/rhel9` and `rpm/rhel9`).
 - The RPM flow depends on EPEL plus PostgreSQL's upstream RPM repository because DocumentDB depends on PostgreSQL, `pg_cron`, `pgvector`, PostGIS, and `rum` for PostgreSQL 17.
 - On Debian/Ubuntu, the distro-packaged `cargo` can be older than the current gateway workspace lockfile. `rustup` avoids that mismatch.

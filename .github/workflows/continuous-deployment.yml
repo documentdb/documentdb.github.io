@@ -104,8 +104,9 @@ jobs:
           KEY_ID: ${{ steps.import_gpg.outputs.keyid }}
           KEY_NAME: ${{ steps.import_gpg.outputs.name }}
           KEY_EMAIL: ${{ steps.import_gpg.outputs.email }}
-          # Configure which DocumentDB release to mirror.
+          # Configure which DocumentDB release each channel mirrors.
           DOCUMENTDB_VERSION: ${{ vars.DOCUMENTDB_VERSION || 'latest' }}
+          DOCUMENTDB_LATEST_VERSION: ${{ vars.DOCUMENTDB_LATEST_VERSION || 'latest' }}
         run: |
           set -euo pipefail
           if [ "$SIGN" = 'true' ]; then
@@ -123,6 +124,7 @@ jobs:
             echo "To enable signing, add GPG_PRIVATE_KEY to the repository secrets."
           fi
           echo "DOCUMENTDB_VERSION=$DOCUMENTDB_VERSION" >> "$GITHUB_ENV"
+          echo "DOCUMENTDB_LATEST_VERSION=$DOCUMENTDB_LATEST_VERSION" >> "$GITHUB_ENV"
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
@@ -176,9 +178,14 @@ jobs:
             echo "Only $reference_count reference pages exported - documentation content looks incomplete."
             exit 1
           fi
-      - name: Download DocumentDB packages from latest release
+      - name: Download DocumentDB packages for the stable and latest channels
         if: steps.features.outputs.packages == 'true'
-        run: .github/scripts/download_packages.sh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          .github/scripts/download_packages.sh
+          SUITE=latest DOCUMENTDB_VERSION="$DOCUMENTDB_LATEST_VERSION" .github/scripts/download_packages.sh
       - name: Verify generated package components
         if: steps.features.outputs.packages == 'true'
         env:
@@ -275,14 +282,18 @@ jobs:
           # The pool is only meaningful if the meta package is actually in it.
           # Fail loudly rather than "passing" a repository that has nothing to
           # resolve.
-          if ! ls out/deb/pool/ubuntu24/documentdb_*_all.deb >/dev/null 2>&1; then
-            echo "::error::out/deb/pool/ubuntu24 has no documentdb meta package - the APT pool is incomplete"
-            exit 1
-          fi
-          if ! ls out/rpm/rhel9/documentdb-*.noarch.rpm >/dev/null 2>&1; then
-            echo "::error::out/rpm/rhel9 has no documentdb meta package - the RPM pool is incomplete"
-            exit 1
-          fi
+          for pool in out/deb/pool/ubuntu24 out/deb/pool/latest/ubuntu24; do
+            if ! ls "$pool"/documentdb_*_all.deb >/dev/null 2>&1; then
+              echo "::error::$pool has no documentdb meta package - the APT pool is incomplete"
+              exit 1
+            fi
+          done
+          for pool in out/rpm/rhel9 out/rpm/latest/rhel9; do
+            if ! ls "$pool"/documentdb-*.noarch.rpm >/dev/null 2>&1; then
+              echo "::error::$pool has no documentdb meta package - the RPM pool is incomplete"
+              exit 1
+            fi
+          done
 
           python3 -m http.server 8099 --directory out >/tmp/repo-http.log 2>&1 &
           HTTP_PID=$!
@@ -292,7 +303,7 @@ jobs:
             sleep 1
           done
 
-          echo "::group::APT resolution (ubuntu24 component)"
+          echo "::group::APT resolution (ubuntu24 component, stable and latest suites)"
           # --network host so the container reaches the runner's http.server.
           # [trusted=yes] because this local mirror is unsigned when the
           # deployment runs without a signing key; signature verification is
@@ -308,23 +319,25 @@ jobs:
               | gpg --dearmor -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.gpg
             echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.gpg] https://apt.postgresql.org/pub/repos/apt noble-pgdg main" \
               > /etc/apt/sources.list.d/pgdg.list
-            echo "deb [trusted=yes] http://127.0.0.1:8099/deb stable ubuntu24" \
-              > /etc/apt/sources.list.d/documentdb.list
-            apt-get update -qq
-            # -s solves the dependency graph and exits non-zero if it cannot.
-            apt-get install -s documentdb > /tmp/sim.txt
-            # Resolving is necessary but not sufficient: assert the transaction
-            # actually pulls the stack, so a meta package that degenerated into
-            # an empty shell cannot pass.
-            for pkg in documentdb documentdb-common documentdb-gateway documentdb-postgresql-tools; do
-              grep -q "Inst $pkg " /tmp/sim.txt || { echo "APT plan is missing $pkg"; cat /tmp/sim.txt; exit 1; }
+            for suite in stable latest; do
+              echo "deb [trusted=yes] http://127.0.0.1:8099/deb $suite ubuntu24" \
+                > /etc/apt/sources.list.d/documentdb.list
+              apt-get update -qq
+              # -s solves the dependency graph and exits non-zero if it cannot.
+              apt-get install -s documentdb > /tmp/sim.txt
+              # Resolving is necessary but not sufficient: assert the transaction
+              # actually pulls the stack, so a meta package that degenerated into
+              # an empty shell cannot pass.
+              for pkg in documentdb documentdb-common documentdb-gateway documentdb-postgresql-tools; do
+                grep -q "Inst $pkg " /tmp/sim.txt || { echo "APT $suite plan is missing $pkg"; cat /tmp/sim.txt; exit 1; }
+              done
+              grep -qE "Inst postgresql-1[78]-documentdb " /tmp/sim.txt || { echo "APT $suite plan pulls no extension package"; exit 1; }
+              echo "APT $suite OK: $(grep -c "^Inst " /tmp/sim.txt) packages in the plan"
             done
-            grep -qE "Inst postgresql-1[78]-documentdb " /tmp/sim.txt || { echo "APT plan pulls no extension package"; exit 1; }
-            echo "APT OK: $(grep -c "^Inst " /tmp/sim.txt) packages in the plan"
           '
           echo "::endgroup::"
 
-          echo "::group::DNF resolution (rhel9 pool)"
+          echo "::group::DNF resolution (rhel9 pool, stable and latest)"
           docker run --rm --network host -e SIGN="$SIGN" rockylinux/rockylinux:9 bash -c '
             set -e
             dnf install -y -q dnf-plugins-core >/dev/null 2>&1
@@ -332,28 +345,32 @@ jobs:
             dnf install -y -q epel-release >/dev/null 2>&1
             dnf config-manager --set-enabled crb
             dnf -qy module disable postgresql >/dev/null 2>&1
-            if [ "$SIGN" = true ]; then
-              printf "%s\n" "[documentdb]" "name=DocumentDB" \
-                "baseurl=http://127.0.0.1:8099/rpm/rhel9" "enabled=1" \
-                "gpgcheck=1" \
-                "gpgkey=http://127.0.0.1:8099/documentdb-archive-keyring.gpg" \
-                > /etc/yum.repos.d/documentdb.repo
-            else
-              printf "%s\n" "[documentdb]" "name=DocumentDB" \
-                "baseurl=http://127.0.0.1:8099/rpm/rhel9" "enabled=1" "gpgcheck=0" \
-                > /etc/yum.repos.d/documentdb.repo
-            fi
-            # --assumeno always exits non-zero (the answer is "no"), so judge the
-            # transaction it printed rather than the exit code.
-            dnf install --assumeno documentdb > /tmp/sim.txt 2>&1 || true
-            if grep -qE "^Error|nothing provides|Problem:" /tmp/sim.txt; then
-              echo "DNF could not resolve documentdb:"; cat /tmp/sim.txt; exit 1
-            fi
-            for pkg in documentdb-common documentdb-gateway documentdb-postgresql-tools; do
-              grep -q "$pkg" /tmp/sim.txt || { echo "DNF plan is missing $pkg"; cat /tmp/sim.txt; exit 1; }
+            for path in rpm/rhel9 rpm/latest/rhel9; do
+              # A repo id per channel keeps dnf from reusing the previous channel metadata.
+              repo="documentdb-$(echo "$path" | tr / -)"
+              if [ "$SIGN" = true ]; then
+                printf "%s\n" "[$repo]" "name=DocumentDB" \
+                  "baseurl=http://127.0.0.1:8099/$path" "enabled=1" \
+                  "gpgcheck=1" \
+                  "gpgkey=http://127.0.0.1:8099/documentdb-archive-keyring.gpg" \
+                  > /etc/yum.repos.d/documentdb.repo
+              else
+                printf "%s\n" "[$repo]" "name=DocumentDB" \
+                  "baseurl=http://127.0.0.1:8099/$path" "enabled=1" "gpgcheck=0" \
+                  > /etc/yum.repos.d/documentdb.repo
+              fi
+              # --assumeno always exits non-zero (the answer is "no"), so judge the
+              # transaction it printed rather than the exit code.
+              dnf install --assumeno documentdb > /tmp/sim.txt 2>&1 || true
+              if grep -qE "^Error|nothing provides|Problem:" /tmp/sim.txt; then
+                echo "DNF $path could not resolve documentdb:"; cat /tmp/sim.txt; exit 1
+              fi
+              for pkg in documentdb-common documentdb-gateway documentdb-postgresql-tools; do
+                grep -q "$pkg" /tmp/sim.txt || { echo "DNF $path plan is missing $pkg"; cat /tmp/sim.txt; exit 1; }
+              done
+              grep -qE "postgresql1[78]-documentdb" /tmp/sim.txt || { echo "DNF $path plan pulls no extension package"; exit 1; }
+              echo "DNF $path OK"
             done
-            grep -qE "postgresql1[78]-documentdb" /tmp/sim.txt || { echo "DNF plan pulls no extension package"; exit 1; }
-            echo "DNF OK"
           '
           echo "::endgroup::"
       - name: Upload artifact

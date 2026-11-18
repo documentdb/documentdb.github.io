@@ -43,30 +43,30 @@ Suppose users interact with your application's interface or API while the databa
 
 ### A common SSPL pitfall: your application becomes a database service
 
-Consider a team whose product begins as a conventional hosted application with MongoDB Community Server behind it. Later, the team adds a feature that lets customers create isolated database instances, connect with MongoDB-compatible clients, run database queries, and manage their own collections. Engineering may see this as an incremental product feature, but the licensing analysis has changed: third parties can now interact with the database's functionality as a service.
+Consider a team whose product begins as a conventional hosted application with MongoDB Community Server behind it. Later, the team adds a feature that lets customers create isolated database instances, connect with MongoDB-compatible clients, run database queries, and manage their own collections. Engineering might see this feature as an incremental product improvement, but the licensing analysis changes: third parties can now interact with the database's functionality as a service.
 
-Under SSPL Section 13, offering MongoDB Community Server this way requires the **Service Source Code** to be available to everyone at no charge under SSPL. Publishing only changes to the database server is not enough. The definition extends to programs used to provide the service, including management software, user interfaces, APIs, automation, monitoring, backup, storage, and hosting software, such that a user could run an instance of the service from the released source.
+Under SSPL Section 13, offering MongoDB Community Server this way requires the **Service Source Code** to be available to everyone at no charge under SSPL. Publishing only changes to the database server isn't enough. The definition extends to programs used to provide the service, including management software, user interfaces, APIs, automation, monitoring, backup, storage, and hosting software, such that a user could run an instance of the service from the released source.
 
-The practical trap is failing to revisit the license when the product architecture changes. A team may have built a proprietary control plane before realizing that a database-as-a-service feature brings it within the service-source requirement. At that point, the choices may include complying with SSPL, obtaining different license rights, redesigning the offering, or selecting a permissively licensed engine. SSPL does **not** prohibit hosting, and not every application that uses MongoDB is a database service; the distinction depends on what functionality is made available to third parties.
+The practical trap is failing to revisit the license when the product architecture changes. A team might have built a proprietary control plane before realizing that a database-as-a-service feature brings it within the service-source requirement. At that point, the choices might include complying with SSPL, obtaining different license rights, redesigning the offering, or selecting a permissively licensed engine. SSPL does **not** prohibit hosting, and not every application that uses MongoDB is a database service. The distinction depends on what functionality is made available to third parties.
 
 With DocumentDB's MIT license, a team can offer hosted database instances, modify the engine, and keep its management software private without an MIT obligation to publish service source. It must still preserve the copyright and MIT license notice where the license requires it and comply with the licenses of other components in the service.
 
 ### You publish a container or ship an on-premises product
 
-Running software internally and giving someone else a copy are different licensing events. Under MIT, keep the DocumentDB copyright and license notice with copies or substantial portions of the software you distribute; you are not required by MIT to publish your changes. Apache 2.0 permits a similar proprietary distribution but has additional license, modification, and applicable NOTICE-attribution requirements. SSPL has copyleft obligations on distributed covered works *even when you are not hosting a database service*, separate from its Section 13 service provision.
+Running software internally and giving someone else a copy are different licensing events. Under MIT, keep the DocumentDB copyright and license notice with copies or substantial portions of the software you distribute; MIT doesn't require you to publish your changes. Apache 2.0 permits a similar proprietary distribution but has additional license, modification, and applicable NOTICE-attribution requirements. SSPL has copyleft obligations on distributed covered works *even when you're not hosting a database service*, separate from its Section 13 service provision.
 
-Containers, virtual-machine images, installers, appliances, and on-premises bundles can all carry third-party software. Check the license of every component in the artifact you publish; a MongoDB-compatible wire protocol does not give you permission to copy a differently licensed database server.
+Containers, virtual-machine images, installers, appliances, and on-premises bundles can all carry third-party software. Check the license of every component in the artifact you publish. A MongoDB-compatible wire protocol doesn't give you permission to copy a differently licensed database server.
 
 ## A license checklist before deployment or release
 
 Before publishing a product or opening a service to users:
 
-1. **Inventory the exact components and versions.** Include the database, extensions, drivers, images, operating-system packages, and bundled tools. A software bill of materials can help, but it does not replace reading the licenses.
-2. **Classify how each component is used.** Internal use, modification, distribution, and making functionality available over a network can carry different obligations.
+1. **Inventory the exact components and versions.** Include the database, extensions, drivers, images, operating-system packages, and bundled tools. A software bill of materials can help, but it doesn't replace reading the licenses.
+2. **Classify how you use each component.** Internal use, modification, distribution, and making functionality available over a network can carry different obligations.
 3. **Prepare the required notices.** Preserve applicable copyright notices, license texts, attribution notices, and modification notices in the locations required by each license.
-4. **Plan for source obligations before release.** If a license requires Corresponding Source or Service Source Code, determine what must be included, how recipients will obtain it, and how long it must remain available.
+4. **Plan for source obligations before release.** If a license requires Corresponding Source or Service Source Code, determine what you must include, how recipients will obtain it, and how long it must remain available.
 5. **Review product changes, not just dependency updates.** Adding direct database access, customer-managed clusters, downloadable images, or an on-premises edition can change the analysis even when the database version stays the same.
-6. **Check the whole distribution.** A permissively licensed database does not override the licenses of its dependencies, plugins, drivers, or management tools.
+6. **Check the whole distribution.** A permissively licensed database doesn't override the licenses of its dependencies, plugins, drivers, or management tools.
 
 ## Why "open source" matters here
 
@@ -74,7 +74,7 @@ Open source is about what you may **do** with the code, not just whether you can
 
 DocumentDB is a PostgreSQL-based implementation of a MongoDB-compatible API, not a copy of MongoDB's server code. MongoDB-supported [drivers are Apache 2.0-licensed](https://www.mongodb.com/legal/licensing/community-edition). Connecting with a compatible driver does not change DocumentDB's MIT license or import the server's SSPL into your own code. Compatibility is not identity: check supported features and behavior for your workload before migrating.
 
-**Bottom line:** For developers, startups, platform teams, and software vendors, the MIT license permits experimentation, commercial use, distribution, and managed DocumentDB services while requiring preservation of its copyright and license notice in copies or substantial portions. It does not impose a license-triggered requirement to publish a hosting stack. Apache 2.0 provides similar flexibility with additional conditions and an express patent grant. SSPL permits many uses too, but distribution and database-as-a-service plans require careful attention to its copyleft terms and Section 13. Licensing does not replace performance testing, security work, support planning, or review of other components' terms.
+**Bottom line:** For developers, startups, platform teams, and software vendors, the MIT license permits experimentation, commercial use, distribution, and managed DocumentDB services while requiring preservation of its copyright and license notice in copies or substantial portions. It doesn't impose a license-triggered requirement to publish a hosting stack. Apache 2.0 provides similar flexibility with additional conditions and an express patent grant. SSPL permits many uses too, but distribution and database-as-a-service plans require careful attention to its copyleft terms and Section 13. Licensing doesn't replace performance testing, security work, support planning, or review of other components' terms.
 
 ## References
 
@@ -85,4 +85,4 @@ DocumentDB is a PostgreSQL-based implementation of a MongoDB-compatible API, not
 - [Open Source Initiative: The SSPL Is Not an Open Source License](https://opensource.org/blog/the-sspl-is-not-an-open-source-license)
 - [PostgreSQL License](https://www.postgresql.org/about/licence/) and [Linux Foundation: DocumentDB joins under the MIT license](https://www.linuxfoundation.org/press/linux-foundation-welcomes-documentdb-to-advance-open-developer-first-nosql-innovation)
 
-This is a practical summary of published license terms, not legal advice. For a product or hosting model where the boundary between an app and a database service is unclear, review the licenses and consult qualified counsel.
+This article is a practical summary of published license terms, not legal advice. For a product or hosting model where the boundary between an app and a database service is unclear, review the licenses and consult qualified counsel.

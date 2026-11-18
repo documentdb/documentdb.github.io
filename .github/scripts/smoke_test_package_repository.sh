@@ -6,14 +6,27 @@ PORT="${PACKAGE_REPOSITORY_PORT:-8099}"
 NETWORK="documentdb-package-test-$$"
 SERVER_NAME="documentdb-package-repo-$$"
 
-if ! ls out/deb/pool/ubuntu24/documentdb_*_all.deb >/dev/null 2>&1; then
-  echo "::error::out/deb/pool/ubuntu24 has no documentdb meta package."
-  exit 1
-fi
-if ! ls out/rpm/rhel9/documentdb-*.noarch.rpm >/dev/null 2>&1; then
-  echo "::error::out/rpm/rhel9 has no documentdb meta package."
-  exit 1
-fi
+for pool in out/deb/pool/ubuntu24 out/deb/pool/latest/ubuntu24; do
+  if ! ls "$pool"/documentdb_*_all.deb >/dev/null 2>&1; then
+    echo "::error::$pool has no documentdb meta package."
+    exit 1
+  fi
+done
+for pool in out/rpm/rhel9 out/rpm/latest/rhel9; do
+  if ! ls "$pool"/documentdb-*.noarch.rpm >/dev/null 2>&1; then
+    echo "::error::$pool has no documentdb meta package."
+    exit 1
+  fi
+done
+
+# Each channel must offer exactly the release its own feed names.
+meta_version() {
+  python3 -c 'import json, re, sys; print(next(m[1] for a in json.load(open(sys.argv[1]))["assets"] if (m := re.fullmatch(r"ubuntu24\.04-documentdb_([^_]+)_all\.deb", a["name"]))))' "$1"
+}
+STABLE_VERSION=$(meta_version out/packages/release-info.json)
+LATEST_VERSION=$(meta_version out/packages/release-info-latest.json)
+CHANNELS="stable=${STABLE_VERSION} latest=${LATEST_VERSION}"
+echo "Expecting $CHANNELS"
 
 cleanup() {
   docker rm -f "$SERVER_NAME" >/dev/null 2>&1 || true
@@ -40,12 +53,17 @@ docker exec "$SERVER_NAME" \
   wget -q -O /dev/null "http://127.0.0.1:${PORT}/rpm/rhel8/repodata/repomd.xml"
 docker exec "$SERVER_NAME" \
   wget -q -O /dev/null "http://127.0.0.1:${PORT}/rpm/main/repodata/repomd.xml"
+docker exec "$SERVER_NAME" \
+  wget -q -O /dev/null "http://127.0.0.1:${PORT}/deb/dists/latest/Release"
+docker exec "$SERVER_NAME" \
+  wget -q -O /dev/null "http://127.0.0.1:${PORT}/rpm/latest/rhel9/repodata/repomd.xml"
 
 echo "::group::APT dependency resolution"
 docker run --rm --network "$NETWORK" \
   -e DOCUMENTDB_REPOSITORY_HOST="$SERVER_NAME" \
   -e DOCUMENTDB_REPOSITORY_PORT="$PORT" \
   -e DOCUMENTDB_REPOSITORY_SIGNED="$SIGN" \
+  -e DOCUMENTDB_CHANNELS="$CHANNELS" \
   ubuntu:24.04 bash -c '
     set -euo pipefail
     export DEBIAN_FRONTEND=noninteractive
@@ -59,28 +77,41 @@ docker run --rm --network "$NETWORK" \
     if [ "$DOCUMENTDB_REPOSITORY_SIGNED" = true ]; then
       curl -fsSL "http://${DOCUMENTDB_REPOSITORY_HOST}:${DOCUMENTDB_REPOSITORY_PORT}/documentdb-archive-keyring.gpg" \
         | gpg --dearmor -o /usr/share/keyrings/documentdb.gpg
-      echo "deb [signed-by=/usr/share/keyrings/documentdb.gpg] http://${DOCUMENTDB_REPOSITORY_HOST}:${DOCUMENTDB_REPOSITORY_PORT}/deb stable ubuntu24" \
-        > /etc/apt/sources.list.d/documentdb.list
-    else
-      echo "deb [trusted=yes] http://${DOCUMENTDB_REPOSITORY_HOST}:${DOCUMENTDB_REPOSITORY_PORT}/deb stable ubuntu24" \
-        > /etc/apt/sources.list.d/documentdb.list
     fi
 
-    apt-get update -qq
-    for major in 17 18; do
-      apt-get install -s "documentdb-${major}" > "/tmp/apt-${major}.txt"
-      for pkg in "documentdb-${major}" documentdb-common documentdb-gateway documentdb-postgresql-tools; do
-        grep -q "Inst ${pkg} " "/tmp/apt-${major}.txt" || {
-          echo "APT PG${major} plan is missing ${pkg}"
+    for channel in $DOCUMENTDB_CHANNELS; do
+      suite=${channel%%=*}
+      version=${channel#*=}
+      if [ "$DOCUMENTDB_REPOSITORY_SIGNED" = true ]; then
+        echo "deb [signed-by=/usr/share/keyrings/documentdb.gpg] http://${DOCUMENTDB_REPOSITORY_HOST}:${DOCUMENTDB_REPOSITORY_PORT}/deb ${suite} ubuntu24" \
+          > /etc/apt/sources.list.d/documentdb.list
+      else
+        echo "deb [trusted=yes] http://${DOCUMENTDB_REPOSITORY_HOST}:${DOCUMENTDB_REPOSITORY_PORT}/deb ${suite} ubuntu24" \
+          > /etc/apt/sources.list.d/documentdb.list
+      fi
+
+      apt-get update -qq
+      offered=$(apt-cache madison documentdb-18 | cut -d"|" -f2 | tr -d " " | sort -u | paste -sd" ")
+      if [ "$offered" != "$version" ]; then
+        echo "APT ${suite} offers documentdb-18 \"${offered}\"; expected only ${version}"
+        exit 1
+      fi
+      for major in 17 18; do
+        apt-get install -s "documentdb-${major}" > "/tmp/apt-${major}.txt"
+        for pkg in "documentdb-${major}" documentdb-common documentdb-gateway documentdb-postgresql-tools; do
+          grep -q "Inst ${pkg} " "/tmp/apt-${major}.txt" || {
+            echo "APT ${suite} PG${major} plan is missing ${pkg}"
+            cat "/tmp/apt-${major}.txt"
+            exit 1
+          }
+        done
+        grep -q "Inst postgresql-${major}-documentdb " "/tmp/apt-${major}.txt" || {
+          echo "APT ${suite} PG${major} plan is missing its extension package"
           cat "/tmp/apt-${major}.txt"
           exit 1
         }
       done
-      grep -q "Inst postgresql-${major}-documentdb " "/tmp/apt-${major}.txt" || {
-        echo "APT PG${major} plan is missing its extension package"
-        cat "/tmp/apt-${major}.txt"
-        exit 1
-      }
+      echo "APT ${suite} offers documentdb-18 ${offered}"
     done
 
     if [ "$DOCUMENTDB_REPOSITORY_SIGNED" = true ]; then
@@ -100,6 +131,7 @@ docker run --rm --network "$NETWORK" \
   -e DOCUMENTDB_REPOSITORY_HOST="$SERVER_NAME" \
   -e DOCUMENTDB_REPOSITORY_PORT="$PORT" \
   -e DOCUMENTDB_REPOSITORY_SIGNED="$SIGN" \
+  -e DOCUMENTDB_CHANNELS="$CHANNELS" \
   rockylinux/rockylinux:9 bash -c '
     set -euo pipefail
     dnf install -y -q dnf-plugins-core >/dev/null 2>&1
@@ -108,33 +140,46 @@ docker run --rm --network "$NETWORK" \
     dnf config-manager --set-enabled crb
     dnf -qy module disable postgresql >/dev/null 2>&1
 
-    {
-      echo "[documentdb]"
-      echo "name=DocumentDB"
-      echo "baseurl=http://${DOCUMENTDB_REPOSITORY_HOST}:${DOCUMENTDB_REPOSITORY_PORT}/rpm/rhel9"
-      echo "enabled=1"
-      if [ "$DOCUMENTDB_REPOSITORY_SIGNED" = true ]; then
-        echo "gpgcheck=1"
-        echo "gpgkey=http://${DOCUMENTDB_REPOSITORY_HOST}:${DOCUMENTDB_REPOSITORY_PORT}/documentdb-archive-keyring.gpg"
-      else
-        echo "gpgcheck=0"
-      fi
-    } > /etc/yum.repos.d/documentdb.repo
+    for channel in $DOCUMENTDB_CHANNELS; do
+      name=${channel%%=*}
+      version=${channel#*=}
+      path=rpm/rhel9
+      [ "$name" = stable ] || path="rpm/${name}/rhel9"
+      # A repo id per channel keeps dnf from reusing the previous channel metadata.
+      {
+        echo "[documentdb-${name}]"
+        echo "name=DocumentDB"
+        echo "baseurl=http://${DOCUMENTDB_REPOSITORY_HOST}:${DOCUMENTDB_REPOSITORY_PORT}/${path}"
+        echo "enabled=1"
+        if [ "$DOCUMENTDB_REPOSITORY_SIGNED" = true ]; then
+          echo "gpgcheck=1"
+          echo "gpgkey=http://${DOCUMENTDB_REPOSITORY_HOST}:${DOCUMENTDB_REPOSITORY_PORT}/documentdb-archive-keyring.gpg"
+        else
+          echo "gpgcheck=0"
+        fi
+      } > /etc/yum.repos.d/documentdb.repo
 
-    for major in 17 18; do
-      dnf install --assumeno "documentdb-${major}" > "/tmp/dnf-${major}.txt" 2>&1 || true
-      if grep -qE "^Error|nothing provides|Problem:" "/tmp/dnf-${major}.txt"; then
-        echo "DNF could not resolve documentdb-${major}:"
-        cat "/tmp/dnf-${major}.txt"
+      offered=$(dnf -q repoquery --qf "%{version}" documentdb-18 | sort -u | paste -sd" ")
+      if [ "$offered" != "$version" ]; then
+        echo "DNF ${path} offers documentdb-18 \"${offered}\"; expected only ${version}"
         exit 1
       fi
-      for pkg in "documentdb-${major}" documentdb-common documentdb-gateway documentdb-postgresql-tools "postgresql${major}-documentdb"; do
-        grep -q "$pkg" "/tmp/dnf-${major}.txt" || {
-          echo "DNF PG${major} plan is missing ${pkg}"
+      for major in 17 18; do
+        dnf install --assumeno "documentdb-${major}" > "/tmp/dnf-${major}.txt" 2>&1 || true
+        if grep -qE "^Error|nothing provides|Problem:" "/tmp/dnf-${major}.txt"; then
+          echo "DNF ${path} could not resolve documentdb-${major}:"
           cat "/tmp/dnf-${major}.txt"
           exit 1
-        }
+        fi
+        for pkg in "documentdb-${major}" documentdb-common documentdb-gateway documentdb-postgresql-tools "postgresql${major}-documentdb"; do
+          grep -q "$pkg" "/tmp/dnf-${major}.txt" || {
+            echo "DNF ${path} PG${major} plan is missing ${pkg}"
+            cat "/tmp/dnf-${major}.txt"
+            exit 1
+          }
+        done
       done
+      echo "DNF ${path} offers documentdb-18 ${offered}"
     done
 
     {

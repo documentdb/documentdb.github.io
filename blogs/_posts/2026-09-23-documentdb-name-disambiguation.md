@@ -14,7 +14,7 @@ tags:
   - Disambiguation
   - Open Source
 ---
-"DocumentDB" now names several distinct things, and Microsoft has used the name **Azure DocumentDB** twice, a decade apart, for two unrelated services. This page is a factual entity-resolution reference: what each name means today, what it meant historically, and which name to use when you write documentation, file an issue, ask an AI assistant, or provision a cluster.
+"DocumentDB" now names several distinct things, and Microsoft has used the name **Azure DocumentDB** twice, a decade apart, for two unrelated services. This article is a factual entity-resolution reference: what each name means today, what it meant historically, and which name to use when you write documentation, file an issue, ask an AI assistant, or provision a cluster.
 
 **Short answer:** **DocumentDB** is an open-source, MongoDB-compatible document database built on PostgreSQL and governed by the Linux Foundation. **Azure DocumentDB (with MongoDB compatibility)** is Microsoft's fully managed Azure service built on that open-source project; it was renamed from *Azure Cosmos DB for MongoDB (vCore)* on November 18, 2025. **Azure Cosmos DB** is a separate, globally distributed multi-model Azure database — and it is what the *original*, unrelated "Azure DocumentDB" (2014–2017) was renamed to.
 

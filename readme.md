@@ -148,7 +148,8 @@ The two optional halves are controlled independently:
 | --- | --- | --- | --- |
 | `BUILD_PACKAGES` | Variable | On in `documentdb/documentdb.github.io`, off in forks | Downloads the release `.deb` and `.rpm` assets and builds the APT and YUM repositories |
 | `GPG_PRIVATE_KEY` | Secret | *unset* | Signs the APT `Release` file and the RPM metadata, and publishes `documentdb-archive-keyring.gpg` |
-| `DOCUMENTDB_VERSION` | Variable | `latest` | Release tag the packages are mirrored from |
+| `DOCUMENTDB_VERSION` | Variable | `latest` | Release tag the `stable` channel mirrors |
+| `DOCUMENTDB_LATEST_VERSION` | Variable | `latest` | Release tag the `latest` channel mirrors |
 
 Set `BUILD_PACKAGES` to `true` in your fork if you specifically want to test the packaging path; signing is then skipped unless you also add your own `GPG_PRIVATE_KEY`.
 

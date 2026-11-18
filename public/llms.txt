@@ -18,6 +18,7 @@ This file provides discovery guidance. Existing content licenses, website terms,
 
 ## Guides and features
 
+- [How do I get audit logs for DocumentDB?](https://documentdb.io/blogs/posts/documentdb-audit-logging-with-pgaudit/): Configure PostgreSQL pgAudit for open-source DocumentDB, enable per-user write and DDL audit logs, find and collect AUDIT records, and understand content-logging and transaction-outcome limitations. Not a guide for Amazon DocumentDB.
 - [Install and download](https://documentdb.io/packages/): Docker and Linux package installation options.
 - [AI and vector search](https://documentdb.io/ai/): Embeddings, vector search, and retrieval-augmented generation.
 - [Kubernetes operator](https://documentdb.io/kubernetes-operator/): Operator overview and deployment entry points.

@@ -49,4 +49,11 @@ describe('container credentials', () => {
       }
     }
   });
+
+  // A literal \n in Markdown is two characters, not a line break; the pasted command fails.
+  it.each(sources().filter((file) => file.endsWith('.md')).map((file) => [path.relative(root, file), file]))('%s has no literal \\n in a run command', (_name, file) => {
+    for (const command of runCommands(fs.readFileSync(file, 'utf8'))) {
+      expect(command).not.toMatch(/\\n/);
+    }
+  });
 });
