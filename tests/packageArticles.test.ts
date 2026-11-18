@@ -698,7 +698,7 @@ describe('release channels', () => {
       linuxPackagesOperationsContent.indexOf('## Upgrading'),
     );
     const text = operations!.replace(/\s+/g, ' ');
-    expect(text).toContain('This is one-way: 1.0 does not run correctly on data that 1.2 has updated');
+    expect(text).toContain('This is one-way: a release does not run correctly on data that a newer release has updated');
     expect(operations).toContain('```bash\nsudo documentdb-setup --pg-version 18 --yes\n```');
     expect(operations).not.toMatch(/documentdb-setup[^\n]*--admin-user/);
     expect(operations).toContain('sudo apt upgrade');

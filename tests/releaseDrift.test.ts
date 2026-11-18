@@ -46,7 +46,7 @@ describe('release drift check', () => {
   it('passes when each fallback names the release its channel mirrors', () => {
     const { status, output } = checkDrift({ latest, stable });
     expect(output).toContain('The latest fallback matches the mirrored release (v1.2-0).');
-    expect(output).toContain('The stable fallback matches the mirrored release (v1.0-0).');
+    expect(output).toContain('The stable fallback matches the mirrored release (v1.2-0).');
     expect(status).toBe(0);
   });
 
@@ -62,10 +62,12 @@ describe('release drift check', () => {
     expect(status).toBe(1);
   });
 
-  it('fails when stable moves to 1.2 but its fallback still names 1.0', () => {
-    const { status, output } = checkDrift({ latest, stable: latest });
+  it('fails when stable still mirrors 1.0 but its fallback names 1.2', () => {
+    const previous = feed({ tagName: 'v1.0-0', aptVersion: '1.0-0', rpmVersion: '1.0.0-1.el9', metaVersion: '1.0.0' });
+    const { status, output } = checkDrift({ latest, stable: previous });
     expect(output).toContain("the site's stable fallback release does not match");
-    expect(output).toContain('FALLBACK_RELEASES.stable): v1.0-0');
+    expect(output).toContain('release-info.json): v1.0-0');
+    expect(output).toContain('FALLBACK_RELEASES.stable): v1.2-0');
     expect(output).not.toContain("the site's latest fallback release does not match");
     expect(status).toBe(1);
   });
@@ -74,7 +76,7 @@ describe('release drift check', () => {
     const next = feed({ tagName: 'v1.3-0', aptVersion: '1.3-0', rpmVersion: '1.3.0-1.el9', metaVersion: '1.3.0' });
     const { status, output } = checkDrift({ latest: next, stable });
     expect(output).toContain("the site's latest fallback release does not match");
-    expect(output).toContain('The stable fallback matches the mirrored release (v1.0-0).');
+    expect(output).toContain('The stable fallback matches the mirrored release (v1.2-0).');
     expect(status).toBe(1);
   });
 

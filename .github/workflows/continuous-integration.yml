@@ -96,9 +96,9 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y createrepo-c dpkg-dev rpm python3
-      - name: Generate stable from v1.0-0 and latest from the newest release
+      - name: Generate stable from v1.2-0 and latest from the newest release
         env:
-          DOCUMENTDB_VERSION: v1.0-0
+          DOCUMENTDB_VERSION: v1.2-0
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
