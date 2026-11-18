@@ -4,6 +4,9 @@
 # Temporary content cloning directory
 _tmp/
 
+# Compiled versioned documentation snapshots
+/versioned/
+
 # Reference files (compiled into the repo root from documentdb/docs; anchored
 # so the patterns cannot swallow tracked paths like app/docs/reference/)
 /api-reference/
