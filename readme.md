@@ -75,6 +75,15 @@ The first time you run `npm run dev` or `npm run build`, documentation content w
 
 We welcome contributions to improve the DocumentDB website, whether it's blog posts, bug fixes, or enhancements to the site itself.
 
+### Running checks
+
+```bash
+npm run lint
+npm test
+```
+
+CI runs tests before compiling upstream documentation. Use self-contained fixtures for imported-content tests rather than depending on the generated `articles/` or `reference/` trees, which are absent on a fresh checkout.
+
 ### Contributing Announcements and Blog Posts
 
 Announcements and blog posts are managed locally in this repository. Contribute directly through a pull request to this repository.

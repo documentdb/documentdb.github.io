@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import matter from "gray-matter";
@@ -36,7 +38,29 @@ describe("static discovery content", () => {
   });
 
   it("preserves upstream architecture content", () => {
-    const source = matter(articles.getMarkdownContent("architecture"));
+    const markdown = `---
+title: Upstream architecture
+description: Architecture documentation from upstream.
+layout: coming-soon
+---
+
+Architecture details will be published here.
+`;
+    const directory = path.join(process.cwd(), "articles", "architecture");
+    const files = new Map([
+      [path.join(directory, "index.md"), markdown],
+      [path.join(directory, "navigation.yml"), "- title: Architecture\n  link: index.md\n"],
+    ]);
+    const existsSync = fs.existsSync;
+    const readFileSync = fs.readFileSync;
+    vi.spyOn(fs, "existsSync").mockImplementation((file) =>
+      files.has(file.toString()) || existsSync(file),
+    );
+    vi.spyOn(fs, "readFileSync").mockImplementation((file, options) =>
+      files.get(file.toString()) ?? readFileSync(file, options),
+    );
+
+    const source = matter(markdown);
     const architecture = articles.getArticleByPath("architecture");
     expect(architecture?.content).toBe(source.content);
     expect(architecture?.frontmatter).toEqual(source.data);
