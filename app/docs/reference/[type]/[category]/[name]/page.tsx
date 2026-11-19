@@ -2,7 +2,8 @@ import { notFound } from 'next/navigation';
 import Breadcrumb from '../../../../../components/Breadcrumb';
 import Markdown from '../../../../../components/Markdown';
 import { getAllReferenceParams, getReferenceByPath } from '../../../../../services/referenceService';
-import { getMetadata } from "../../../../../services/metadataService";
+import { getMetadata, getModifiedTime } from "../../../../../services/metadataService";
+import StructuredData, { articleStructuredData } from "../../../../../components/StructuredData";
 
 export async function generateMetadata({ params }: { params: Promise<{ type: string; category: string; name: string }> }) {
   const { type, category, name } = await params;
@@ -22,6 +23,7 @@ export async function generateMetadata({ params }: { params: Promise<{ type: str
     description: data.frontmatter.description || '',
     path: `/docs/reference/${type}/${category}/${name}/`,
     type: 'article',
+    modifiedTime: getModifiedTime(data.frontmatter.last_modified_at),
     extraKeywords: ['reference', type, category, name]
   });
 }
@@ -44,6 +46,20 @@ export default async function ReferencePage({ params }: { params: Promise<{ type
 
   return (
     <article>
+      <StructuredData data={articleStructuredData({
+        title: pageTitle,
+        description: pageDescription,
+        path: `/docs/reference/${type}/${category}/${name}/`,
+        dateModified: getModifiedTime(data.frontmatter.last_modified_at),
+        breadcrumbs: [
+          { name: 'Home', path: '/' },
+          { name: 'Documentation', path: '/docs/' },
+          { name: 'MQL Reference', path: '/docs/reference/' },
+          { name: type, path: `/docs/reference/${type}/` },
+          { name: category, path: `/docs/reference/${type}/${category}/` },
+          { name: pageTitle, path: `/docs/reference/${type}/${category}/${name}/` },
+        ],
+      })} />
       <Breadcrumb type={type} category={category} name={pageTitle} />
       
       {/* Markdown Content */}

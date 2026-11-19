@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from 'next/navigation';
 import { capitalCase } from 'change-case';
 import { getAllArticlePaths, getArticleByPath } from "../../../services/articleService";
-import { getMetadata } from "../../../services/metadataService";
+import { getMetadata, getModifiedTime } from "../../../services/metadataService";
+import StructuredData, { articleStructuredData } from "../../../components/StructuredData";
 import ComingSoon from "../../../components/ComingSoon";
 import CommandSnippet from "../../../components/CommandSnippet";
 import TelemetryNote from "../../../components/TelemetryNote";
@@ -96,6 +97,8 @@ export async function generateMetadata({ params }: PageProps) {
         description: frontmatter.description || '',
         path: slug.length > 0 ? `/docs/${section}/${slug.join('/')}/` : `/docs/${section}/`,
         type: 'article',
+        modifiedTime: getModifiedTime(frontmatter.last_modified_at),
+        noindex: frontmatter.layout === 'coming-soon',
     });
 }
 
@@ -114,6 +117,7 @@ export default async function ArticlePage({ params }: PageProps) {
     }
 
     const { content, frontmatter, navigation, file } = articleData;
+    const modifiedTime = getModifiedTime(frontmatter.last_modified_at);
     const selectedNavItem = navigation.find((item) =>
         item.link.includes(file)
     );
@@ -130,6 +134,7 @@ export default async function ArticlePage({ params }: PageProps) {
     const sectionTitle = capitalCase(section)
         .replace(/documentdb/i, 'DocumentDB')
         .replace(/api/i, 'API');
+    const pagePath = slug.length > 0 ? `/docs/${section}/${slug.join('/')}/` : `/docs/${section}/`;
 
     // Rendered once, shown in the desktop sidebar and the mobile disclosure
     const navigationLinks = navigation.map((item) => {
@@ -160,6 +165,18 @@ export default async function ArticlePage({ params }: PageProps) {
 
     return (
         <div className="min-h-screen bg-neutral-900 relative overflow-hidden">
+            {!isComingSoon && <StructuredData data={articleStructuredData({
+                title: pageTitle,
+                description: frontmatter.description,
+                path: pagePath,
+                dateModified: modifiedTime,
+                breadcrumbs: [
+                    { name: 'Home', path: '/' },
+                    { name: 'Documentation', path: '/docs/' },
+                    ...(slug.length > 0 ? [{ name: sectionTitle, path: `/docs/${section}/` }] : []),
+                    { name: pageTitle, path: pagePath },
+                ],
+            })} />}
             {/* Background elements */}
             <div className="absolute inset-0 bg-gradient-to-br from-neutral-900 via-neutral-800 to-black"></div>
             <div className="absolute inset-0 opacity-5">
@@ -236,6 +253,12 @@ export default async function ArticlePage({ params }: PageProps) {
                             </h1>
                         )}
                         {isComingSoon && <ComingSoon />}
+                        {modifiedTime && (
+                            <p className="mb-4 text-sm text-gray-300">
+                                Last updated: <time dateTime={modifiedTime}>{modifiedTime.slice(0, 10)}</time>.
+                                {frontmatter.applies_to ? ` ${frontmatter.applies_to}` : ''}
+                            </p>
+                        )}
 
                         {showInstallPrimer && (
                             <section className="mb-8 rounded-2xl border border-blue-500/30 bg-gradient-to-br from-blue-500/10 via-neutral-900/90 to-neutral-900/90 p-6">

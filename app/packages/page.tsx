@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import CommandSnippet from "../components/CommandSnippet";
 import TelemetryNote from "../components/TelemetryNote";
+import StaticInstallGuides from "../components/StaticInstallGuides";
 import {
   aptTargetLabels,
   aptTargetPgVersions,
@@ -134,6 +135,12 @@ export default function PackagesPage() {
         <header className="text-center">
           <h1 className="text-4xl font-extrabold text-white sm:text-5xl">Install DocumentDB</h1>
           <p className="mt-4 text-lg text-gray-300">Start a local database and run your first query in a few minutes.</p>
+          <p className="mt-3 text-sm text-gray-300">
+            Complete static guides:{" "}
+            <Link href="/docs/getting-started/docker" className={linkClass}>Docker quickstart</Link>
+            {" · "}
+            <Link href="/docs/getting-started/packages" className={linkClass}>Linux packages quickstart</Link>.
+          </p>
         </header>
 
         <section aria-label="Installation method" className="grid gap-3 sm:grid-cols-2">
@@ -158,7 +165,7 @@ export default function PackagesPage() {
 
         <noscript>
           <p className="text-gray-200">
-            Enable JavaScript to select installation commands, or follow the{" "}
+            Use the standalone instructions below without JavaScript, or follow the{" "}
             <Link href="/docs/getting-started/packages" className={linkClass}>Linux quickstart</Link>{" "}
             or <Link href="/docs/getting-started/docker" className={linkClass}>Docker quickstart</Link>.
           </p>
@@ -177,9 +184,9 @@ export default function PackagesPage() {
           </div>
         )}
 
-        {/* The static page can't see the query string, so show no flow until it is read. */}
+        {/* Standalone guides must not imply that an unvalidated query selected a target. */}
         {state === null ? (
-          <p className="text-center text-sm text-gray-400">Loading installation steps...</p>
+          <StaticInstallGuides />
         ) : method === "packages" ? (
           <section className={panelClass} aria-label="Linux packages installation">
             <label htmlFor="install-target" className="block text-sm font-medium text-gray-200">Linux distribution</label>

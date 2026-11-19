@@ -56,6 +56,10 @@ export default function Docs() {
           <p className="text-xl text-gray-400 max-w-3xl mx-auto mb-8">
             {articleContent.landing.description}
           </p>
+          <p className="text-sm text-gray-300 mb-6">
+            Documentation for the open-source project, not similarly named managed services.{" "}
+            <Link href="/blogs/posts/documentdb-name-disambiguation/" className="text-blue-300 underline underline-offset-4">DocumentDB naming guide</Link>
+          </p>
           <div className="w-32 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-green-500 mx-auto rounded-full"></div>
         </div>
 

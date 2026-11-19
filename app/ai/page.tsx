@@ -156,7 +156,7 @@ const useCases = [
     description:
       "Store chunks, metadata, and embeddings together so retrieval stays close to the source document.",
     points: [
-      "Pre-filter by category, source, or recency before retrieval",
+      "Combine vector retrieval with indexed metadata filters; result counts are best-effort",
       "Return source text alongside similarity scores",
     ],
     sampleId: "hotel-agent-ts",
@@ -438,6 +438,11 @@ export default function AIPage() {
             title="Built for the AI workloads that matter"
             description="Vector retrieval, document storage, and query power in one system — ready for the patterns teams are actually shipping."
           />
+          <p className="mb-6 max-w-3xl text-sm leading-6 text-gray-300">
+            Vector filters intersect approximate nearest-neighbor results: filter paths must be indexed,
+            counts are best-effort, and filtered search is unsupported on sharded collections.{" "}
+            <Link href={vectorSearchReference} className={textLinkClass}>Read the vector search limitations</Link>
+          </p>
           <div className="grid gap-4 md:grid-cols-2">
             {useCases.map((item) => {
               const link = useCaseLink(item);

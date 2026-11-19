@@ -31,10 +31,51 @@
     {% if page.date %}
     <meta property="article:published_time" content="{{ page.date | date_to_xmlschema }}">
     {% endif %}
+    {% if page.last_modified_at %}
+    <meta property="article:modified_time" content="{{ page.last_modified_at | date_to_xmlschema }}">
+    {% endif %}
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{{ social_title | escape }}">
     <meta name="twitter:description" content="{{ social_description | escape }}">
     <meta name="twitter:image" content="{{ social_image }}">
+    {% if page.date %}
+    {% assign page_canonical = page.url | absolute_url %}
+    {% assign article_id = page_canonical | append: '#article' %}
+    {% assign breadcrumb_section = page.section | default: 'blogs' %}
+    {% assign section_path = '/' | append: breadcrumb_section | append: '/' %}
+    {% assign section_url = section_path | absolute_url %}
+    {% assign home_url = '/' | absolute_url %}
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "BlogPosting",
+          "@id": {{ article_id | jsonify | replace: '<', '\u003c' }},
+          "headline": {{ social_title | jsonify | replace: '<', '\u003c' }},
+          "description": {{ social_description | jsonify | replace: '<', '\u003c' }},
+          "url": {{ page_canonical | jsonify }},
+          "mainEntityOfPage": {{ page_canonical | jsonify }},
+          "datePublished": {{ page.date | date_to_xmlschema | jsonify }},
+          {% if page.last_modified_at %}"dateModified": {{ page.last_modified_at | date_to_xmlschema | jsonify }},{% endif %}
+          {% if page.author %}"author": { "@type": "{% if page.author == 'DocumentDB team' %}Organization{% else %}Person{% endif %}", "name": {{ page.author | jsonify | replace: '<', '\u003c' }} },{% endif %}
+          "image": {{ social_image | jsonify }},
+          "inLanguage": "en",
+          "publisher": { "@type": "Organization", "@id": "https://documentdb.io/#project", "name": "DocumentDB", "url": "https://documentdb.io/" },
+          "about": { "@type": "SoftwareSourceCode", "@id": "https://documentdb.io/#software", "name": "DocumentDB", "codeRepository": "https://github.com/documentdb/documentdb", "license": "https://opensource.org/license/mit" }
+        },
+        {
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            { "@type": "ListItem", "position": 1, "name": "Home", "item": {{ home_url | jsonify }} },
+            { "@type": "ListItem", "position": 2, "name": {{ breadcrumb_section | capitalize | jsonify }}, "item": {{ section_url | jsonify }} },
+            { "@type": "ListItem", "position": 3, "name": {{ social_title | jsonify | replace: '<', '\u003c' }}, "item": {{ page_canonical | jsonify }} }
+          ]
+        }
+      ]
+    }
+    </script>
+    {% endif %}
 
     <link rel="alternate" type="application/atom+xml" title="DocumentDB Blog" href="{{ '/blogs/feed.xml' | relative_url }}">
     <link rel="stylesheet" href="{{ '/blogs/assets/blog.css' | relative_url }}">
