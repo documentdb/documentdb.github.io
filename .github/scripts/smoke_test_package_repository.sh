@@ -134,11 +134,24 @@ docker run --rm --network "$NETWORK" \
   -e DOCUMENTDB_CHANNELS="$CHANNELS" \
   rockylinux/rockylinux:9 bash -c '
     set -euo pipefail
-    dnf install -y -q dnf-plugins-core >/dev/null 2>&1
-    dnf install -y -q https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-x86_64/pgdg-redhat-repo-latest.noarch.rpm >/dev/null 2>&1
-    dnf install -y -q epel-release >/dev/null 2>&1
-    dnf config-manager --set-enabled crb
-    dnf -qy module disable postgresql >/dev/null 2>&1
+    dnf_retry() {
+      local attempt=1
+      until "$@"; do
+        if [ "$attempt" -ge 3 ]; then
+          echo "DNF command failed after ${attempt} attempts: $*" >&2
+          return 1
+        fi
+        echo "DNF command failed on attempt ${attempt}; retrying: $*" >&2
+        sleep "$attempt"
+        attempt=$((attempt + 1))
+      done
+    }
+
+    dnf_retry dnf install -y -q dnf-plugins-core
+    dnf_retry dnf install -y -q https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+    dnf_retry dnf install -y -q epel-release
+    dnf_retry dnf config-manager --set-enabled crb
+    dnf_retry dnf -qy module disable postgresql
 
     for channel in $DOCUMENTDB_CHANNELS; do
       name=${channel%%=*}
@@ -159,7 +172,7 @@ docker run --rm --network "$NETWORK" \
         fi
       } > /etc/yum.repos.d/documentdb.repo
 
-      offered=$(dnf -q repoquery --qf "%{version}" documentdb-18 | sort -u | paste -sd" ")
+      offered=$(dnf_retry dnf -q repoquery --qf "%{version}" documentdb-18 | sort -u | paste -sd" ")
       if [ "$offered" != "$version" ]; then
         echo "DNF ${path} offers documentdb-18 \"${offered}\"; expected only ${version}"
         exit 1
@@ -189,7 +202,7 @@ docker run --rm --network "$NETWORK" \
       echo "enabled=1"
       echo "gpgcheck=0"
     } > /etc/yum.repos.d/documentdb-retired.repo
-    dnf -q makecache --disablerepo="*" --enablerepo=documentdb-retired
+    dnf_retry dnf -q makecache --disablerepo="*" --enablerepo=documentdb-retired
     echo "DNF PG17/PG18 resolution and retired-repository refresh succeeded."
   '
 echo "::endgroup::"
