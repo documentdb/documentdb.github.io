@@ -70,6 +70,21 @@ function xmlEscape(value) {
     .replace(/'/g, '&apos;');
 }
 
+function contentModifiedTime(html) {
+  for (const tag of html.match(/<meta\b[^>]*>/gi) ?? []) {
+    if (!/\bproperty=["']article:modified_time["']/i.test(tag)) continue;
+    const value = tag.match(/\bcontent=["']([^"']+)["']/i)?.[1];
+    if (!value || !/^\d{4}-\d{2}-\d{2}(?:T.*)?$/.test(value)) continue;
+    const date = new Date(value);
+    const day = value.slice(0, 10);
+    if (Number.isFinite(date.getTime()) && new Date(`${day}T00:00:00Z`).toISOString().slice(0, 10) === day) {
+      return date.toISOString();
+    }
+  }
+  // Missing provenance is preferable to a deploy timestamp masquerading as a content update.
+  return undefined;
+}
+
 /**
  * Walks the export directory and returns one entry per page, where a page is
  * any directory containing an index.html (the shape `trailingSlash: true` and
@@ -88,7 +103,7 @@ function collectPages(directory, relativePath = '') {
     } else {
       pages.push({
         url: relativePath === '' ? '/' : `/${relativePath}/`,
-        lastModified: fs.statSync(indexFile).mtime,
+        lastModified: contentModifiedTime(html),
       });
     }
   }
@@ -142,7 +157,7 @@ const sitemap = [
     [
       '  <url>',
       `    <loc>${xmlEscape(siteUrl + page.url)}</loc>`,
-      `    <lastmod>${page.lastModified.toISOString()}</lastmod>`,
+      ...(page.lastModified ? [`    <lastmod>${page.lastModified}</lastmod>`] : []),
       '  </url>',
     ].join('\n'),
   ),

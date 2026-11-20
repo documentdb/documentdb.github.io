@@ -4,6 +4,7 @@ import "./globals.css";
 import AnnouncementBar from "./components/AnnouncementBar";
 import Navbar from "./components/Navbar";
 import { getMetadata } from "./services/metadataService";
+import StructuredData, { projectStructuredData } from "./components/StructuredData";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -20,6 +21,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
+        <StructuredData data={projectStructuredData} />
         <AnnouncementBar />
         <Navbar />
         {children}

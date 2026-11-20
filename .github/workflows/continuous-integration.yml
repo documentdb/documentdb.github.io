@@ -102,9 +102,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          .github/scripts/download_packages.sh
+          bash .github/scripts/download_packages.sh
           # Unpinned, like the deploy while DOCUMENTDB_LATEST_VERSION is unset.
-          SUITE=latest DOCUMENTDB_VERSION=latest .github/scripts/download_packages.sh
+          SUITE=latest DOCUMENTDB_VERSION=latest bash .github/scripts/download_packages.sh
       - name: Verify release inventory and metadata
         run: python3 .github/scripts/verify_package_inventory.py
       - name: Resolve both PostgreSQL majors and retired endpoints

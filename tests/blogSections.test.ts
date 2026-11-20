@@ -211,7 +211,25 @@ describe.each([
       expect(html).toContain(`<a href="${baseurl}${sectionPaths[post.section]}">&larr; Back to all ${backLabel}</a>`);
       expect(html).toContain(`<link rel="canonical" href="https://documentdb.io${post.href}">`);
       expect(html).toContain(`<a href="${baseurl}${sectionPaths[post.section]}" aria-current="page">`);
+      const json = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)?.[1];
+      expect(json).toBeDefined();
+      const graph = JSON.parse(json!)['@graph'];
+      expect(graph[0]).toMatchObject({
+        '@type': 'BlogPosting',
+        url: `https://documentdb.io${post.href}`,
+        about: { '@id': 'https://documentdb.io/#software' },
+      });
+      expect(graph[1].itemListElement.at(-1).item).toBe(`https://documentdb.io${post.href}`);
     }
+  });
+
+  it('publishes explicit update dates and the Amazon naming distinction', () => {
+    const html = fs.readFileSync(path.join(destination, 'blogs/posts/documentdb-name-disambiguation/index.html'), 'utf8');
+    expect(html).toContain('Amazon DocumentDB');
+    expect(html).not.toContain('/docs/compatibility/');
+    expect(html).toContain('<meta property="article:modified_time" content="2026-11-18T00:00:00+00:00">');
+    const json = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)?.[1];
+    expect(JSON.parse(json!)['@graph'][0].dateModified).toBe('2026-11-18T00:00:00+00:00');
   });
 
   it('preserves the combined feed for existing subscribers', () => {

@@ -18,7 +18,19 @@ export const sanitizeMarkdown = async (markdown: string | undefined): Promise<st
 
 export const siteUrl = 'https://documentdb.io';
 
-export const getMetadata = ({ title, description, path, type = 'website', extraKeywords = [] }: {
+export function getModifiedTime(value: unknown): string | undefined {
+  if (value instanceof Date) {
+    return Number.isFinite(value.getTime()) ? value.toISOString() : undefined;
+  }
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}(?:T.*)?$/.test(value)) return undefined;
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return undefined;
+  const day = value.slice(0, 10);
+  if (new Date(`${day}T00:00:00Z`).toISOString().slice(0, 10) !== day) return undefined;
+  return date.toISOString();
+}
+
+export const getMetadata = ({ title, description, path, type = 'website', extraKeywords = [], modifiedTime, noindex = false }: {
   title: string,
   description: string,
   /**
@@ -29,6 +41,8 @@ export const getMetadata = ({ title, description, path, type = 'website', extraK
   /** Open Graph object type; use 'article' for docs/reference content pages. */
   type?: 'website' | 'article',
   extraKeywords?: string[],
+  modifiedTime?: string,
+  noindex?: boolean,
 }): Metadata => ({
   metadataBase: new URL(siteUrl),
   keywords: [...getBaseKeywords(), ...extraKeywords],
@@ -37,6 +51,8 @@ export const getMetadata = ({ title, description, path, type = 'website', extraK
   ...(path ? { alternates: { canonical: path } } : {}),
   openGraph: {
     type,
+    ...(path ? { url: path } : {}),
+    ...(type === 'article' && getModifiedTime(modifiedTime) ? { modifiedTime: getModifiedTime(modifiedTime) } : {}),
     title,
     description,
     images: [
@@ -56,7 +72,7 @@ export const getMetadata = ({ title, description, path, type = 'website', extraK
     ]
   },
   robots: {
-    index: true,
+    index: !noindex,
     follow: true
   }
 });

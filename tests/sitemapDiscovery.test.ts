@@ -34,4 +34,27 @@ describe('operator sitemap discovery', () => {
     expect(await readFile(path.join(out, 'robots.txt'), 'utf8')).toBe(robots);
     expect(await readFile(path.join(out, 'sitemap.xml'), 'utf8')).toContain('<loc>https://documentdb.io/</loc>');
   });
+
+  it('uses explicit content dates, not exported HTML timestamps, and excludes placeholders', async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), 'documentdb-sitemap-dates-'));
+    directories.push(directory);
+    const out = path.join(directory, 'out');
+    const pages = {
+      '': '<html><body>No content date</body></html>',
+      dated: '<meta content="2026-11-18" property="article:modified_time">',
+      invalid: '<meta property="article:modified_time" content="2026-02-30">',
+      placeholder: '<meta name="robots" content="noindex, follow">',
+    };
+    for (const [slug, html] of Object.entries(pages)) {
+      const target = path.join(out, slug);
+      await mkdir(target, { recursive: true });
+      await writeFile(path.join(target, 'index.html'), html);
+    }
+    execFileSync(process.execPath, [generator], { cwd: directory });
+    const sitemap = await readFile(path.join(out, 'sitemap.xml'), 'utf8');
+    expect(sitemap.match(/<lastmod>/g)).toHaveLength(1);
+    expect(sitemap).toContain('<lastmod>2026-11-18T00:00:00.000Z</lastmod>');
+    expect(sitemap).not.toContain('/placeholder/');
+    expect(sitemap).toContain('/invalid/');
+  });
 });

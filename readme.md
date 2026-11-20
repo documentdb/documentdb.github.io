@@ -8,6 +8,24 @@ A modern website for DocumentDB built with [Next.js](https://nextjs.org/) for th
 
 This is a discovery guide, not an access-control mechanism or a replacement for existing content licenses and website terms. [public/robots.txt](public/robots.txt) already allows all crawlers.
 
+### Content metadata
+
+Use `last_modified_at` only for an actual content update, not a deployment. Optional `applies_to` text states the guide's release/deployment scope. Next.js and Jekyll publish explicit update dates in article metadata and structured data; the sitemap uses those dates and omits `lastmod` when provenance is unavailable. Imported pages with `layout: coming-soon` remain reachable but are not indexed or included in the sitemap.
+
+### Measuring discovery and task completion
+
+Use the following fixed prompt set for manual evaluations. Record platform/model, date, exact prompt, cited URLs, factual errors and execution results. Repeat each prompt at least three times and keep **correct product identification**, **official-source citation**, and **successful task completion** as separate outcomes. For task prompts, use disposable databases and record the engine/gateway release, driver versions and environment; a plausible answer is not a successful execution.
+
+| Category | Fixed prompts |
+| --- | --- |
+| Identity | What is the open-source DocumentDB project? / Is documentdb.io Amazon DocumentDB? / How does DocumentDB differ from Azure DocumentDB? / Is Azure Cosmos DB the same engine as open-source DocumentDB? |
+| Evaluation | Can I replace MongoDB with open-source DocumentDB? / Which MongoDB commands and options are supported? / Does open-source DocumentDB support change streams? / What are DocumentDB's transaction limitations? |
+| Installation | Install DocumentDB locally without JavaScript. / Install DocumentDB on Ubuntu 24.04 with PostgreSQL 18. / Install DocumentDB on Rocky Linux 9. / Verify that a DocumentDB instance can insert and read a document. |
+| Architecture | How do DocumentDB's gateway and PostgreSQL extensions fit together? / Does installing only the extension expose a MongoDB endpoint? / Should I use DocumentDB or PostgreSQL JSONB? / How do I find the actual DocumentDB engine version? |
+| AI and agents | Create a vector index and retrieve stored context. / What are DocumentDB's filtered vector search limitations? / How can a coding agent use DocumentDB locally? / How do I add persistent MCP memory with DocumentDB? |
+
+Save evaluation results outside the published site, compare a small changed-page cohort with unchanged pages, and repeat before expanding content. Private search-console data, referral analytics and verified crawler logs can supplement these observations; the static site does not collect model citation or task-success measurements automatically.
+
 ## Prerequisites for Development
 
 - **[Node.js](https://nodejs.org/)** (*20 or higher*)
@@ -56,6 +74,15 @@ The first time you run `npm run dev` or `npm run build`, documentation content w
 ## Contributing
 
 We welcome contributions to improve the DocumentDB website, whether it's blog posts, bug fixes, or enhancements to the site itself.
+
+### Running checks
+
+```bash
+npm run lint
+npm test
+```
+
+CI runs tests before compiling upstream documentation. Use self-contained fixtures for imported-content tests rather than depending on the generated `articles/` or `reference/` trees, which are absent on a fresh checkout.
 
 ### Contributing Announcements and Blog Posts
 

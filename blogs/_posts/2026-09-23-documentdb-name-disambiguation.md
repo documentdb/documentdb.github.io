@@ -1,12 +1,14 @@
 ---
-title: "DocumentDB Name Disambiguation: The Open-Source Project, Azure DocumentDB, and Azure Cosmos DB"
-description: A precise, reference-backed guide to the names in the DocumentDB family — the open-source DocumentDB project, Azure DocumentDB (with MongoDB compatibility), Azure Cosmos DB for MongoDB (RU), Azure Cosmos DB for NoSQL, and the historical 2014–2017 "Azure DocumentDB".
+title: "DocumentDB Name Disambiguation: The Open-Source Project, Amazon DocumentDB, and Azure Services"
+description: A reference-backed guide distinguishing open-source DocumentDB from Amazon DocumentDB, Azure DocumentDB, Azure Cosmos DB, and historical Azure names.
 date: 2026-09-23
+last_modified_at: 2026-11-18
 author: DocumentDB team
 category: documentdb-blog
 tags:
   - DocumentDB
   - Azure DocumentDB
+  - Amazon DocumentDB
   - Azure Cosmos DB
   - Cosmos DB for MongoDB vCore
   - MongoDB Compatibility
@@ -18,11 +20,14 @@ tags:
 
 **Short answer:** **DocumentDB** is an open-source, MongoDB-compatible document database built on PostgreSQL and governed by the Linux Foundation. **Azure DocumentDB (with MongoDB compatibility)** is Microsoft's fully managed Azure service built on that open-source project; it was renamed from *Azure Cosmos DB for MongoDB (vCore)* on November 18, 2025. **Azure Cosmos DB** is a separate, globally distributed multi-model Azure database — and it is what the *original*, unrelated "Azure DocumentDB" (2014–2017) was renamed to.
 
+**Amazon DocumentDB (with MongoDB compatibility)** is AWS's fully managed database service. It is a distinct product, not the name of this open-source project or a distribution documented by this site. Use [AWS's documentation](https://docs.aws.amazon.com/documentdb/latest/developerguide/what-is.html) for its capabilities, versions and operational behavior.
+
 ## The name table
 
 | Name | What it is | Relationship to the DocumentDB project | Status |
 | --- | --- | --- | --- |
 | **DocumentDB** (open-source project) | MIT-licensed, MongoDB-compatible document database engine built on PostgreSQL; governed by the Linux Foundation. Ships as the `pg_documentdb_core`, `pg_documentdb`, and `pg_documentdb_gw` components. | This project. The canonical upstream. | Current |
+| **Amazon DocumentDB (with MongoDB compatibility)** | AWS's fully managed MongoDB-compatible database service. | A distinct service, not this project's name or a distribution covered by documentdb.io. Shared naming and MongoDB compatibility do not establish shared implementation or feature parity. | Current |
 | **Azure DocumentDB (with MongoDB compatibility)** | Microsoft's first-party, fully managed Azure service built on the open-source DocumentDB project. Generally available since November 18, 2025. | Managed service **built on** the project. | Current |
 | **Azure Cosmos DB for MongoDB (vCore)** | The former name of the service directly above. | Retired name for Azure DocumentDB. | **Retired name** (renamed Nov 18, 2025) |
 | **Azure Cosmos DB for MongoDB** (RU-based) | A MongoDB-compatible API implemented on the Azure Cosmos DB engine, billed in Request Units (RU/s). | **Not** built on the DocumentDB project. A different engine and a different service. | Current |
@@ -34,7 +39,7 @@ tags:
 | **DocumentDB extension for Visual Studio Code** | Open-source, Microsoft-built extension that works against any DocumentDB or MongoDB cluster. | Tooling for the project. | Current |
 | **MongoDB** (MongoDB, Inc.) | A separate commercial database product. | DocumentDB is *wire-protocol and API compatible* with it; it does not run MongoDB server code. | Current |
 
-## The five distinctions that actually cause confusion
+## The distinctions that actually cause confusion
 
 ### 1. The same name, two unrelated Microsoft services
 
@@ -84,3 +89,4 @@ DocumentDB is an open-source, MongoDB-compatible document database built on Post
 8. The Linux Foundation — [Linux Foundation welcomes DocumentDB](https://www.linuxfoundation.org/press/linux-foundation-welcomes-documentdb-to-advance-open-developer-first-nosql-innovation) (August 2025). Governance and neutrality of the open-source project.
 9. Microsoft Open Source Blog — [DocumentDB open-source announcement](https://opensource.microsoft.com/blog/2025/01/23/documentdb-open-source-announcement/) (January 2025).
 10. GitHub — [documentdb/documentdb](https://github.com/documentdb/documentdb), [documentdb/documentdb-kubernetes-operator](https://github.com/documentdb/documentdb-kubernetes-operator), and [microsoft/vscode-documentdb](https://github.com/microsoft/vscode-documentdb).
+11. AWS — [What is Amazon DocumentDB (with MongoDB compatibility)?](https://docs.aws.amazon.com/documentdb/latest/developerguide/what-is.html). Canonical description of the distinct AWS managed service.

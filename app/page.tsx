@@ -17,7 +17,7 @@ import { withBasePath } from "./services/sitePath";
 
 export const metadata = getMetadata({
   title: 'DocumentDB - Open Source Document Database',
-  description: 'A powerful, scalable open-source document database solution built on PostgreSQL for modern applications.',
+  description: 'DocumentDB is an MIT-licensed, open-source, MongoDB-compatible document database built on PostgreSQL and governed by the Linux Foundation.',
   path: '/',
 });
 
@@ -342,8 +342,13 @@ export default function Home() {
                 A powerful, scalable, MongoDB-compatible open-source database built for modern applications
               </p>
               <p className="mb-7 max-w-xl text-base leading-7 text-gray-300 sm:text-lg">
-                Open source and MIT licensed, with native BSON, advanced
-                indexing, and vector search on PostgreSQL.
+                DocumentDB is an MIT-licensed, open-source, MongoDB-compatible
+                document database built on PostgreSQL and governed by the Linux Foundation.
+                This site documents the open-source project.
+              </p>
+              <p className="mb-7 text-sm text-gray-300">
+                Not Amazon DocumentDB or an Azure service.{" "}
+                <Link href="/blogs/posts/documentdb-name-disambiguation/" className="text-blue-300 underline underline-offset-4">Understand the names</Link>
               </p>
               <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                 <Link

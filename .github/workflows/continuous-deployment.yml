@@ -184,8 +184,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          .github/scripts/download_packages.sh
-          SUITE=latest DOCUMENTDB_VERSION="$DOCUMENTDB_LATEST_VERSION" .github/scripts/download_packages.sh
+          bash .github/scripts/download_packages.sh
+          SUITE=latest DOCUMENTDB_VERSION="$DOCUMENTDB_LATEST_VERSION" bash .github/scripts/download_packages.sh
       - name: Verify generated package components
         if: steps.features.outputs.packages == 'true'
         env:
