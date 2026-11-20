@@ -1,5 +1,6 @@
 {
   "links": [
+    { "label": "Why documents?", "href": "/why-document-databases" },
     { "label": "Docs", "href": "/docs" },
     { "label": "Install & Download", "href": "/packages" },
     { "label": "AI", "href": "/ai" },

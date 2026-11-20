@@ -5,6 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import matter from "gray-matter";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import PackagesPage from "../app/packages/page";
+import WhyDocumentDatabasesPage, { metadata as whyDocumentsMetadata } from "../app/why-document-databases/page";
 import ArticlePage, { generateMetadata } from "../app/docs/[section]/[[...slug]]/page";
 import StructuredData, { articleStructuredData } from "../app/components/StructuredData";
 import { getModifiedTime } from "../app/services/metadataService";
@@ -24,6 +25,27 @@ function structuredData(html: string) {
 }
 
 describe("static discovery content", () => {
+  it("renders the anchor article in full with working section links and installation paths", () => {
+    const html = renderToStaticMarkup(createElement(WhyDocumentDatabasesPage));
+    expect(html.match(/<h1\b/g)).toHaveLength(1);
+    expect(html).toContain("Modern applications often work with documents");
+    expect(html).toContain("Choose hosting because it fits the organization.");
+    expect(html).toContain("<table");
+    expect(html).toContain("Compact travel camera");
+    const anchors = [...html.matchAll(/href="#([^"]+)"/g)].map((match) => match[1]);
+    expect(anchors.length).toBeGreaterThan(0);
+    for (const anchor of anchors) {
+      expect(html).toContain(`id="${anchor}"`);
+    }
+    expect(html).toContain('href="/docs/getting-started"');
+    expect(html).toContain('href="/packages"');
+    expect(whyDocumentsMetadata.alternates?.canonical).toBe("/why-document-databases/");
+    const article = structuredData(html)["@graph"][0];
+    expect(article["@type"]).toBe("TechArticle");
+    expect(article.url).toBe("https://documentdb.io/why-document-databases/");
+    expect(html).toContain(article.headline);
+  });
+
   it("exports standalone install commands without treating an unread query as a valid selection", () => {
     const html = renderToStaticMarkup(createElement(PackagesPage));
     expect(html).toContain('aria-label="Static installation quickstarts"');
