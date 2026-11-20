@@ -17,7 +17,7 @@ tags:
 
 A backup is useful only if you can restore it and use the recovered data. For DocumentDB, that means recovering more than document rows: collections must be discoverable, indexes must work, and new writes must succeed.
 
-This guide covers the open-source, PostgreSQL-based DocumentDB project. See the [DocumentDB naming guide]({{ '/blogs/posts/documentdb-name-disambiguation/' | relative_url }}) if you are unsure which project you use.
+This guide covers the open-source, PostgreSQL-based DocumentDB project. See the [DocumentDB naming guide]({{ '/blogs/posts/documentdb-name-disambiguation/' | relative_url }}) if you're unsure which project you use.
 
 There are three approaches worth understanding:
 
@@ -27,11 +27,11 @@ There are three approaches worth understanding:
 | `mongodump` and `mongorestore` | Logical export and restore through the document endpoint | Pause writes for the entire export |
 | `pg_dump` and `pg_restore` | PostgreSQL-level logical backup | Today, manually register the required metadata and handle scheduled jobs during restore |
 
-Our Kubernetes operator uses volume snapshots. PostgreSQL logical backup can also be used today, but a plain dump-and-restore command pair is not sufficient on affected versions. We are working to simplify that workflow; [issue #737](https://github.com/documentdb/documentdb/issues/737) tracks the missing-metadata problem.
+Our Kubernetes operator uses volume snapshots. You can also use PostgreSQL logical backup today, but a plain dump-and-restore command pair isn't sufficient on affected versions. We're working to simplify that workflow; [issue #737](https://github.com/documentdb/documentdb/issues/737) tracks the missing-metadata problem.
 
 ### What we verified
 
-Both logical backup approaches below were verified against `documentdb-local:latest` on November 20, 2026:
+We verified both logical backup approaches against `documentdb-local:latest` on November 20, 2026:
 
 | Component | Tested version |
 | --- | --- |
@@ -42,13 +42,13 @@ Both logical backup approaches below were verified against `documentdb-local:lat
 
 The image resolved to `ghcr.io/documentdb/documentdb/documentdb-local@sha256:5da68829e51e55d32ccf6fb09e5733716c312a823a986976cbf817867cc3b299`. Pin the image when reproducing these results; `latest` will change.
 
-Each logical round trip recovered five documents across two application collections, preserved representative BSON types and secondary indexes, enforced uniqueness, and allowed a new collection, write, and index afterward. The PostgreSQL test used a fresh destination database, matching roles and extension versions, and the manual registration SQL below. The operator snapshot workflow is documented separately by the operator project.
+Each logical round trip recovered five documents across two application collections, preserved representative BSON types, rebuilt secondary indexes, enforced uniqueness, and allowed a new collection, write, and index afterward. The PostgreSQL test used a fresh destination database, matching roles and extension versions, and the manual registration SQL in the following section. The operator snapshot workflow is documented separately by the operator project.
 
 ## 1. Volume snapshots with the Kubernetes operator
 
-The [DocumentDB Kubernetes operator](https://github.com/documentdb/documentdb-kubernetes-operator) backs up the primary instance's persistent volume using Kubernetes `VolumeSnapshot` resources.
+The [DocumentDB Kubernetes operator](https://github.com/documentdb/documentdb-kubernetes-operator) backs up the primary instance's persistent volume by using Kubernetes `VolumeSnapshot` resources.
 
-With the required CSI driver, snapshot CRDs, and `VolumeSnapshotClass` installed, an on-demand backup looks like this:
+When you install the required CSI driver, snapshot CRDs, and `VolumeSnapshotClass`, an on-demand backup looks like this:
 
 ```yaml
 apiVersion: documentdb.io/v1
@@ -62,7 +62,7 @@ spec:
   retentionDays: 14
 ```
 
-Apply the manifest and check that the backup completes:
+Apply the manifest and check that the backup finishes:
 
 ```bash
 kubectl apply -f backup.yaml
@@ -94,23 +94,23 @@ spec:
         name: before-upgrade
 ```
 
-This last snippet is part of a cluster manifest, not a complete manifest. Choose a compatible `documentDBVersion`, ideally the version used when the snapshot was taken. Do not restore onto an older schema version or use a physical snapshot to move between PostgreSQL major versions.
+This last snippet is part of a cluster manifest, not a complete manifest. Choose a compatible `documentDBVersion`, ideally the version you used when you took the snapshot. Don't restore onto an older schema version or use a physical snapshot to move between PostgreSQL major versions.
 
-These snapshots do not provide continuous point-in-time recovery. Writes after the snapshot are not included. Snapshot retention also is not the same as an independent, off-cluster copy: consider what happens if the storage account, region, or Kubernetes environment is lost.
+These snapshots don't provide continuous point-in-time recovery. They don't include writes after the snapshot. Snapshot retention isn't the same as an independent, off-cluster copy. Consider what happens if the storage account, region, or Kubernetes environment is lost.
 
-See the operator's [backup and restore guide](https://github.com/documentdb/documentdb-kubernetes-operator/blob/main/docs/operator-public-documentation/v1/operations/backup-and-restore.md) for storage prerequisites, retention behavior, and complete restore manifests.
+For storage prerequisites, retention behavior, and complete restore manifests, see the operator's [backup and restore guide](https://github.com/documentdb/documentdb-kubernetes-operator/blob/main/docs/operator-public-documentation/v1/operations/backup-and-restore.md).
 
 ## 2. Logical backups through the document endpoint
 
-`mongodump` and `mongorestore` provide a logical path through DocumentDB's wire-protocol-compatible endpoint. Run them from a machine that can reach the source and destination; do not assume the Database Tools are installed in the database image.
+`mongodump` and `mongorestore` provide a logical path through DocumentDB's wire-protocol-compatible endpoint. Run them from a machine that can reach the source and destination. Don't assume the Database Tools are installed in the database image.
 
-Our test used Database Tools 100.18.0. Validate your own tool and DocumentDB versions before relying on them. The disposable test instances used self-signed certificates; the examples below assume certificates trusted by the client.
+Our test used Database Tools 100.18.0. Validate your own tool and DocumentDB versions before relying on them. The disposable test instances used self-signed certificates. The following examples assume certificates trusted by the client.
 
 ### Pause writes before exporting
 
 Stop application writers, ingestion, administrative changes, and any background activity that changes the exported data, including TTL deletion. Wait for in-flight work to finish.
 
-**Keep writes paused until the entire dump finishes.** Separate collections are not necessarily read at the same instant, and this endpoint does not provide an oplog-based point-in-time dump. Do not add `--oplog` or assume a successful exit makes a live export consistent.
+**Keep writes paused until the entire dump finishes.** Separate collections aren't necessarily read at the same instant, and this endpoint doesn't provide an oplog-based point-in-time dump. Don't add `--oplog` or assume a successful exit makes a live export consistent.
 
 ### Export an application database
 
@@ -127,7 +127,7 @@ mongodump \
   --gzip
 ```
 
-Resume source writes only after the command succeeds. Keep the archive encrypted at rest and restrict access to it.
+Resume source writes only after the command succeeds.
 
 ### Restore into an empty destination database
 
@@ -143,42 +143,42 @@ mongorestore \
   --stopOnError
 ```
 
-Use an empty destination rather than merging with existing data. The example deliberately omits `--drop`, which deletes destination collections before restoring them.
+Use an empty destination rather than merging with existing data. The following example deliberately omits `--drop`, which deletes destination collections before restoring them.
 
-Do not use `--noIndexRestore` if you expect the archive's indexes to be recreated. Review the restore output for document failures and unsupported collection or index options.
+`mongodump` saves index definitions, not physical index structures. By default, `mongorestore` rebuilds those indexes after loading the documents, so allow time for index creation during recovery. Use `--noIndexRestore` only if you intend to create indexes separately. Check the restore output for document failures and errors recreating collections or indexes.
 
 This is an application-database export, not a complete deployment backup. Provision users, permissions, certificates, and service configuration separately.
 
 ## 3. PostgreSQL logical backups today
 
-PostgreSQL logical backup is the direction we want to make simpler and preferred for PostgreSQL-level exports. You do not need to wait for the fix to use it, but **the order of operations matters**.
+PostgreSQL logical backup is the direction we want to make simpler and preferred for PostgreSQL-level exports. You don't need to wait for the fix to use it, but **the order of operations matters**.
 
 ### Why the extra steps?
 
-On versions affected by [#737](https://github.com/documentdb/documentdb/issues/737), `pg_dump` includes the physical document tables but omits the extension-owned collection and index catalog contents. Restoring those tables alone can leave documents on disk while the document endpoint reports that the namespace does not exist.
+On affected versions, `pg_dump` includes the physical document tables but omits the extension-owned collection and index catalog contents. Restoring only those tables can leave documents on disk while the document endpoint reports that the namespace doesn't exist.
 
 Collection and index ID sequences matter too: restoring existing IDs without their sequence state can break later collection or index creation.
 
-There is a separate restore concern: creating the extensions can schedule maintenance jobs before archived `pg_cron` rows are loaded. Those generated rows can conflict with the archived jobs.
+Creating the extensions can schedule maintenance jobs before archived `pg_cron` rows are loaded. Those generated rows can conflict with the archived jobs.
 
-The workaround below registers the missing metadata and sequences before taking the dump, then restores in phases so generated jobs can be removed before archived jobs are loaded. No new DocumentDB binaries or restore hooks are required.
+The following workaround registers the missing metadata and sequences before taking the dump, then restores in phases so generated jobs can be removed before archived jobs are loaded. This workaround doesn't require new DocumentDB binaries or restore hooks.
 
 ### Scope and prerequisites
 
-This is an advanced, same-version procedure for a **single-node, self-managed DocumentDB installation**, not a distributed-cluster or cross-major migration recipe.
+This procedure is an advanced, same-version procedure for a **single-node, self-managed DocumentDB installation**, not a distributed-cluster or cross-major migration recipe.
 
 Before starting:
 
 - Rehearse on disposable instances with your exact PostgreSQL, DocumentDB, and extension versions.
-- Use the same PostgreSQL major and exact extension versions on both ends. Ensure the target's default extension versions match the source, because archive extension creation does not necessarily pin the source version.
+- Use the same PostgreSQL major and exact extension versions on both ends. Ensure the target's default extension versions match the source, because archive extension creation doesn't necessarily pin the source version.
 - Install the required extension binaries and configure required preload libraries on the destination.
-- Prepare an otherwise empty target database in a separate PostgreSQL instance. Do not run this restore over an active or already populated DocumentDB installation.
+- Prepare an otherwise empty target database in a separate PostgreSQL instance. Don't run this restore over an active or already populated DocumentDB installation.
 - Restore into the database configured by `cron.database_name`, commonly `postgres`.
-- Provision the PostgreSQL roles referenced by the archive, including ownership and grants. `pg_dump` does not back up cluster-wide roles. Do not add `--no-owner` as a shortcut.
-- Connect using the same extension-owner role on the destination as on the source. The examples use the `documentdb` administrative role from the tested image; substitute your actual administrative role.
+- Provision the PostgreSQL roles referenced by the archive, including ownership and grants. `pg_dump` doesn't back up cluster-wide roles. Don't add `--no-owner` as a shortcut.
+- Connect by using the same extension-owner role on the destination as on the source. The following examples use the `documentdb` administrative role from the tested image; substitute your actual administrative role.
 - Use a matching PostgreSQL toolchain. Configure authentication through a protected password file or another appropriate mechanism.
 
-The examples use the public DocumentDB schema names. They intentionally do not call any new pre-restore or post-restore hooks.
+The following examples use the public DocumentDB schema names. They intentionally don't call any new pre-restore or post-restore hooks.
 
 ### Step 1: Quiesce the source and disable scheduled jobs
 
@@ -189,7 +189,7 @@ ALTER SYSTEM SET cron.launch_active_jobs = off;
 SELECT pg_reload_conf();
 ```
 
-This is instance-wide. Record the original setting first, confirm the new setting has taken effect, and wait for already-running jobs and writes to finish. Disabling launches does not cancel jobs already executing. Also stop any writers outside `pg_cron`.
+This setting is instance-wide. Record the original setting first, confirm the new setting takes effect, and wait for already-running jobs and writes to finish. Disabling launches doesn't cancel jobs already executing. Also stop any writers outside `pg_cron`.
 
 Check the effective setting from a new connection:
 
@@ -207,9 +207,9 @@ Keep the source quiesced through registration and the dump. Keep destination gat
 
 PostgreSQL normally registers extension-owned backup data with `pg_extension_config_dump()`. However, that function can only run inside an extension installation or update script, not as a standalone `SELECT` in `psql`.
 
-The temporary administrator workaround is to add the equivalent entries to `pg_catalog.pg_extension`. **This directly modifies a PostgreSQL system catalog and requires superuser privileges.** It is not routine application SQL. Rehearse it on a disposable copy, retain an independent recovery option, and do not run it concurrently with extension installation or upgrades.
+The temporary administrator workaround is to add the equivalent entries to `pg_catalog.pg_extension`. **This approach directly modifies a PostgreSQL system catalog and requires superuser privileges.** It isn't routine application SQL. Rehearse it on a disposable copy, retain an independent recovery option, and don't run it concurrently with extension installation or upgrades.
 
-Run the following on the source using `psql` with error stopping enabled. It preserves existing registrations and adds only missing entries for the four relations involved in #737. It also checks that each relation belongs to the expected extension.
+Run the following on the source by using `psql` with error stopping enabled. It preserves existing registrations and adds only missing entries for the four relations involved in #737. It also checks that each relation belongs to the expected extension.
 
 ```sql
 \set ON_ERROR_STOP on
@@ -294,7 +294,7 @@ $registration$;
 COMMIT;
 ```
 
-If anything fails, stop and investigate. Do not bypass an ownership or registration check. A successful registration persists for subsequent dumps of this database; it does not repair previously created archives.
+If anything fails, stop and investigate. Don't bypass an ownership or registration check. A successful registration persists for subsequent dumps of this database; it doesn't repair previously created archives.
 
 ### Step 3: Take and inspect the dump
 
@@ -320,9 +320,9 @@ grep -E 'TABLE DATA documentdb_api_catalog (collections|collection_indexes) |SEQ
   archive.list
 ```
 
-Verify that the archive contains **all four** entries: table data for `collections` and `collection_indexes`, and sequence state for their two ID sequences. A successful `pg_dump` exit alone is not enough.
+Verify that the archive contains **all four** entries: table data for `collections` and `collection_indexes`, and sequence state for their two ID sequences. A successful `pg_dump` exit alone isn't enough.
 
-Keep the archive, role export, and source version information together. `roles.sql` can contain password hashes and must be protected like the database backup. Review it and provision the required roles on the destination before restoring; do not blindly replay role creation over roles that already exist. If an archive entry is missing or an export fails, do not treat the backup as complete.
+Keep the archive, role export, and source version information together. `roles.sql` can contain password hashes and you must protect it like the database backup. Review it and provision the required roles on the destination before restoring; don't blindly replay role creation over roles that already exist. If an archive entry is missing or an export fails, don't treat the backup as complete.
 
 After the export and archive inspection succeed, restore the source's original scheduler setting and resume source traffic.
 
@@ -364,17 +364,17 @@ pg_restore --dbname="$TARGET_PG" \
   documentdb.dump
 ```
 
-The post-data phase restores objects such as indexes and constraints. Do not ignore errors or enable traffic after a partially successful restore.
+The post-data phase restores objects such as indexes and constraints. Don't ignore errors or enable traffic after a partially successful restore.
 
 ### Step 5: Reconcile jobs and restart the gateway
 
-Inspect restored `cron.job` entries before allowing them to run. Check their database, username, connection settings, schedules, and commands against the destination. A source hostname or port is not necessarily valid on a new instance. Confirm that required maintenance jobs are present and that the job ID sequence will not reuse an existing job ID.
+Inspect restored `cron.job` entries before allowing them to run. Check their database, username, connection settings, schedules, and commands against the destination. A source hostname or port isn't necessarily valid on a new instance. Confirm that required maintenance jobs are present and that the job ID sequence doesn't reuse an existing job ID.
 
-Run the metadata registration SQL on the destination as well before taking future backups from it. Registration changes made directly to the source system catalog are not themselves reproduced by `CREATE EXTENSION` during restore.
+Run the metadata registration SQL on the destination as well before taking future backups from it. Registration changes made directly to the source system catalog aren't reproduced by `CREATE EXTENSION` during restore.
 
 Restore the destination's intended scheduler setting only after those checks pass. Start or restart the gateway so it discovers the recovered catalog state, then verify the restored data through the document endpoint.
 
-The work tracked by #737 aims to remove manual metadata handling and make this process less error-prone. Until that is available in your installed version, follow the full procedure rather than relying on a plain `pg_dump` / `pg_restore` round trip.
+The work tracked by #737 aims to remove manual metadata handling and make this process less error-prone. Until that work is available in your installed version, follow the full procedure rather than relying on a plain `pg_dump` / `pg_restore` round trip.
 
 ## Verify recovery, not just command completion
 
