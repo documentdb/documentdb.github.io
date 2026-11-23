@@ -217,14 +217,14 @@ sudo sh documentdb-install.sh
 
 This installs the current release (v1.2-0) from the \`latest\` channel of the package repository, on PostgreSQL 18; add \`--pg-major 17\` for 17. The host keeps that channel, so \`apt upgrade\` and \`dnf upgrade\` follow \`latest\` to new releases. To choose another release, add one option:
 
-- \`--stable\`: the \`stable\` channel, which serves v1.2-0 and takes new releases later than \`latest\`.
+- \`--stable\`: the \`stable\` channel, which serves v1.0-0 and takes new releases later than \`latest\`.
 - \`--version 1.0.0\`: exactly that release (1.0.0 or later), downloaded from its GitHub release. No DocumentDB repository is configured, so the package manager never upgrades it.
 
 The installer only sets up new installs: on a host where DocumentDB is already installed it changes no packages. To move an existing install to a newer release, follow [Upgrading](/docs/linux-packages#upgrading).
 
 ## Install
 
-These commands use the \`latest\` channel. For \`stable\` (v1.2-0), write \`stable\` in place of \`latest\` in the DocumentDB APT line, or use \`baseurl=https://documentdb.io/rpm/rhel9\` on EL9.
+These commands use the \`latest\` channel. For \`stable\` (v1.0-0), write \`stable\` in place of \`latest\` in the DocumentDB APT line, or use \`baseurl=https://documentdb.io/rpm/rhel9\` on EL9.
 
 ### Ubuntu 24.04, PostgreSQL 18 (APT)
 
@@ -447,8 +447,8 @@ For an adopted instance, use the operator's existing PostgreSQL connection inste
 
 ## Upgrading
 
-Package installs from v0.116, v0.117 or 1.0 upgrade in place to 1.2 on either channel; to take each new release as
-soon as it is published, [switch it to \`latest\`](#switch-from-stable-to-latest). Move the entire stack
+Package installs from v0.116 or v0.117 upgrade in place to 1.0 from the \`stable\` channel; to
+take a 1.0.0 install to 1.2, [switch it to \`latest\`](#switch-from-stable-to-latest). Move the entire stack
 together; upgrading only \`postgresql-N-documentdb\` does not update the gateway, tools,
 common payload, or \`documentdb-N\`. These steps use systemd; upgrading a host without it isn't covered here.
 On a package-managed private PostgreSQL 18 instance:
@@ -530,10 +530,10 @@ PostgreSQL and run it once more. By hand, use that instance's own \`psql\` conne
 
 ## Switch from \`stable\` to \`latest\`
 
-Both channels serve 1.2, and \`stable\` takes new releases later than \`latest\`. To have a host
-take each new release as soon as it is published, point its one repository file at \`latest\` and
-upgrade the packages. This is one-way: a release does not run correctly on data that a newer
-release has updated, so back up the data directory first.
+\`stable\` still serves 1.0.0 and takes new releases later than \`latest\`, which serves 1.2. To move a
+1.0.0 install to 1.2 now, point its one repository file at \`latest\` and upgrade the packages.
+This is one-way: 1.0 does not run correctly on data that 1.2 has updated, so back up the data
+directory first.
 
 \`\`\`bash
 # Debian / Ubuntu
