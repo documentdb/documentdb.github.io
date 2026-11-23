@@ -26,6 +26,25 @@ Use the following fixed prompt set for manual evaluations. Record platform/model
 
 Save evaluation results outside the published site, compare a small changed-page cohort with unchanged pages, and repeat before expanding content. Private search-console data, referral analytics and verified crawler logs can supplement these observations; the static site does not collect model citation or task-success measurements automatically.
 
+## Agent landing page
+
+The standalone agent landing page is at `/campaigns/landing/`. It includes the
+Starter article summary, retail storefront and AI-memory prompt carousel,
+folded resource links, and the local article at `/why-document-databases/`.
+The polished article is maintained in `content/why-document-databases.md`.
+
+The 20 KB film poster loads first; Three.js and WebGL initialize only after
+Play. Carousel rotation and film playback remain independent. This page has
+no Waline or campaign-collector dependency and requires no hosting changes.
+Its existing noindex/nofollow metadata is preserved.
+
+Both prompts use the published Agent-Kit repository pinned to
+`d10f02a9fcd1694b390658d9098a6945948eff97` and the tested gallery revision.
+The retail and text/tag/regex memory flows passed independent end-to-end
+checks with Claude Sonnet 5.5 and GPT-5.6 Sol. Those runs used the authorized
+local Agent-Kit mirror at the identical commit after remote clones were blocked;
+public cold-clone access and optional Ollama semantic mode were not verified.
+
 ## Prerequisites for Development
 
 - **[Node.js](https://nodejs.org/)** (*20 or higher*)

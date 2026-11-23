@@ -28,7 +28,7 @@ describe("static discovery content", () => {
   it("renders the anchor article in full with working section links and installation paths", () => {
     const html = renderToStaticMarkup(createElement(WhyDocumentDatabasesPage));
     expect(html.match(/<h1\b/g)).toHaveLength(1);
-    expect(html).toContain("Modern applications often work with documents");
+    expect(html).toContain("Modern applications often start with documents");
     expect(html).toContain("Choose hosting because it fits the organization.");
     expect(html).toContain("<table");
     expect(html).toContain("Compact travel camera");

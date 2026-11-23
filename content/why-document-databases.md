@@ -1,24 +1,20 @@
-# Why are there many document databases now? A Perspective from an open-source DocumentDB
+# Why are there so many document databases?
 
-Modern applications often work with documents before they work with databases. A customer profile arrives as JSON. A product has nested attributes. A content item combines text, tags, permissions, and references to media. An AI application associates those records with embeddings.
+Modern applications often start with documents: a JSON customer profile, a product with nested attributes, an article with tags and permissions, or an AI record with an embedding. Document databases store and query these objects in a form close to the application model.
 
-Document databases let developers persist and query data in a form close to these application objects. Their appeal is not simply that they avoid tables. It is that, for suitable workloads, they reduce the distance between how an application represents information and how its database stores and retrieves it.
+Their appeal is not simply avoiding tables. For suitable workloads, they reduce the distance between how an application represents information and how its database stores and retrieves it.
 
-**MongoDB deserves recognition as a trailblazer in bringing this approach to mainstream application development.** It did not invent document databases, but helped popularize a compelling combination: flexible JSON-like documents, collections, document-oriented queries and updates, and drivers that make those operations accessible from application code. Its [document model and query capabilities](https://www.mongodb.com/docs/manual/) remain a foundational reference point for implementations supporting MongoDB APIs.
+**MongoDB helped bring this approach into mainstream development.** It did not invent document databases, but popularized a compelling combination of flexible documents, collections, document-oriented operations, and accessible drivers. Its [document model and query capabilities](https://www.mongodb.com/docs/manual/) remain an important reference for compatible implementations.
 
-That influence goes beyond storing documents. Developers have invested in MongoDB APIs, tools, frameworks, and expertise. Compatible implementations can preserve part of that investment while offering different engines, operating models, or licensing terms. Compatibility is therefore a useful bridge, not the entire reason to build another document database.
+That ecosystem represents years of investment in code, tools, and expertise. MongoDB API compatibility can preserve some of that investment while offering a different engine, operating model, or license. It is a bridge to more choices, not the only reason to build another document database.
 
-But the document model does not dictate a single database engine, license, or hosting provider. That helps explain why there are multiple document databases: organizations want similar development experiences with different choices about infrastructure, operations, compatibility, and ownership.
+The document model does not require one engine or hosting provider. The open-source [DocumentDB project](https://github.com/documentdb/documentdb) illustrates another approach: selected MongoDB wire-protocol commands and compatible drivers, backed by PostgreSQL and distributed under the MIT License. It builds on a familiar development experience while giving organizations an implementation they can inspect, operate, and extend.
 
-The open-source [DocumentDB project](https://github.com/documentdb/documentdb) illustrates one approach: implement selected MongoDB wire-protocol commands and support compatible drivers, using PostgreSQL as the underlying engine, and distribute the project under the MIT License. The opportunity is to make that familiar development model available through a permissively licensed implementation that organizations can inspect, operate, and extend -- adding choices rather than dismissing MongoDB's contribution.
-
-*A naming distinction matters: open-source DocumentDB, Amazon DocumentDB, and Azure DocumentDB are not interchangeable names for one product. Amazon DocumentDB is an AWS managed service. Azure DocumentDB describes itself as a managed service built on the open-source DocumentDB foundation. Shared terminology and MongoDB compatibility do not establish identical implementations or feature sets.*
+*Open-source DocumentDB, Amazon DocumentDB, and Azure DocumentDB are distinct products. Amazon DocumentDB is an AWS managed service; Azure DocumentDB describes itself as a managed service built on the open-source DocumentDB foundation. Shared names and API compatibility do not imply identical implementations or features.*
 
 ## Why choose a document database?
 
-A document database stores records as documents containing fields, nested objects, and arrays. Documents within a collection can have different attributes.
-
-Consider a product catalog:
+A document contains fields, nested objects, and arrays. Records in one collection can have different attributes:
 
 ```json
 {
@@ -33,71 +29,65 @@ Consider a product catalog:
 }
 ```
 
-A book in the same catalog might have an author and ISBN rather than camera specifications. A document model accommodates these differences without requiring a column for every possible attribute or a separate table for every product category.
+A book in the same catalog might have an author and ISBN instead of camera specifications. Documents accommodate that variation without a column for every possible attribute or a table for every category.
 
-The practical advantages are conditional, but meaningful:
+The practical benefits are:
 
-- **Evolving attributes:** adding an optional document field can avoid a database-wide table-schema change.
-- **Nested application objects:** related information frequently read together can be stored together.
-- **Heterogeneous records:** different record types can retain their relevant attributes without populating a large set of irrelevant columns.
-- **Document-oriented queries:** applications can filter fields, project selected values, and aggregate documents through an API suited to their data model.
+- **Evolving attributes:** optional fields can be added without a database-wide table-schema change.
+- **Nested objects:** related information commonly read together can be stored together.
+- **Heterogeneous records:** each record retains its relevant attributes.
+- **Document-oriented queries:** applications can filter, project, and aggregate through an API suited to the model.
 
-None of this means "no schema." Applications still need agreements about field names, types, required values, and versioning. Flexible storage moves some schema decisions out of table definitions; it does not remove the need for data discipline.
+Flexible storage does not mean "no schema." Applications still need consistent field names, types, required values, and versioning.
 
-Nor are these capabilities exclusive to dedicated document databases. PostgreSQL has [native JSON and JSONB types, document-processing operators, and JSONB indexing](https://www.postgresql.org/docs/current/datatype-json.html). Applications that prefer SQL can already combine relational and document-shaped data without adopting a separate document API.
+Nor is document storage exclusive to dedicated document databases. PostgreSQL already provides [JSON, JSONB, document operators, and indexing](https://www.postgresql.org/docs/current/datatype-json.html). Applications that prefer SQL can combine relational and document-shaped data directly.
 
-That native support should not be confused with MongoDB compatibility. PostgreSQL's JSONB is not BSON, and PostgreSQL does not natively expose the MongoDB wire protocol. DocumentDB adds BSON support through an extension, together with collection management, document operations, indexing behavior, and a gateway implementing selected MongoDB wire-protocol commands. Its additional value is this document-database interface and implementation -- not merely the ability to store JSON.
+But JSONB is not BSON, and PostgreSQL does not natively expose the MongoDB wire protocol. DocumentDB adds BSON support, collection management, document operations, indexing behavior, and a gateway for selected MongoDB commands. Its value is a document-database interface and implementation, not merely storing JSON.
 
-## A broad category, with different interfaces and deployment choices
+## One data model, different interfaces and deployment choices
 
-As [an overview of document-oriented databases](https://en.wikipedia.org/wiki/Document-oriented_database), it describes a broad category, not a common application interface. MongoDB, Azure Cosmos DB, Amazon DynamoDB, Apache CouchDB, and Couchbase all support document-shaped data, but that does not make their clients, queries, or deployment models interchangeable.
+[Document-oriented databases](https://en.wikipedia.org/wiki/Document-oriented_database) form a broad category, not a shared application interface. Similar documents do not make clients, queries, or deployments interchangeable.
 
-These products compete on developer interfaces, workload capabilities, operational services, and ownership. **MongoDB API compatibility connects some of them to an established application ecosystem; portability is a possible benefit, not the defining feature of document databases.** A database can be document-oriented without accepting MongoDB commands. Conversely, a service can accept MongoDB commands without making its underlying engine available for self-hosting.
-
-### Similar documents do not imply compatible applications
-
-| Database or API | Document-oriented capabilities and interface | What changes when moving a MongoDB application? |
+| Database or API | Interface | Moving a MongoDB application |
 |---|---|---|
-| **Amazon DynamoDB** | Flexible items with nested attributes, accessed through DynamoDB operations and AWS SDKs. | Database calls and access patterns generally need adaptation; storing nested data is not MongoDB protocol compatibility. |
-| **Azure Cosmos DB for NoSQL** | Flexible document storage through Cosmos DB APIs and SDKs, with its own partitioning, consistency, and throughput model. | MongoDB calls must be replaced or translated, and database-specific behavior must be reconsidered. |
-| **Azure Cosmos DB for MongoDB** | A separate Cosmos DB API supporting the MongoDB wire protocol and existing MongoDB drivers. | Some client code can be retained, but supported operations and service semantics still need testing. |
-| **Apache CouchDB** | Documents exposed through a RESTful HTTP API, with document revisions and optimistic conflict handling. | HTTP operations and revision handling are not substitutes for MongoDB commands; application adaptation is required. |
-| **Couchbase** | JSON documents queried with SQL++, alongside its other data-access interfaces. | SQL++ queries are not MongoDB aggregation pipelines; application queries and database calls need adaptation. |
+| **Amazon DynamoDB** | Flexible items and nested attributes through DynamoDB operations and AWS SDKs. | Adapt database calls and access patterns. |
+| **Azure Cosmos DB for NoSQL** | Cosmos DB APIs with their own partitioning, consistency, and throughput model. | Replace or translate MongoDB calls and reassess behavior. |
+| **Azure Cosmos DB for MongoDB** | MongoDB wire protocol and existing MongoDB drivers. | Retain some client code; test supported operations and semantics. |
+| **Apache CouchDB** | RESTful HTTP operations, document revisions, and conflict handling. | Adapt operations and revision handling. |
+| **Couchbase** | JSON documents queried with SQL++ and other interfaces. | Adapt queries and database calls; SQL++ is not a MongoDB aggregation pipeline. |
 
-These distinctions are grounded in the products' own documentation. [DynamoDB's data model](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.CoreComponents.html) permits varying attributes and nested documents, while its [`Query` operation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.html) requires a specific partition-key value, optionally refined by a sort-key condition. Secondary indexes provide additional access paths. This encourages deliberate key and access-pattern design rather than treating every document field as an interchangeable query entry point.
+These differences affect application design. [DynamoDB's data model](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.CoreComponents.html) supports nested data, but its [`Query` operation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.html) requires a partition-key value, optionally refined by a sort-key condition. Secondary indexes provide other access paths.
 
-[Cosmos DB](https://learn.microsoft.com/en-us/azure/cosmos-db/overview) combines document storage with managed global distribution and other data models. Crucially, **"Cosmos DB" alone is not precise enough for a compatibility comparison**: [Cosmos DB for MongoDB](https://learn.microsoft.com/en-us/azure/cosmos-db/mongodb/overview) explicitly supports the MongoDB wire protocol. It belongs in MongoDB comparisons too. Microsoft currently directs readers considering MongoDB migrations or MongoDB Query Language features toward Azure DocumentDB, while retaining Cosmos DB for MongoDB as a distinct offering.
+[Cosmos DB](https://learn.microsoft.com/en-us/azure/cosmos-db/overview) supports several APIs, so the name alone is insufficient for a compatibility comparison. [Cosmos DB for MongoDB](https://learn.microsoft.com/en-us/azure/cosmos-db/mongodb/overview) supports the MongoDB wire protocol and remains distinct from Azure DocumentDB. Microsoft directs readers considering MongoDB migrations or MongoDB Query Language features toward Azure DocumentDB.
 
-[CouchDB's HTTP interface](https://docs.couchdb.org/en/stable/intro/overview.html) and [Couchbase's SQL++ queries](https://docs.couchbase.com/server/current/n1ql/n1ql-intro/queriesandresults.html) illustrate why document storage alone does not establish a shared API. They are alternatives in the broader database-selection discussion, even when they are not direct substitutes for an existing MongoDB application.
+[CouchDB's HTTP API](https://docs.couchdb.org/en/stable/intro/overview.html) and [Couchbase's SQL++](https://docs.couchbase.com/server/current/n1ql/n1ql-intro/queriesandresults.html) are alternatives in the broader selection discussion, not drop-in MongoDB interfaces.
 
-### What does "portable" actually mean?
+### What does portability mean?
 
-Portability has several independent dimensions:
+Portability has four independent dimensions:
 
-- **Data portability:** can records be exported and imported while preserving identifiers, numeric types, dates, and other values? JSON export alone may lose distinctions represented in BSON or other typed formats.
-- **Application portability:** can drivers, commands, queries, and transaction behavior be retained? A shared wire protocol reduces rewriting, but does not guarantee matching results or supported features.
-- **Deployment portability:** can a production-capable implementation run on-premises or with a different infrastructure provider?
-- **Operational portability:** can backup, recovery, authentication, monitoring, and provisioning workflows move too? Those often remain specific to an engine or cloud service.
+- **Data:** can exports preserve identifiers, numeric types, dates, and other values? Plain JSON may lose distinctions represented in BSON.
+- **Application:** can drivers, commands, queries, and transaction behavior be retained? A shared wire protocol does not guarantee matching features or results.
+- **Deployment:** can a production-capable implementation run on-premises or with another provider?
+- **Operations:** can backup, recovery, authentication, monitoring, and provisioning workflows move too?
 
-For example, Amazon DocumentDB improves application portability for supported MongoDB workloads, but its managed service is an AWS offering, not a self-hostable distribution of the open-source DocumentDB engine. Its [supported-API matrix](https://docs.aws.amazon.com/documentdb/latest/devguide/mongo-apis.html) and functional-difference documentation matter more than the shared product name.
+Amazon DocumentDB supports application portability for selected MongoDB workloads, but remains an AWS service, not a self-hostable distribution of open-source DocumentDB. Its [supported-API matrix](https://docs.aws.amazon.com/documentdb/latest/devguide/mongo-apis.html) and functional differences matter more than its name.
 
-Open-source DocumentDB adds a different dimension: the implementation is available to operate and modify on infrastructure an organization controls. That expands deployment choice, but does not make PostgreSQL data files interchangeable with MongoDB's, or eliminate migration and compatibility testing.
+Open-source DocumentDB adds control over the implementation and infrastructure. It does not make PostgreSQL data files interchangeable with MongoDB's or remove migration testing.
 
-Local development also should not be confused with production deployment freedom. The [Cosmos DB emulator](https://learn.microsoft.com/en-us/azure/cosmos-db/emulator) is intended for development, not production. [DynamoDB Local](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.html) supports offline development and testing. AWS now also documents [ExtendDB](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ExtendDB.html), an independent open-source DynamoDB-compatible adapter using backends such as SQLite or PostgreSQL. This is an important counterexample to a blanket claim that DynamoDB APIs cannot be implemented outside AWS; however, AWS describes the documented development image as local/CI-only, not suitable for production or shared networks.
+Local development is also different from production portability. The [Cosmos DB emulator](https://learn.microsoft.com/en-us/azure/cosmos-db/emulator) and [DynamoDB Local](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.html) are development tools. AWS also documents [ExtendDB](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ExtendDB.html), an independent open-source DynamoDB-compatible adapter with SQLite or PostgreSQL backends. That challenges blanket claims that DynamoDB APIs cannot run outside AWS, but the documented development image is local/CI-only, not for production or shared networks.
 
-### Narrowing the comparison to implementations supporting MongoDB APIs
+### Preserving MongoDB APIs narrows the comparison
 
-For teams that specifically want to preserve MongoDB drivers and document operations, the relevant comparison includes **open-source DocumentDB, Amazon DocumentDB, Azure DocumentDB, and Cosmos DB for MongoDB**, alongside MongoDB itself.
+Teams retaining MongoDB drivers should compare MongoDB itself with open-source DocumentDB, Amazon DocumentDB, Azure DocumentDB, and Cosmos DB for MongoDB.
 
-MongoDB itself also offers deployment choices. [MongoDB Atlas supports AWS, Azure, and Google Cloud](https://www.mongodb.com/docs/atlas/reference/cloud-providers/), demonstrating that multicloud hosting is not exclusive to open-source DocumentDB. Choosing a cloud provider within one managed product, switching database implementations, and obtaining permissive rights to operate or redistribute an engine are nevertheless different freedoms.
+[MongoDB Atlas runs on AWS, Azure, and Google Cloud](https://www.mongodb.com/docs/atlas/reference/cloud-providers/), so multicloud hosting is not unique to DocumentDB. Choosing a provider within one service, switching implementations, and obtaining permissive rights to operate or redistribute an engine are different freedoms.
 
-The practical conclusion is not that broader document databases are unsuitable. DynamoDB or Cosmos DB may be a strong fit when their access models and managed capabilities match the application. **Choose the document model for the data, the API for the application, and the deployment and license for the organization's portability requirements.**
+**Choose the document model for the data, the API for the application, and the deployment and license for the organization's requirements.** DynamoDB or Cosmos DB can be a strong fit when their access models and managed capabilities match the workload.
 
-## What makes open-source DocumentDB a database, rather than a JSON storage wrapper?
+## More than a JSON storage wrapper
 
-The implementation provides a useful way to evaluate the claims.
-
-At a high level, its architecture is:
+Open-source DocumentDB combines a document-aware interface with PostgreSQL's database machinery:
 
 ```text
 Application using a MongoDB driver
@@ -113,173 +103,128 @@ Application using a MongoDB driver
               PostgreSQL
 ```
 
-### BSON is a native PostgreSQL type
+### BSON participates in PostgreSQL's type system
 
-DocumentDB uses BSON, a binary document format that supports nested structures and typed values beyond plain JSON, including binary data and additional numeric and identifier types.
+BSON represents nested documents and typed values beyond plain JSON, including binary data and additional numeric and identifier types.
 
-The core extension [registers a PostgreSQL BSON type](https://github.com/documentdb/documentdb/blob/a5f1636269e5062fa22a24bfa4d58d3cc92a0bc7/pg_documentdb_core/sql/types/bson--0.10-0.sql), with text and binary input/output functions. The document representation is therefore integrated into PostgreSQL's type system, rather than stored only as application-managed text.
+DocumentDB's core extension [registers a PostgreSQL BSON type](https://github.com/documentdb/documentdb/blob/a5f1636269e5062fa22a24bfa4d58d3cc92a0bc7/pg_documentdb_core/sql/types/bson--0.10-0.sql) with text and binary input/output functions. [Collection creation](https://github.com/documentdb/documentdb/blob/a5f1636269e5062fa22a24bfa4d58d3cc92a0bc7/pg_documentdb/src/commands/create_collection_core.c#L319-L369) creates PostgreSQL tables with BSON `document` and `object_id` columns. The table has a defined structure; documents within its rows can vary.
 
-The collection-creation code supplies another concrete detail: [it creates PostgreSQL tables](https://github.com/documentdb/documentdb/blob/a5f1636269e5062fa22a24bfa4d58d3cc92a0bc7/pg_documentdb/src/commands/create_collection_core.c#L319-L369) containing a BSON `document` column and a separate BSON `object_id` column.
+### Familiar drivers, a different backend
 
-This explains how flexible documents and relational storage coexist. The physical table has a defined structure; the document inside a row can carry varying fields.
+The Rust gateway translates MongoDB wire-protocol operations into PostgreSQL calls. Its [query catalog](https://github.com/documentdb/documentdb/blob/a5f1636269e5062fa22a24bfa4d58d3cc92a0bc7/pg_documentdb_gw/documentdb_gateway_core/src/postgres/query_catalog.rs#L674-L683) covers inserts, finds, updates, deletes, and aggregation; the quickstart connects with PyMongo.
 
-### Familiar drivers connect to a document-aware backend
+Driver compatibility does not promise every MongoDB feature or identical behavior. Test the application's commands, query semantics, transactions, and drivers before migrating. The gateway is not a REST API: a browser application still needs a service for HTTP, authentication, and business logic.
 
-The Rust gateway parses MongoDB wire-protocol messages and translates operations into PostgreSQL calls. Its [query catalog](https://github.com/documentdb/documentdb/blob/a5f1636269e5062fa22a24bfa4d58d3cc92a0bc7/pg_documentdb_gw/documentdb_gateway_core/src/postgres/query_catalog.rs#L674-L683) includes calls for inserting, finding, updating, deleting, and aggregating documents.
+### Queries and indexes execute in the database
 
-The benefit is a familiar application interface without requiring the storage engine itself to be MongoDB. The project's quickstart, for example, connects using PyMongo.
+The [aggregation implementation](https://github.com/documentdb/documentdb/blob/a5f1636269e5062fa22a24bfa4d58d3cc92a0bc7/pg_documentdb/src/aggregation/bson_aggregation_pipeline.c) generates backend queries for stages such as `$match`, `$project`, and `$group`. [Index-handler selection](https://github.com/documentdb/documentdb/blob/a5f1636269e5062fa22a24bfa4d58d3cc92a0bc7/pg_documentdb/src/commands/create_indexes.c#L699-L734) integrates document indexes with PostgreSQL access methods, selecting a RUM-based handler by default.
 
-However, **support for MongoDB drivers and selected commands does not mean identical behavior to every MongoDB version or feature**. Applications should test their actual commands, query semantics, transaction requirements, and driver behavior before migrating.
+Applications need not fetch every document to inspect its fields. Performance still depends on selectivity, indexes, document size, updates, and supported optimizations; indexes consume storage and add write overhead.
 
-The gateway is also not a REST API. A browser-facing HTTP application normally needs an application service that handles authentication, business logic, and database access.
+### Flexibility can include validation
 
-### Documents can be queried and indexed -- not just retrieved whole
+The [validation implementation](https://github.com/documentdb/documentdb/blob/a5f1636269e5062fa22a24bfa4d58d3cc92a0bc7/pg_documentdb/src/schema_validation/schema_validation.c#L28-L103) checks updated documents against configured validators and distinguishes validation modes. Optional attributes can coexist with enforced invariants, but availability depends on the release and configuration; the code includes a feature gate.
 
-The [aggregation implementation](https://github.com/documentdb/documentdb/blob/a5f1636269e5062fa22a24bfa4d58d3cc92a0bc7/pg_documentdb/src/aggregation/bson_aggregation_pipeline.c) generates backend queries for document pipelines, including stages such as `$match`, `$project`, and `$group`.
+### Vector search builds on extensions
 
-Document indexes are integrated with PostgreSQL access methods. The [index-handler selection code](https://github.com/documentdb/documentdb/blob/a5f1636269e5062fa22a24bfa4d58d3cc92a0bc7/pg_documentdb/src/commands/create_indexes.c#L699-L734), for example, selects a RUM-based handler by default and checks whether an alternative handler supports the requested index capabilities.
+The source defines [IVFFlat and HNSW vector indexes](https://github.com/documentdb/documentdb/blob/a5f1636269e5062fa22a24bfa4d58d3cc92a0bc7/pg_documentdb/src/vector/vector_index_kind_impl.c#L108-L130) and [index expressions](https://github.com/documentdb/documentdb/blob/a5f1636269e5062fa22a24bfa4d58d3cc92a0bc7/pg_documentdb/src/vector/vector_utilities.c#L145-L220) that extract document vectors and use PostgreSQL vector types and distance operators.
 
-The architectural advantage is that document queries can use database execution and indexing machinery rather than requiring an application to fetch every record and inspect it.
+Content, metadata, and similarity search can share one database system. Embedding generation, access control, and retrieval quality remain application responsibilities.
 
-This is not a universal performance claim. Query selectivity, index choice, document size, update frequency, and supported optimizations still determine results. Indexes also consume storage and add write overhead.
-
-### Flexibility can coexist with validation
-
-The [schema-validation implementation](https://github.com/documentdb/documentdb/blob/a5f1636269e5062fa22a24bfa4d58d3cc92a0bc7/pg_documentdb/src/schema_validation/schema_validation.c#L28-L103) checks updated documents against configured validators and distinguishes validation behavior for different modes.
-
-That matters for evolving applications: teams can allow optional attributes while still enforcing important invariants. Availability and behavior should be checked against the deployed release and configuration; the code includes a feature gate.
-
-### Vector search builds on PostgreSQL extensions
-
-For AI-oriented applications, the source includes definitions for [IVFFlat and HNSW vector indexes](https://github.com/documentdb/documentdb/blob/a5f1636269e5062fa22a24bfa4d58d3cc92a0bc7/pg_documentdb/src/vector/vector_index_kind_impl.c#L108-L130). It also [generates index expressions](https://github.com/documentdb/documentdb/blob/a5f1636269e5062fa22a24bfa4d58d3cc92a0bc7/pg_documentdb/src/vector/vector_utilities.c#L145-L220) that extract document vectors and use PostgreSQL vector types and distance operator classes.
-
-This can bring document content, metadata, and similarity search into one database system. It does not eliminate the need to generate embeddings, enforce access controls, or evaluate retrieval quality.
-
-These source references demonstrate implementation mechanisms in the inspected revision -- not a promise that every capability is enabled in every packaged release or managed service.
+These source references describe the inspected revision, not a guarantee that every packaged release or managed service enables every capability.
 
 ## Which applications benefit most?
 
-AWS's [document-database use cases](https://docs.aws.amazon.com/documentdb/latest/devguide/document-database-use-cases.html) identify user profiles, operational data, and content management. These are useful starting points because their suitability follows from the shape and access patterns of the data.
+[Common document-database use cases](https://docs.aws.amazon.com/documentdb/latest/devguide/document-database-use-cases.html) follow from data shape and access patterns:
 
-| Application | Why documents can fit | Important design boundary |
+| Application | Why documents fit | Design boundary |
 |---|---|---|
-| **User profiles and preferences** | Users supply different optional attributes; settings often form nested objects read together. | Keep frequently updated or unbounded activity histories separate from the profile. |
-| **Product catalogs** | Categories have different specifications, while applications share common search fields. | Standardize the fields used for filtering, sorting, and validation. |
-| **Content management** | Articles, comments, and other content types combine common metadata with type-specific fields. | Large images and videos are often better kept in object storage, with references in documents. |
-| **Operational events and telemetry** | Sources produce evolving payloads that can be filtered and aggregated near ingestion. | Retention, ingestion throughput, and analytical query costs still need explicit planning. |
-| **AI knowledge applications** | Content, provenance, metadata, and embeddings can be associated with the same records. | Retrieval quality, authorization, and model integration remain application responsibilities. |
+| **Profiles and preferences** | Optional attributes and nested settings read together. | Keep unbounded activity histories separate. |
+| **Product catalogs** | Category-specific specifications with common search fields. | Standardize filter, sort, and validation fields. |
+| **Content management** | Shared metadata with type-specific fields. | Store large media in object storage and keep references. |
+| **Events and telemetry** | Evolving payloads filtered and aggregated near ingestion. | Plan retention, throughput, and analytical costs. |
+| **AI knowledge applications** | Content, provenance, metadata, and embeddings associated with records. | Own retrieval quality, authorization, and model integration. |
 
 The strongest fit is often an **application aggregate**: a bounded object whose information belongs together and is commonly retrieved together.
 
-A document model is less compelling when the workload depends on extensive joins, shared entities that must be updated consistently across many records, or database-enforced relationships. Relational tables may be clearer for accounting, inventory invariants, and highly interconnected transactional data.
+Extensive joins, shared entities requiring consistent updates, and database-enforced relationships may favor relational tables. Embedding can simplify reads, but excessive embedding creates oversized documents, duplication, and expensive updates.
 
-Embedding can reduce joins for suitable reads, but excessive embedding can create oversized documents, duplicated information, and expensive updates. The right question is not "Are documents better than tables?" It is "Which representation best matches this application's consistency and access requirements?"
+The question is not whether documents beat tables, but which representation fits the application's consistency and access requirements.
 
 ## Why PostgreSQL underneath matters
 
-Building on PostgreSQL separates two decisions that are often bundled together: the application's document interface and the underlying database engine.
+DocumentDB separates the application's document interface from its storage engine. It reuses PostgreSQL's storage, transactions, query execution, and extension infrastructure while adding document-specific behavior.
 
-DocumentDB can use PostgreSQL's storage, transaction, query-execution, and extension infrastructure while adding document-specific behavior. For organizations already familiar with PostgreSQL, this offers a recognizable foundation for operations and troubleshooting.
+Teams familiar with PostgreSQL gain a recognizable operational foundation, not automatic compatibility with every existing tool. Validate extensions, metadata, and gateway behavior; a successful PostgreSQL restore must also recover a working DocumentDB system.
 
-It also creates an opportunity to reuse existing database expertise rather than introduce an entirely unfamiliar engine. PostgreSQL's extension ecosystem is visible in the vector-search implementation, for example.
+PostgreSQL underneath does not guarantee full MongoDB transaction semantics, effortless horizontal scaling, or managed-service availability. Those depend on the implementation and deployment.
 
-There are limits to that benefit. Existing PostgreSQL tooling must be validated with DocumentDB's extensions, metadata, and gateway. Backup restoration must recover a working DocumentDB system, not merely produce a successful PostgreSQL restore command.
+**The advantage is a mature foundation, not exemption from database engineering.**
 
-Likewise, PostgreSQL underneath does not automatically guarantee complete MongoDB transaction semantics, effortless horizontal scaling, or managed-service availability. Those depend on the DocumentDB implementation and deployment architecture.
+## MIT licensing, and where SSPL changes the calculation
 
-**The advantage is a mature foundation -- not exemption from database engineering.**
+The project's [MIT License](https://github.com/documentdb/documentdb/blob/a5f1636269e5062fa22a24bfa4d58d3cc92a0bc7/LICENSE) permits use, modification, distribution, sublicensing, and sale, provided the required notices are preserved.
 
-## Why the MIT License matters -- and where SSPL changes the calculation
+Organizations can operate DocumentDB themselves, package it with commercial products, adapt it, or build hosting and support services. MIT does not require publishing the surrounding application or hosting stack merely because the database is offered as a service. Dependencies have separate licenses to review.
 
-The project's [MIT License](https://github.com/documentdb/documentdb/blob/a5f1636269e5062fa22a24bfa4d58d3cc92a0bc7/LICENSE) permits using, modifying, distributing, sublicensing, and selling the software, subject to preserving the required copyright and permission notices.
+The **Server Side Public License (SSPL)** differs. [Section 13](https://www.mongodb.com/legal/licensing/server-side-public-license) requires the defined "Service Source Code" to be made available under SSPL when the program's functionality is offered to third parties as a service. That definition includes management, monitoring, backup, and hosting software.
 
-For an organization building applications, this provides considerable freedom to:
+This is especially relevant to database-hosting businesses. It does **not** mean every application using an SSPL database must publish all its code. Obligations depend on the offering; obtain legal review for a specific business model.
 
-- Operate the database on its own infrastructure.
-- Package it with a commercial product.
-- Modify the implementation for specific requirements.
-- Build hosting or support services around it.
+The [Open Source Initiative does not recognize SSPL as an open-source license](https://opensource.org/blog/the-sspl-is-not-an-open-source-license). Readable source and permissively licensed open source are different propositions. MIT reduces this licensing friction, but supplies neither a warranty nor database operations.
 
-The MIT License does not impose a requirement to publish the surrounding application or hosting stack merely because the database is offered as a service. Dependencies have their own licenses, however, and should be reviewed separately.
+## The opportunity: owning database-backed applications
 
-That differs materially from the **Server Side Public License (SSPL)**: [Section 13 of the SSPL](https://www.mongodb.com/legal/licensing/server-side-public-license) requires that, when the program's functionality is offered to third parties as a service, the defined "Service Source Code" be made available to everyone by network download at no charge under the SSPL. Its definition includes software used to provide the service, such as management, monitoring, backup, and hosting software.
+The goal is not for every organization to invent a database engine. It is to let teams adopt, inspect, operate, and, when necessary, adapt the database their applications depend on.
 
-This is especially relevant to database-hosting businesses and products that expose database functionality. It should **not** be reduced to the claim that every application using an SSPL database must publish all its code. The applicable obligations depend on what is being offered and how; legal review is appropriate for a specific business model.
+A permissively licensed implementation of a familiar interface broadens participation: application teams gain deployment choices, vendors can support customer-hosted environments, and contributors can build on a shared foundation. It combines the developer experience MongoDB helped establish with PostgreSQL infrastructure.
 
-The [Open Source Initiative does not recognize SSPL as an open-source license](https://opensource.org/blog/the-sspl-is-not-an-open-source-license). Publicly readable source and permissively licensed open source are different propositions.
+Teams can start locally, test real queries, and understand the implementation before committing to production hosting. This suits on-premises software, private environments, and established PostgreSQL operations.
 
-MIT licensing reduces this particular licensing friction. It does not supply a warranty, pay infrastructure bills, or remove operational responsibilities.
+Ownership does not require avoiding the cloud. An application can use cloud compute, storage, identity, and monitoring with a self-operated database, or choose managed database operations when they offer better value. The starting point is an application requirement, not a hosting commitment.
 
-## The opportunity: organizations can own their database-backed applications
+## When managed hosting is the better choice
 
-The broader vision, and like the reality, is not that every organization should create a new database engine. It is that organizations should be able to adopt, inspect, operate, and -- when necessary -- adapt the database on which their applications depend.
+Self-hosting is not automatically cheaper or safer. Production databases need patching, capacity planning, access management, monitoring, verified backups, incident response, and recovery exercises.
 
-An open, permissively licensed implementation of a familiar document interface can broaden participation: application teams gain deployment choices, software vendors can serve customer-hosted environments, and contributors and service providers can build on a shared foundation. Those benefits can extend beyond the users of any one hosting service. This builds on the developer experience MongoDB helped establish, while using PostgreSQL's database infrastructure rather than requiring every project to create a storage engine from scratch.
+Managed services can help small teams protect development time, meet demanding availability and recovery objectives, handle capacity changes, and integrate enterprise controls. Their value depends on service limits, pricing, and the surrounding application.
 
-An open-source document database makes that practical without requiring an immediate commitment to a particular managed service. A team can begin locally, validate its data model, test its real queries, and understand the implementation before deciding where production should run.
+[Amazon DocumentDB](https://docs.aws.amazon.com/documentdb/latest/devguide/what-is.html) supports selected MongoDB APIs and drivers, with automated backups, point-in-time recovery, replica failover, VPC isolation, and AWS KMS encryption. [Azure DocumentDB](https://azure.microsoft.com/en-us/products/documentdb) offers an open-source-based managed service with availability options, backups, scaling, and Azure integrations.
 
-That can suit customer-hosted software, on-premises deployments, private environments, and teams with established PostgreSQL operations.
+Evaluate operations, regional availability, recovery objectives, performance, migration effort, and total cost. A managed service's features do not automatically belong to a standalone open-source deployment.
 
-Ownership is not the same as isolation from the cloud. The same application may use cloud compute, object storage, identity, and monitoring while retaining a self-operated database. Alternatively, the team may conclude that managed database operations provide better value.
+### Cloud providers and specialist database vendors
 
-Either way, the starting point can be an application requirement rather than a hosting commitment.
+Cloud-provider services are not the only managed choices:
 
-## When cloud hosting or database-as-a-service is the better choice
-
-Self-hosting is not automatically cheaper or safer. Operating a production database requires patching, capacity planning, access management, monitoring, backup verification, incident response, and recovery exercises.
-
-Managed services become particularly valuable in these scenarios:
-
-| Scenario | Why managed hosting can help |
-|---|---|
-| **A small team needs production reliability** | Database maintenance and on-call work would otherwise compete with application development. |
-| **Availability and recovery objectives are demanding** | Managed failover, backups, and recovery capabilities can reduce implementation and operational effort. |
-| **Capacity changes significantly** | Provider-supported scaling can simplify provisioning, subject to service limits and pricing. |
-| **Enterprise controls must integrate with cloud infrastructure** | Private networking, encryption-key management, monitoring, and governance may be easier to standardize. |
-| **The application is part of a broader cloud solution** | Database operations can be integrated with application hosting, identity, event processing, storage, analytics, and AI services. |
-
-[Amazon DocumentDB](https://docs.aws.amazon.com/documentdb/latest/devguide/what-is.html) provides a fully managed service supporting selected MongoDB APIs and drivers. Its documentation describes automated backups and point-in-time recovery, replica-based failover, VPC isolation, and encryption integrated with AWS KMS.
-
-[Azure DocumentDB](https://azure.microsoft.com/en-us/products/documentdb) describes an open-source-based managed document database with high-availability options, backups, scaling, and Azure integrations for security, monitoring, application hosting, and AI.
-
-Neither service should be selected by name or compatibility status alone. Evaluate supported operations, regional availability, recovery objectives, workload performance, migration effort, and total cost. Managed-service features are not automatically capabilities of a standalone open-source deployment.
-
-### Cloud-provider services versus specialist database vendors
-
-Azure DocumentDB and Amazon DocumentDB are not the only managed choices. Specialist database vendors also operate services on public clouds. Examples include MongoDB Atlas and Couchbase Capella; "specialist" here describes their database-centered offerings, not an absence of cloud integrations.
-
-| Service | Distinctive consideration | What to evaluate |
+| Service | Distinctive consideration | Evaluate |
 |---|---|---|
-| **Azure DocumentDB** | An Azure-managed service built on the open-source DocumentDB foundation, with Azure resource management and identity integration. | Supported application behavior, service-tier capabilities, and how closely the managed deployment matches a self-operated deployment. |
-| **Amazon DocumentDB** | An AWS-managed database supporting selected MongoDB APIs, integrated with AWS infrastructure and services. | Supported commands and semantics, cluster-specific capabilities, and fit with existing AWS operations. |
-| **MongoDB Atlas** | A managed offering from the vendor developing MongoDB, available on AWS, Azure, and Google Cloud. | Required MongoDB features, deployment options, cloud integrations, and total cost. |
-| **Couchbase Capella** | A managed document database with SQL++ querying, search, eventing, and mobile/edge synchronization options. | Whether those capabilities fit the application better than retaining MongoDB APIs, and the cost of changing application interfaces. |
+| **Azure DocumentDB** | Azure-managed, built on open-source DocumentDB. | Application behavior, tiers, and differences from self-hosting. |
+| **Amazon DocumentDB** | AWS-managed, supporting selected MongoDB APIs. | Commands, semantics, cluster capabilities, and AWS operational fit. |
+| **MongoDB Atlas** | MongoDB's vendor-operated service on AWS, Azure, and Google Cloud. | Required features, deployment options, integrations, and cost. |
+| **Couchbase Capella** | SQL++, search, eventing, and mobile/edge synchronization options. | Workload fit and the cost of changing application interfaces. |
 
-The [Atlas cloud-provider documentation](https://www.mongodb.com/docs/atlas/reference/cloud-providers/) establishes its hosting choices. [Capella's documentation](https://docs.couchbase.com/cloud/get-started/intro.html) describes its database, search, eventing, and mobile capabilities, while its [cluster-creation guide](https://docs.couchbase.com/cloud/clusters/create-database.html) documents cloud-provider selection and private-networking options.
+[Atlas documents its cloud choices](https://www.mongodb.com/docs/atlas/reference/cloud-providers/); [Capella describes its capabilities](https://docs.couchbase.com/cloud/get-started/intro.html) and [provider and networking options](https://docs.couchbase.com/cloud/clusters/create-database.html).
 
-**Managed backups, scaling, and private networking are not exclusive advantages of a cloud provider's own database service.** The more useful comparison is how much work remains to integrate each service into the organization's operating environment, and whether its database capabilities meet the workload.
+Backups, scaling, and private networking are not exclusive to a cloud provider's own database. Compare database capabilities and the integration work that remains.
 
-### What does the surrounding cloud ecosystem actually buy?
+### What does the cloud ecosystem buy?
 
-The benefit is usually less integration and operational work across the complete application, not an automatic improvement in document-query performance.
+Usually, less integration and operational work across the application, not automatically faster document queries:
 
-**Shared identity and governance.** A database that fits existing identity and resource-management practices can reduce separate credential systems and administrative workflows. Azure DocumentDB supports [Microsoft Entra ID authentication, including managed identities](https://learn.microsoft.com/en-us/azure/documentdb/how-to-connect-role-based-access-control). Amazon DocumentDB exposes [resource-management permissions through AWS IAM](https://docs.aws.amazon.com/documentdb/latest/devguide/security-iam.html). Resource administration and permission to read or write database records are different layers; one must not be mistaken for the other.
+- **Identity and governance:** Azure DocumentDB supports [Entra ID and managed identities](https://learn.microsoft.com/en-us/azure/documentdb/how-to-connect-role-based-access-control). Amazon DocumentDB exposes [resource-management permissions through IAM](https://docs.aws.amazon.com/documentdb/latest/devguide/security-iam.html). Resource administration and record access are different permission layers.
+- **Private connectivity:** Azure documents [Private Link](https://learn.microsoft.com/en-us/azure/documentdb/how-to-private-link); Amazon DocumentDB runs in a VPC. [Atlas also supports private endpoints](https://www.mongodb.com/docs/atlas/security-private-endpoint/) on supported deployments. Latency and transfer costs depend on region, routing, and pricing.
+- **Monitoring:** Azure DocumentDB can send [diagnostics to Azure Monitor and Log Analytics](https://learn.microsoft.com/en-us/azure/documentdb/how-to-monitor-diagnostics-logs). Configuration and tier restrictions apply; integration is not automatic end-to-end tracing.
+- **Event processing:** [Lambda can process Amazon DocumentDB change streams](https://docs.aws.amazon.com/lambda/latest/dg/with-documentdb.html). Engine and cluster restrictions apply, and at-least-once delivery requires handlers that tolerate duplicates.
+- **Procurement and support:** a database may fit existing purchasing, inventories, cost allocation, and support workflows. Check contracts and charges; specialist vendors may fit those workflows too.
 
-**Private application-to-database connectivity.** Using private network paths can avoid exposing a database endpoint publicly and align connectivity with existing network controls. Azure DocumentDB documents [Private Link connectivity](https://learn.microsoft.com/en-us/azure/documentdb/how-to-private-link), while Amazon DocumentDB runs within a VPC. This is not an exclusive cloud-provider advantage: [Atlas supports private endpoints](https://www.mongodb.com/docs/atlas/security-private-endpoint/) through AWS PrivateLink, Azure Private Link, and Google Cloud Private Service Connect on supported deployments. Network proximity can help latency and transfer costs, but depends on region, routing, and pricing -- not on the database vendor's name.
+Specialists offer many of the same connections. [Atlas supports AWS IAM database authentication](https://www.mongodb.com/docs/atlas/security/aws-iam-authentication/), including application roles on AWS compute. This is not "cloud integration versus no integration."
 
-**A common monitoring workflow.** Integrating database diagnostics with an existing operations platform can simplify alert routing and incident investigation. Azure DocumentDB can send [diagnostic logs to Azure Monitor and Log Analytics](https://learn.microsoft.com/en-us/azure/documentdb/how-to-monitor-diagnostics-logs), allowing operators to investigate database requests within their Azure monitoring environment. This requires configuration, and the documented resource-log feature excludes some lower tiers. Integration does not automatically provide end-to-end application tracing.
+The tradeoff is **database strengths, integration effort, and platform dependence**. Cloud identities and event mappings can simplify work now and complicate a later move. A specialist service can preserve an interface across clouds while creating dependencies on its own management platform. Neither eliminates lock-in or guarantees lower cost.
 
-**Managed event-processing connections.** A documented service integration can replace some custom plumbing. For example, [AWS Lambda can process Amazon DocumentDB change streams](https://docs.aws.amazon.com/lambda/latest/dg/with-documentdb.html) through an event-source mapping, supporting workflows such as updating a search index when records change. The integration has engine-version and cluster-type restrictions, and delivery is at least once, so application handlers must tolerate duplicate events. "Integrated" does not mean unrestricted or exactly once.
+An integrated service may be simplest for a team already operating in Azure or AWS. A specialist may better fit particular features or multicloud management. Customer-hosted deployments and direct engine control are reasons to consider open-source DocumentDB.
 
-**A smaller procurement and support coordination burden.** Where an organization already standardizes on a cloud provider, its database service may fit existing purchasing, resource inventories, cost allocation, and support processes. That can be valuable even without a unique database feature. However, contractual coverage, support plans, marketplace purchasing, and charges must be checked; specialist vendors may fit those processes too.
-
-Specialist services can offer many of the same connections. For example, [Atlas supports AWS IAM database authentication](https://www.mongodb.com/docs/atlas/security/aws-iam-authentication/), including roles used by applications on AWS compute. It would therefore be misleading to frame this choice as "cloud integration versus no integration."
-
-The tradeoff is between **database-specific strengths, integration effort, and platform dependence**. Cloud-native identities, event mappings, and operational APIs can reduce work today while making a later move more involved. A specialist service may preserve one database interface across multiple clouds, but still introduces dependencies on its own management platform. Neither model eliminates lock-in or guarantees lower cost.
-
-For a team already operating its application in Azure or AWS, an integrated database service can be the simplest complete solution. For a team prioritizing particular database features, mobile synchronization, or a consistent managed offering across clouds, a specialist vendor may be a better fit. For organizations requiring customer-hosted deployments or direct control of the engine, open-source DocumentDB remains another starting point.
-
-The final architecture is usually larger than the database:
+The complete system remains larger than its database:
 
 ```text
 Web, mobile, or AI client
@@ -292,14 +237,12 @@ Identity, monitoring, backups, object storage,
 event processing, and cloud AI or analytics
 ```
 
-The database is a component of that system, not a replacement for it.
-
 ## Start with the application, keep deployment choices open
 
-There are many document databases because the document model solves a recurring application problem, while organizations have different requirements for implementation, licensing, and operations.
+There are many document databases because the document model solves a recurring application problem, while organizations need different implementations, licenses, and operating models.
 
-Open-source DocumentDB offers a concrete combination: a document-oriented interface, BSON and document operations integrated with PostgreSQL, and a permissive MIT License. Its value is not that it makes every workload faster or every deployment simpler. Its value is that teams can adopt the document model while retaining meaningful control over the software and infrastructure.
+Open-source DocumentDB combines a document-oriented interface, BSON and document operations integrated with PostgreSQL, and MIT licensing. It does not promise every workload will be faster or every deployment simpler. It offers meaningful control over software and infrastructure.
 
-A sensible starting point is the [open-source quickstart](https://github.com/documentdb/documentdb#get-started): build a representative application, test compatibility, measure real queries, and verify backup and recovery procedures. Then choose self-hosting or a managed service according to production requirements.
+Start with the [quickstart](/docs/getting-started/): build a representative application, test compatibility, measure real queries, and verify recovery. Then choose self-hosting or a managed service according to production requirements.
 
 **Choose documents because they fit the application. Choose hosting because it fits the organization.**
