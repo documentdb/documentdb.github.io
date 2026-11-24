@@ -79,7 +79,7 @@ describe('package metadata', () => {
 });
 
 describe('release metadata', () => {
-  it('uses v1.2-0 for latest and stable before the feeds load', () => {
+  it('uses v1.2-0 for latest and v1.0-0 for stable before the feeds load', () => {
     expect(FALLBACK_RELEASES.latest).toMatchObject({
       tagName: 'v1.2-0',
       aptVersion: '1.2-0',
@@ -89,12 +89,12 @@ describe('release metadata', () => {
       releaseUrl: 'https://github.com/documentdb/documentdb/releases/tag/v1.2-0',
     });
     expect(FALLBACK_RELEASES.stable).toMatchObject({
-      tagName: 'v1.2-0',
-      aptVersion: '1.2-0',
-      rpmVersion: '1.2.0-1.el9',
-      metaVersion: '1.2.0',
-      metaRpmVersion: '1.2.0-1',
-      releaseUrl: 'https://github.com/documentdb/documentdb/releases/tag/v1.2-0',
+      tagName: 'v1.0-0',
+      aptVersion: '1.0-0',
+      rpmVersion: '1.0.0-1.el9',
+      metaVersion: '1.0.0',
+      metaRpmVersion: '1.0.0-1',
+      releaseUrl: 'https://github.com/documentdb/documentdb/releases/tag/v1.0-0',
     });
   });
 
