@@ -1,0 +1,536 @@
+/*
+ * Layout states for the campaign film, switched by data-mode on .root:
+ *
+ *   poster   a static preview; no WebGL or renderer download until Play.
+ *   film     WebGL is available: the film plays behind the hero, with one
+ *            line of narration and a pause button under it.
+ *   static   no WebGL (or a very short viewport): the hero, followed by the
+ *            film's eight steps as a plain list.
+ *
+ * The traditional hero scrolls into its written fallback. The prompt layout
+ * fits the remaining viewport between the site's navigation and footer.
+ */
+
+.root {
+  /* Height of the announcement bar and the site header above the stage; the
+     component measures the real value once it runs. */
+  --film-top: 101px;
+  --stage-h: calc(100vh - var(--film-top));
+  position: relative;
+  isolation: isolate;
+  background: #05070a;
+}
+
+:global(body):has(.root[data-layout="prompt"]) {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+}
+
+:global(body):has(.root[data-layout="prompt"]) > * {
+  flex-shrink: 0;
+}
+
+:global(body):has(.root[data-layout="prompt"]) > :global(main) {
+  flex: 1;
+  min-height: 0;
+}
+
+.root[data-layout="prompt"] {
+  height: 100%;
+}
+
+.root[data-layout="prompt"] .stage {
+  height: 100%;
+  min-height: 0;
+}
+
+.root[data-layout="prompt"] .frame {
+  height: 100%;
+}
+
+.root[data-layout="prompt"] .topbar {
+  flex-shrink: 0;
+  height: 0.5rem;
+}
+
+.root[data-layout="prompt"] .copy {
+  max-width: min(38rem, 48vw);
+  padding: 0.5rem 0 1rem;
+}
+
+.compactSteps {
+  position: absolute;
+  z-index: 4;
+  top: 1rem;
+  right: 1.5rem;
+  bottom: 5rem;
+  display: grid;
+  gap: 0.5rem;
+  width: calc(50% - 2.5rem);
+  overflow: auto;
+  list-style: none;
+}
+
+.compactSteps .stepItem {
+  padding: 1rem;
+}
+
+@supports (height: 100dvh) {
+  .root {
+    --stage-h: calc(100dvh - var(--film-top));
+  }
+}
+
+.stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: var(--stage-h);
+  overflow: hidden;
+}
+
+/* Shown until the first WebGL frame, and kept as the static-mode background.
+   It mirrors the scene's own backdrop so the canvas can fade in over it. */
+.backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 60% 55% at 70% 48%, rgba(14, 116, 168, 0.3), transparent 70%),
+    radial-gradient(ellipse 45% 40% at 86% 88%, rgba(16, 185, 129, 0.1), transparent 70%),
+    linear-gradient(180deg, #070b12 0%, #030405 100%);
+}
+
+.poster {
+  position: absolute;
+  z-index: 1;
+  left: var(--film-focus-left, 50%);
+  top: var(--film-focus-top, 1rem);
+  width: var(--film-focus-width, calc(50% - 1.5rem));
+  height: var(--film-focus-height, calc(100% - 6rem));
+  pointer-events: none;
+  transition: opacity 1.2s ease;
+}
+
+.poster img {
+  object-fit: contain;
+  mask-image:
+    linear-gradient(to right, transparent, #000 8%, #000 92%, transparent),
+    linear-gradient(to bottom, transparent, #000 3%, #000 94%, transparent);
+  mask-composite: intersect;
+}
+
+.poster[data-hidden="true"] {
+  opacity: 0;
+}
+
+.root[data-mode="static"] .poster {
+  display: none;
+}
+
+.scene {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 1.2s ease;
+}
+
+.scene[data-ready="true"] {
+  opacity: 1;
+}
+
+.scene canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.root:not([data-mode="film"]) .scene {
+  display: none;
+}
+
+/* Keeps the copy and the narration readable over whatever the film shows. */
+.scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    linear-gradient(0deg, rgba(5, 7, 10, 0.9) 0%, rgba(5, 7, 10, 0.55) 9%, rgba(5, 7, 10, 0) 20%),
+    linear-gradient(
+      90deg,
+      rgba(5, 7, 10, 0.94) 0%,
+      rgba(5, 7, 10, 0.82) 26%,
+      rgba(5, 7, 10, 0.42) 44%,
+      rgba(5, 7, 10, 0) 60%
+    );
+}
+
+.frame {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  width: 100%;
+  max-width: 80rem;
+  min-height: 0;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+/* Clear space under the site header. Its lower edge is the upper edge of the
+   area the film is framed in, so its height is part of the film's framing. */
+.topbar {
+  height: 2.75rem;
+}
+
+.copy {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  /* Narrower on small laptops, so the film keeps about half the width. */
+  max-width: min(35rem, 44vw);
+  min-height: 0;
+  padding: 1.25rem 0 1rem;
+}
+
+.heading {
+  font-size: clamp(2.05rem, min(4.5vw, 7.4vh), 3.75rem);
+  font-weight: 600;
+  line-height: 1.07;
+  letter-spacing: -0.025em;
+  color: #fff;
+  text-wrap: balance;
+}
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+/* Narration: a pause button, one line that changes with each shot, and a
+   hairline showing how far the film has run. */
+.player {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.75rem 0.9rem;
+  padding: 0.5rem 0 1.5rem;
+}
+
+.root[data-mode="static"] .player {
+  display: none;
+}
+
+.toggle {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border: 1px solid rgba(125, 211, 252, 0.35);
+  border-radius: 999px;
+  background: rgba(8, 20, 30, 0.7);
+  color: #e0f2fe;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.toggle:hover {
+  border-color: #7dd3fc;
+  background: rgba(14, 40, 58, 0.85);
+}
+
+.toggle:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.toggle:focus-visible {
+  outline: 2px solid #7dd3fc;
+  outline-offset: 3px;
+}
+
+.toggleIcon {
+  width: 0.7rem;
+  height: 0.7rem;
+  fill: currentColor;
+}
+
+/* Every line shares one grid cell, so the bar keeps its height as they change. */
+.captions {
+  display: grid;
+  min-width: 0;
+}
+
+.caption {
+  grid-area: 1 / 1;
+  align-self: center;
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  color: #cbd5e1;
+  text-shadow: 0 0 14px #05070a;
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity 0.35s ease,
+    transform 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.caption[data-active="true"] {
+  opacity: 1;
+  transform: none;
+  transition-delay: 0.1s;
+}
+
+.step {
+  margin-right: 0.75rem;
+  font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  color: #7dd3fc;
+  white-space: nowrap;
+}
+
+.captionTitle {
+  margin-right: 0.3rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.progress {
+  position: relative;
+  grid-column: 1 / -1;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: rgba(148, 163, 184, 0.22);
+}
+
+.progressFill {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, #6ee7b7, #7dd3fc);
+  transform: scaleX(var(--film-progress, 0));
+  transform-origin: left center;
+}
+
+/* Gaps between the eight shots. */
+.tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  margin-left: -1.5px;
+  background: #05070a;
+}
+
+/* The film in words: static mode, reduced motion and no JavaScript. */
+.steps {
+  display: grid;
+  gap: 1.25rem;
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 1rem;
+  list-style: none;
+}
+
+.stepItem {
+  border: 1px solid #262626;
+  border-radius: 1rem;
+  background: rgba(23, 23, 23, 0.6);
+  padding: 1.5rem;
+}
+
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+.fact {
+  border: 1px solid rgba(125, 211, 252, 0.28);
+  border-radius: 999px;
+  background: rgba(8, 20, 30, 0.72);
+  padding: 0.3rem 0.75rem;
+  font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: #bae6fd;
+}
+
+@media (min-width: 768px) {
+  .steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Narrow screens: the film plays on top, its narration sits right under it,
+   and the copy follows at the bottom. */
+@media (max-width: 1023px) {
+  .poster {
+    left: var(--film-focus-left, 1.25rem);
+    width: var(--film-focus-width, calc(100% - 2.5rem));
+    height: var(--film-focus-height, 30%);
+  }
+
+  .root[data-layout="prompt"] .poster {
+    height: var(--film-focus-height, calc(38% - 6rem));
+  }
+
+  .scrim {
+    background: linear-gradient(
+      0deg,
+      rgba(5, 7, 10, 0.97) 0%,
+      rgba(5, 7, 10, 0.92) 40%,
+      rgba(5, 7, 10, 0.55) 56%,
+      rgba(5, 7, 10, 0) 70%
+    );
+  }
+
+  .frame {
+    padding: 0 1.25rem;
+  }
+
+  .topbar {
+    height: 2.15rem;
+  }
+
+  .player {
+    order: 2;
+    margin-top: auto;
+    padding: 0.5rem 0 0.25rem;
+  }
+
+  .copy {
+    order: 3;
+    flex: 0 0 auto;
+    max-width: 40rem;
+    padding: 0.9rem 0 1.25rem;
+  }
+
+  .buttons {
+    margin-top: 1.1rem;
+  }
+
+  .caption {
+    font-size: 0.8125rem;
+    line-height: 1.4;
+  }
+
+  .root[data-layout="prompt"] .copy {
+    flex: 0 0 62%;
+    max-width: none;
+    padding: 0.5rem 0 0.75rem;
+  }
+
+  .root[data-layout="prompt"] .player {
+    flex-shrink: 0;
+  }
+
+  .compactSteps {
+    inset: 0.5rem 1.25rem auto;
+    width: auto;
+    height: 28%;
+  }
+}
+
+@media (max-height: 559px) and (min-width: 640px) {
+  .root[data-layout="prompt"] .copy {
+    order: initial;
+    flex: 1;
+    max-width: 52%;
+    padding: 0.25rem 0 0.5rem;
+  }
+
+  .root[data-layout="prompt"] .player {
+    order: initial;
+    padding-bottom: 0.5rem;
+  }
+
+  .root[data-layout="prompt"] .scrim {
+    background: linear-gradient(90deg, #05070a 0%, rgba(5, 7, 10, 0.85) 45%, transparent 65%);
+  }
+
+  .root[data-layout="prompt"][data-mode="static"] .player {
+    display: none;
+  }
+
+  .compactSteps {
+    inset: 0.5rem 1.25rem 0.5rem auto;
+    width: 43%;
+    height: auto;
+  }
+}
+
+@media (max-width: 639px), (max-height: 450px) {
+  :global(body):has(.root[data-layout="prompt"]) > :global(footer) > :global(div) {
+    padding: 0.5rem 1rem;
+  }
+
+  :global(body):has(.root[data-layout="prompt"]) > :global(footer) :global(p) {
+    font-size: 0.6875rem;
+    line-height: 1.4;
+  }
+}
+
+/* Phones: every line of copy costs the film room, so the buttons share a row. */
+@media (max-width: 639px) {
+  .root[data-layout="prompt"] .poster {
+    height: var(--film-focus-height, calc(30% - 7rem));
+  }
+
+  .root[data-layout="prompt"] .copy {
+    flex-basis: 70%;
+  }
+
+  .compactSteps {
+    height: calc(30% - 4.5rem);
+  }
+
+  .root[data-mode="static"] .compactSteps {
+    height: 28%;
+  }
+
+  .topbar {
+    height: 1.93125rem;
+  }
+
+  .buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+
+  .toggle {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .step {
+    margin-right: 0.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .poster,
+  .scene,
+  .caption {
+    transition-duration: 0.01s !important;
+  }
+
+  .caption {
+    transform: none;
+  }
+}
