@@ -110,6 +110,7 @@ function fitToViewport(menu: HTMLDivElement | null) {
 
 export default function Navbar() {
   const pathname = usePathname();
+  const isLandingPage = pathname === "/campaigns/landing" || pathname === "/campaigns/landing/";
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [menuPathname, setMenuPathname] = useState(pathname);
   const [openGroup, setOpenGroup] = useState<string | null>(null);
@@ -123,6 +124,7 @@ export default function Navbar() {
   if (menuPathname !== pathname) {
     setMenuPathname(pathname);
     setIsMenuOpen(false);
+    if (isLandingPage) setOpenGroup(null);
   }
 
   useEffect(() => {
@@ -154,6 +156,8 @@ export default function Navbar() {
       document.removeEventListener("keydown", closeOnEscape);
     };
   }, [openGroup]);
+
+  if (isLandingPage) return null;
 
   return (
     <nav className="sticky top-0 z-50 border-b border-neutral-700 bg-neutral-900/95 shadow-sm backdrop-blur">

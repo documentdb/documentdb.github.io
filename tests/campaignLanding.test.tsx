@@ -3,6 +3,9 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { agentKitRevision, agentKitUrl, galleryRevision, samplePrompts } from '../app/components/campaign/promptContent';
 
+const { pathnameMock } = vi.hoisted(() => ({ pathnameMock: vi.fn() }));
+vi.mock('next/navigation', () => ({ usePathname: pathnameMock }));
+
 afterEach(() => {
   vi.unstubAllEnvs();
   vi.resetModules();
@@ -60,6 +63,23 @@ describe('agent landing page', () => {
       agentKitUrl,
     ]);
     expect(html).toContain('src="/preview/images/campaign-film-poster.webp"');
+  });
+});
+
+describe('landing navigation', () => {
+  it.each(['/campaigns/landing', '/campaigns/landing/'])('omits the navbar on %s', async (pathname) => {
+    pathnameMock.mockReturnValue(pathname);
+    const { default: Navbar } = await import('../app/components/Navbar');
+    expect(renderToStaticMarkup(createElement(Navbar))).toBe('');
+  });
+
+  it.each(['/', '/why-document-databases/', '/campaigns/landing-extra/'])('keeps the navbar on %s', async (pathname) => {
+    pathnameMock.mockReturnValue(pathname);
+    const { default: Navbar } = await import('../app/components/Navbar');
+    const html = renderToStaticMarkup(createElement(Navbar));
+    expect(html).toContain('<nav');
+    expect(html).toContain('DocumentDB Logo');
+    expect(html).toContain('Install &amp; Download');
   });
 });
 
