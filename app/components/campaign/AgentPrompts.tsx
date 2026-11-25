@@ -70,9 +70,11 @@ export default function AgentPrompts({ primary, secondary }: { primary: Link; se
         if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false);
       }}>
       <div className={styles.heading}>
-        <p className={styles.eyebrow}>Open source. Agent ready. Yours to run.</p>
-        <h1 id="hero-heading">One prompt. A working app.</h1>
-        <p className={styles.description}>Start with the basics, or let your agent build a sample.</p>
+        <p className={styles.eyebrow}>DocumentDB. Built on PostgreSQL. MIT licensed.</p>
+        <h1 id="hero-heading">The Open-Source Document Database built on PostgreSQL</h1>
+        <p className={styles.description}>
+          <a href={agentKitUrl} target="_blank" rel="noopener noreferrer">Try Agent-Kit</a> with a prompt. Build a working app.
+        </p>
       </div>
 
       <div hidden={!expanded} className={styles.carouselNav}>

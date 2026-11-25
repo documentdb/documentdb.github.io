@@ -3,8 +3,8 @@ import CampaignFilm from "../../components/campaign/CampaignFilm";
 import { getMetadata } from "../../services/metadataService";
 import { withBasePath } from "../../services/sitePath";
 
-const title = "DocumentDB for coding agents - Build with one prompt";
-const description = "Give your coding agent one prompt and get a working app on an open-source document database built on PostgreSQL.";
+const title = "DocumentDB - The Open-Source Document Database built on PostgreSQL";
+const description = "Try Agent-Kit with a prompt. Build a working app on DocumentDB, the MIT-licensed document database built on PostgreSQL.";
 
 export const metadata = {
   ...getMetadata({ title, description, path: "/campaigns/landing/" }),
@@ -18,8 +18,8 @@ export default function LandingPage() {
   return (
     <main className="relative overflow-x-clip bg-neutral-950">
       <CampaignFilm
-        tagline="Open source. Agent ready. Yours to run."
-        heading="One prompt. A working app."
+        tagline="DocumentDB. Built on PostgreSQL. MIT licensed."
+        heading="The Open-Source Document Database built on PostgreSQL"
         description={description}
         primary={primary}
         secondary={secondary}
